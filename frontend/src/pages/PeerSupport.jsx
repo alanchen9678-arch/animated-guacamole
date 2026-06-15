@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect } from 'react'
+﻿import { useState, useRef, useEffect } from 'react'
 
-// ─── anonymous identity ────────────────────────────────────────────────────────
+// Anonymous identity
 
 const WORD_A = ['Calm','Quiet','Gentle','Steady','Brave','Kind','Warm','Still','Soft','Clear','Bold','Light']
 const WORD_N = ['Maple','River','Stone','Dawn','Forest','Lake','Ember','Cloud','Tide','Ridge','Pine','Brook']
+const ONBOARDING_STORAGE_KEY = 'aurora.peerSupport.onboarding'
+const PEER_STATE_STORAGE_KEY = 'aurora.peerSupport.state'
 
 function makeAnonName() {
   const a = WORD_A[Math.floor(Math.random() * WORD_A.length)]
@@ -11,7 +13,51 @@ function makeAnonName() {
   return `${a}${n}${10 + Math.floor(Math.random() * 89)}`
 }
 
-// ─── moderation engine ─────────────────────────────────────────────────────────
+function loadOnboardingState() {
+  try {
+    const stored = window.localStorage.getItem(ONBOARDING_STORAGE_KEY)
+    if (!stored) return null
+
+    const parsed = JSON.parse(stored)
+    if (parsed?.acceptedGuidelines && typeof parsed.anonName === 'string') {
+      return parsed
+    }
+  } catch {
+    return null
+  }
+
+  return null
+}
+
+function saveOnboardingState(anonName) {
+  try {
+    window.localStorage.setItem(
+      ONBOARDING_STORAGE_KEY,
+      JSON.stringify({ acceptedGuidelines: true, anonName }),
+    )
+  } catch {
+    // Storage can be unavailable in some private browsing modes.
+  }
+}
+
+function loadPeerSupportState() {
+  try {
+    const stored = window.localStorage.getItem(PEER_STATE_STORAGE_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
+function savePeerSupportState(state) {
+  try {
+    window.localStorage.setItem(PEER_STATE_STORAGE_KEY, JSON.stringify(state))
+  } catch {
+    // Storage can be unavailable in some private browsing modes.
+  }
+}
+
+// Moderation engine
 
 const MOD_RULES = [
   {
@@ -19,15 +65,15 @@ const MOD_RULES = [
     terms: ['suicide','suicidal','kill myself','end my life','end it all','want to die','dont want to live','do not want to live'],
     patterns: [],
     label: 'We noticed something serious',
-    message: "It sounds like you might be in a really dark place right now. You are not alone — please reach out to the 988 Suicide & Crisis Lifeline (call or text 988, available 24/7). You can also connect with a therapist through Aurora's Therapist Match.",
+    message: "It sounds like you might be in a really dark place right now. You are not alone. Please reach out to the 988 Suicide & Crisis Lifeline (call or text 988, available 24/7). You can also connect with a therapist through Aurora's Therapist Match.",
     color: '#dc2626', bg: 'rgba(220,38,38,0.06)', border: 'rgba(220,38,38,0.22)',
   },
   {
     type: 'harassment', blocked: true,
     terms: ['idiot','stupid','loser','worthless','shut up','you suck','hate you','go away','moron','dumb'],
     patterns: [],
-    label: 'Message blocked — harassment',
-    message: "This message was flagged for potential harassment and wasn't sent. Please keep interactions respectful — everyone here is going through something difficult.",
+    label: 'Message blocked: harassment',
+    message: "This message was flagged for potential harassment and wasn't sent. Please keep interactions respectful. Everyone here is going through something difficult.",
     color: '#d97706', bg: 'rgba(217,119,6,0.06)', border: 'rgba(217,119,6,0.22)',
   },
   {
@@ -58,12 +104,12 @@ function moderate(text) {
   return null
 }
 
-// ─── mock data ─────────────────────────────────────────────────────────────────
+// Mock data
 
 const ROOM_SEED = [
   { id: 1,  user: 'GentleStone28', color: '#7c3aed', text: "Does anyone else get anxiety spikes first thing in the morning before anything has even happened?", day: 3 },
   { id: 2,  user: 'SteadyTide44',  color: '#b45309', text: "Yes, every single morning. I wake up with this dread and I can't explain where it's coming from.", day: 3 },
-  { id: 3,  user: 'BoldForest12',  color: '#15803d', text: "Morning anxiety is real. I've started 5 minutes of slow breathing before I check my phone — it helps a little.", day: 3 },
+  { id: 3,  user: 'BoldForest12',  color: '#15803d', text: "Morning anxiety is real. I've started 5 minutes of slow breathing before I check my phone. It helps a little.", day: 3 },
   { id: 4,  user: 'QuietDawn67',   color: '#1d4ed8', text: "I keep telling myself the feeling will pass and it usually does. It just takes a while.", day: 2 },
   { id: 5,  user: 'SoftCloud91',   color: '#be185d', text: "The hardest part is not knowing what triggered it. Makes it hard to address.", day: 2 },
   { id: 6,  user: 'GentleStone28', color: '#7c3aed', text: "Exactly. There's no clear trigger. It's just... there.", day: 2 },
@@ -77,13 +123,38 @@ const ROOM_SEED = [
 
 const DAY_LABEL = { 3: '3 days ago', 2: '2 days ago', 1: 'Yesterday', 0: 'Today' }
 
+const VISIBLE_MATCH_COUNT = 5
+
 const PEER_LIST = [
-  { id: 1, name: 'QuietRiver33',  color: '#7c3aed', similarity: 94, concerns: ['Anxiety (75)', 'Stress (70)'],     status: 'none' },
-  { id: 2, name: 'SteadyCloud19', color: '#0891b2', similarity: 88, concerns: ['Anxiety (72)', 'Burnout (65)'],    status: 'none' },
-  { id: 3, name: 'BraveEmber55',  color: '#b45309', similarity: 82, concerns: ['Stress (68)', 'Anxiety (60)'],     status: 'none' },
-  { id: 4, name: 'SoftDawn41',    color: '#15803d', similarity: 77, concerns: ['Anxiety (58)', 'Loneliness (52)'], status: 'none' },
-  { id: 5, name: 'GentleTide27',  color: '#be185d', similarity: 71, concerns: ['Burnout (70)', 'Stress (65)'],     status: 'none' },
+  { id: 1, name: 'QuietRiver33',  color: '#7c3aed', status: 'none' },
+  { id: 2, name: 'SteadyCloud19', color: '#0891b2', status: 'none' },
+  { id: 3, name: 'BraveEmber55',  color: '#b45309', status: 'none' },
+  { id: 4, name: 'SoftDawn41',    color: '#15803d', status: 'none' },
+  { id: 5, name: 'GentleTide27',  color: '#be185d', status: 'none' },
+  { id: 6, name: 'ClearBrook64',  color: '#2563eb', status: 'none' },
+  { id: 7, name: 'WarmPine82',    color: '#c2410c', status: 'none' },
+  { id: 8, name: 'StillLake38',   color: '#0f766e', status: 'none' },
+  { id: 9, name: 'LightStone73',  color: '#a21caf', status: 'none' },
+  { id: 10, name: 'KindMaple46',  color: '#047857', status: 'none' },
 ]
+
+function mergeSavedPeers(savedPeers) {
+  if (!Array.isArray(savedPeers)) return PEER_LIST.map(p => ({ ...p }))
+
+  return PEER_LIST.map(peer => {
+    const saved = savedPeers.find(p => p.id === peer.id)
+    return saved ? { ...peer, status: saved.status ?? peer.status } : { ...peer }
+  })
+}
+
+function makeInitialDmMessages(peer, anonName) {
+  return [{
+    id: 0,
+    role: 'them',
+    text: `Hey ${anonName}! Glad we matched. How are you doing lately?`,
+    time: ts(),
+  }]
+}
 
 const PEER_REPLIES = [
   "Hey, thanks for reaching out. It's good to talk to someone who actually gets it.",
@@ -95,7 +166,7 @@ const PEER_REPLIES = [
 ]
 
 const GUIDELINES = [
-  'Be kind and respectful — everyone here is going through something difficult.',
+  'Be kind and respectful. Everyone here is going through something difficult.',
   'Stay anonymous. Do not share your real name, phone number, email, or social media handles.',
   'Do not harass, bully, or demean other community members.',
   'Do not give medical advice or encourage others to stop taking medication.',
@@ -103,7 +174,7 @@ const GUIDELINES = [
   'Conversations are AI-moderated 24/7. Serious or repeated violations may result in removal.',
 ]
 
-// ─── shared utils ──────────────────────────────────────────────────────────────
+// Shared utils
 
 function ts() {
   return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -134,12 +205,24 @@ function ModAlert({ rule, onDismiss }) {
         <strong style={{ color: rule.color }}>{rule.label}</strong>
         <p>{rule.message}</p>
       </div>
-      <button className="ps-mod-dismiss" onClick={onDismiss} aria-label="Dismiss">×</button>
+      <button className="ps-mod-dismiss" onClick={onDismiss} aria-label="Dismiss">x</button>
     </div>
   )
 }
 
-// ─── onboarding ───────────────────────────────────────────────────────────────
+function LeaveConfirmBubble({ label, onCancel, onConfirm }) {
+  return (
+    <div className="ps-leave-confirm">
+      <p>{label}</p>
+      <div className="ps-leave-confirm-actions">
+        <button className="ps-confirm-cancel" onClick={onCancel}>Cancel</button>
+        <button className="ps-confirm-danger" onClick={onConfirm}>Leave</button>
+      </div>
+    </div>
+  )
+}
+
+// Onboarding
 
 function OnboardingView({ anonName, onDone }) {
   const [agreed, setAgreed] = useState(false)
@@ -157,9 +240,9 @@ function OnboardingView({ anonName, onDone }) {
           <div className="ps-name-reveal">
             <AnonAvatar name={anonName} color="#0f766e" size={72} />
             <div className="ps-name-big">{anonName}</div>
-            <p className="ps-name-note">Randomly assigned · cannot be changed</p>
+            <p className="ps-name-note">Randomly assigned - cannot be changed</p>
           </div>
-          <button className="ps-primary-btn" onClick={onDone}>Enter the community →</button>
+          <button className="ps-primary-btn" onClick={onDone}>Enter the community</button>
         </div>
       </section>
     )
@@ -168,7 +251,7 @@ function OnboardingView({ anonName, onDone }) {
   return (
     <section className="page">
       <div className="ps-center-wrap ps-center-wrap--wide">
-        <p className="ps-eyebrow">Aurora · Peer Support</p>
+        <p className="ps-eyebrow">Aurora - Peer Support</p>
         <h2 className="ps-heading">Community guidelines</h2>
         <p className="ps-sub">
           Aurora's peer community connects you with others who share similar experiences.
@@ -192,19 +275,18 @@ function OnboardingView({ anonName, onDone }) {
           style={{ opacity: agreed ? 1 : 0.45, cursor: agreed ? 'pointer' : 'not-allowed' }}
           onClick={() => setStep(2)}
         >
-          Continue →
+          Continue
         </button>
       </div>
     </section>
   )
 }
 
-// ─── hub ──────────────────────────────────────────────────────────────────────
+// Hub
 
-function HubView({ anonName, peers, onRoom, onPeers }) {
-  const [rematch, setRematch] = useState(true)
-  const connected             = peers.filter(p => p.status === 'connected').length
-  const pending               = peers.filter(p => p.status === 'pending').length
+function HubView({ anonName, peers, setPeers, onRoom, onDM }) {
+  const connected = peers.filter(p => p.status === 'connected').length
+  const pending = peers.filter(p => p.status === 'pending').length
 
   return (
     <section className="page">
@@ -216,18 +298,6 @@ function HubView({ anonName, peers, onRoom, onPeers }) {
         </div>
       </div>
 
-      {rematch && (
-        <div className="ps-rematch-banner">
-          <div className="ps-rematch-dot" />
-          <div className="ps-rematch-text">
-            <strong>Your needs profile shifted</strong>
-            <p>We found new peer matches that may be a better fit for where you are now.</p>
-          </div>
-          <button className="ps-rematch-cta" onClick={() => { setRematch(false); onPeers() }}>View matches</button>
-          <button className="ps-rematch-x" onClick={() => setRematch(false)}>×</button>
-        </div>
-      )}
-
       <div className="ps-hub-cards">
         <button className="ps-hub-card" onClick={onRoom}>
           <div className="ps-hub-card-icon ps-hub-card-icon--purple">
@@ -235,12 +305,12 @@ function HubView({ anonName, peers, onRoom, onPeers }) {
           </div>
           <div className="ps-hub-card-text">
             <strong>Anxiety Support Room</strong>
-            <p>Your assigned group · 14 members · Active now</p>
+            <p>Your assigned group - 14 members - Active now</p>
           </div>
-          <span className="ps-hub-arrow">→</span>
+          <span className="ps-hub-arrow">-&gt;</span>
         </button>
 
-        <button className="ps-hub-card" onClick={onPeers}>
+        {false && <button className="ps-hub-card" onClick={() => {}}>
           <div className="ps-hub-card-icon ps-hub-card-icon--teal">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
           </div>
@@ -248,13 +318,15 @@ function HubView({ anonName, peers, onRoom, onPeers }) {
             <strong>Peer Matches</strong>
             <p>
               5 matched
-              {connected > 0 ? ` · ${connected} connected` : ''}
-              {pending > 0   ? ` · ${pending} pending` : ''}
+              {connected > 0 ? ` - ${connected} connected` : ''}
+              {pending > 0   ? ` - ${pending} pending` : ''}
             </p>
           </div>
-          <span className="ps-hub-arrow">→</span>
-        </button>
+          <span className="ps-hub-arrow">-&gt;</span>
+        </button>}
       </div>
+
+      <PeerMatchesSection peers={peers} setPeers={setPeers} onDM={onDM} />
 
       <div className="ps-hub-pills">
         <span className="ps-pill">All chats anonymous</span>
@@ -266,15 +338,23 @@ function HubView({ anonName, peers, onRoom, onPeers }) {
   )
 }
 
-// ─── room chat ────────────────────────────────────────────────────────────────
+// Room chat
 
-function RoomView({ anonName, onBack, onLeave }) {
-  const [messages, setMessages] = useState(ROOM_SEED.map(m => ({ ...m })))
+function RoomView({ anonName, messages, setMessages, onBack, onLeave }) {
   const [input, setInput]       = useState('')
   const [modAlert, setModAlert] = useState(null)
-  const bottomRef               = useRef(null)
+  const [confirmLeave, setConfirmLeave] = useState(false)
+  const messagesRef             = useRef(null)
+  const shouldScrollRef         = useRef(false)
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+  useEffect(() => {
+    if (!shouldScrollRef.current) {
+      return
+    }
+    shouldScrollRef.current = false
+    const messagesEl = messagesRef.current
+    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' })
+  }, [messages])
 
   function send() {
     const text = input.trim()
@@ -282,6 +362,7 @@ function RoomView({ anonName, onBack, onLeave }) {
     const flag = moderate(text)
     if (flag?.blocked) { setModAlert(flag); setInput(''); return }
     if (flag) setModAlert(flag)
+    shouldScrollRef.current = true
     setMessages(prev => [...prev, { id: Date.now(), user: anonName, color: '#0f766e', text, day: 0, self: true }])
     setInput('')
   }
@@ -291,20 +372,29 @@ function RoomView({ anonName, onBack, onLeave }) {
   return (
     <div className="ps-chat-root">
       <div className="ps-chat-header">
-        <button className="ps-back-btn" onClick={onBack}>←</button>
+        <button className="ps-back-btn" onClick={onBack}>Back</button>
         <div className="ps-room-badge">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
         <div>
           <strong className="ps-chat-name">Anxiety Support Room</strong>
-          <span className="ps-chat-sub">14 members · 7-day history · AI-moderated</span>
+          <span className="ps-chat-sub">14 members - 7-day history - AI-moderated</span>
         </div>
-        <button className="ps-leave-btn" onClick={onLeave}>Leave room</button>
+        <div className="ps-leave-wrap">
+          <button className="ps-leave-btn" onClick={() => setConfirmLeave(true)}>Leave room</button>
+          {confirmLeave && (
+            <LeaveConfirmBubble
+              label="Leave this room?"
+              onCancel={() => setConfirmLeave(false)}
+              onConfirm={onLeave}
+            />
+          )}
+        </div>
       </div>
 
       {modAlert && <ModAlert rule={modAlert} onDismiss={() => setModAlert(null)} />}
 
-      <div className="ps-messages">
+      <div className="ps-messages" ref={messagesRef}>
         {uniqueDays.map(day => (
           <div key={day}>
             <div className="ps-day-sep">{DAY_LABEL[day]}</div>
@@ -321,13 +411,12 @@ function RoomView({ anonName, onBack, onLeave }) {
             ))}
           </div>
         ))}
-        <div ref={bottomRef} />
       </div>
 
       <div className="ps-input-bar">
         <textarea
           className="chat-textarea"
-          placeholder="Send a message to the room…"
+          placeholder="Send a message to the room"
           rows={1}
           value={input}
           onChange={e => setInput(e.target.value)}
@@ -341,9 +430,14 @@ function RoomView({ anonName, onBack, onLeave }) {
   )
 }
 
-// ─── peer list ────────────────────────────────────────────────────────────────
+// Peer list
 
-function PeersView({ peers, setPeers, onDM, onBack }) {
+function PeerMatchesSection({ peers, setPeers, onDM, onBack }) {
+  const activeChats = peers.filter(p => p.status === 'connected')
+  const recommendedPeers = peers
+    .filter(p => p.status !== 'connected' && p.status !== 'left')
+    .slice(0, VISIBLE_MATCH_COUNT)
+
   function sendRequest(id) {
     setPeers(prev => prev.map(p => p.id === id ? { ...p, status: 'pending' } : p))
     setTimeout(() => {
@@ -353,14 +447,41 @@ function PeersView({ peers, setPeers, onDM, onBack }) {
 
   return (
     <section className="page">
-      <button className="ps-back-btn" style={{ marginBottom: 12 }} onClick={onBack}>← Community Hub</button>
+      <button className="ps-back-btn" style={{ marginBottom: 12 }} onClick={onBack}>Community Hub</button>
       <header className="page-header">
         <h2>Your peer matches</h2>
-        <p>Matched by needs profile similarity. All identities are anonymous — both users must accept to connect.</p>
+        <p>Recommended anonymous peers. Both users must accept before a chat opens.</p>
       </header>
 
+      <div>
+        <div className="ps-section-heading">
+          <span>Active chats</span>
+          <strong>{activeChats.length}</strong>
+        </div>
+        <div className="ps-peers-list">
+          {activeChats.length === 0 && (
+            <div className="ps-active-empty">Accepted peer requests will appear here.</div>
+          )}
+          {activeChats.map(p => (
+            <div key={p.id} className="ps-peer-card ps-peer-card--active">
+              <AnonAvatar name={p.name} color={p.color} size={48} />
+              <div className="ps-peer-info">
+                <strong>{p.name}</strong>
+                <p className="ps-peer-concerns">Active anonymous chat</p>
+              </div>
+              <button className="ps-req-btn ps-req-btn--on" onClick={() => onDM(p)}>Message</button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="ps-section-heading">
+        <span>Recommended matches</span>
+        <strong>{recommendedPeers.length}</strong>
+      </div>
+
       <div className="ps-peers-list">
-        {peers.map(p => (
+        {recommendedPeers.map(p => (
           <div key={p.id} className="ps-peer-card">
             <AnonAvatar name={p.name} color={p.color} size={48} />
             <div className="ps-peer-info">
@@ -368,7 +489,7 @@ function PeersView({ peers, setPeers, onDM, onBack }) {
             </div>
             <div>
               {p.status === 'none'      && <button className="ps-req-btn" onClick={() => sendRequest(p.id)}>Send request</button>}
-              {p.status === 'pending'   && <span className="ps-req-pending">Pending…</span>}
+              {p.status === 'pending'   && <span className="ps-req-pending">Pending...</span>}
               {p.status === 'connected' && <button className="ps-req-btn ps-req-btn--on" onClick={() => onDM(p)}>Message</button>}
             </div>
           </div>
@@ -378,33 +499,39 @@ function PeersView({ peers, setPeers, onDM, onBack }) {
   )
 }
 
-// ─── DM chat ──────────────────────────────────────────────────────────────────
+// DM chat
 
-function DMView({ peer, anonName, onBack }) {
-  const [messages, setMessages] = useState([{
-    id: 0, role: 'them',
-    text: `Hey ${anonName}! Glad we matched — looks like we're dealing with similar things. How are you doing lately?`,
-    time: ts(),
-  }])
+function DMView({ peer, anonName, messages, setMessages, onBack, onLeave }) {
   const [input, setInput]       = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [modAlert, setModAlert] = useState(null)
   const [replyIdx, setReplyIdx] = useState(0)
-  const [left, setLeft]         = useState(false)
-  const bottomRef               = useRef(null)
+  const [confirmLeave, setConfirmLeave] = useState(false)
+  const messagesRef             = useRef(null)
+  const shouldScrollRef         = useRef(false)
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, isTyping])
+  useEffect(() => {
+    if (!shouldScrollRef.current) {
+      return
+    }
+    shouldScrollRef.current = false
+    const messagesEl = messagesRef.current
+    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' })
+  }, [messages, isTyping])
 
   function send() {
     const text = input.trim()
-    if (!text || isTyping || left) return
+    if (!text || isTyping) return
     const flag = moderate(text)
     if (flag?.blocked) { setModAlert(flag); setInput(''); return }
     if (flag) setModAlert(flag)
+    shouldScrollRef.current = true
     setMessages(prev => [...prev, { id: Date.now(), role: 'me', text, time: ts() }])
     setInput('')
+    shouldScrollRef.current = true
     setIsTyping(true)
     setTimeout(() => {
+      shouldScrollRef.current = true
       setIsTyping(false)
       setReplyIdx(i => i + 1)
       setMessages(prev => [...prev, {
@@ -415,37 +542,34 @@ function DMView({ peer, anonName, onBack }) {
     }, 1000 + Math.random() * 900)
   }
 
-  if (left) {
-    return (
-      <section className="page">
-        <div className="ps-center-wrap">
-          <h2 className="ps-heading">You left this chat</h2>
-          <p className="ps-sub">The connection has ended. Your peer has been notified anonymously.</p>
-          <button className="ps-primary-btn" onClick={onBack}>Back to peers</button>
-        </div>
-      </section>
-    )
-  }
-
   return (
     <div className="ps-chat-root">
       <div className="ps-chat-header">
-        <button className="ps-back-btn" onClick={onBack}>←</button>
+        <button className="ps-back-btn" onClick={onBack}>Back</button>
         <AnonAvatar name={peer.name} color={peer.color} size={34} />
         <div>
           <strong className="ps-chat-name">{peer.name}</strong>
           <span className="ps-chat-sub">Anonymous</span>
         </div>
-        <button className="ps-leave-btn" onClick={() => setLeft(true)}>Leave chat</button>
+        <div className="ps-leave-wrap">
+          <button className="ps-leave-btn" onClick={() => setConfirmLeave(true)}>Leave chat</button>
+          {confirmLeave && (
+            <LeaveConfirmBubble
+              label="Leave this chat?"
+              onCancel={() => setConfirmLeave(false)}
+              onConfirm={() => onLeave(peer.id)}
+            />
+          )}
+        </div>
       </div>
 
       <div className="ps-anon-notice">
-        Anonymous chat · Do not share personal info, contact details, or social media handles
+        Anonymous chat - Do not share personal info, contact details, or social media handles
       </div>
 
       {modAlert && <ModAlert rule={modAlert} onDismiss={() => setModAlert(null)} />}
 
-      <div className="ps-messages">
+      <div className="ps-messages" ref={messagesRef}>
         {messages.map(m => {
           const isMe = m.role === 'me'
           return (
@@ -467,13 +591,12 @@ function DMView({ peer, anonName, onBack }) {
             </div>
           </div>
         )}
-        <div ref={bottomRef} />
       </div>
 
       <div className="ps-input-bar">
         <textarea
           className="chat-textarea"
-          placeholder="Message…"
+          placeholder="Message"
           rows={1}
           value={input}
           onChange={e => setInput(e.target.value)}
@@ -488,29 +611,73 @@ function DMView({ peer, anonName, onBack }) {
   )
 }
 
-// ─── root ─────────────────────────────────────────────────────────────────────
+// Root
 
 export default function PeerSupport() {
-  const [anonName]                  = useState(makeAnonName)
-  const [view, setView]             = useState('onboarding')
-  const [peers, setPeers]           = useState(PEER_LIST.map(p => ({ ...p })))
+  const [savedOnboarding]           = useState(loadOnboardingState)
+  const [savedPeerState]            = useState(loadPeerSupportState)
+  const [anonName]                  = useState(() => savedOnboarding?.anonName ?? makeAnonName())
+  const [view, setView]             = useState(() => savedOnboarding?.acceptedGuidelines ? 'hub' : 'onboarding')
+  const [peers, setPeers]           = useState(() => mergeSavedPeers(savedPeerState?.peers))
+  const [roomMessages, setRoomMessages] = useState(() => (
+    Array.isArray(savedPeerState?.roomMessages)
+      ? savedPeerState.roomMessages
+      : ROOM_SEED.map(m => ({ ...m }))
+  ))
+  const [dmHistories, setDmHistories] = useState(() => (
+    savedPeerState?.dmHistories && typeof savedPeerState.dmHistories === 'object'
+      ? savedPeerState.dmHistories
+      : {}
+  ))
   const [activePeer, setActivePeer] = useState(null)
 
-  function openDM(peer) { setActivePeer(peer); setView('dm') }
+  useEffect(() => {
+    savePeerSupportState({ peers, roomMessages, dmHistories })
+  }, [peers, roomMessages, dmHistories])
+
+  function setDmMessages(peerId, updater) {
+    setDmHistories(prev => {
+      const current = prev[peerId] ?? makeInitialDmMessages(activePeer ?? { id: peerId, name: 'Peer' }, anonName)
+      const next = typeof updater === 'function' ? updater(current) : updater
+      return { ...prev, [peerId]: next }
+    })
+  }
+
+  function openDM(peer) {
+    setDmHistories(prev => (
+      prev[peer.id] ? prev : { ...prev, [peer.id]: makeInitialDmMessages(peer, anonName) }
+    ))
+    setActivePeer(peer)
+    setView('dm')
+  }
+  function finishOnboarding() { saveOnboardingState(anonName); setView('hub') }
+  function leaveDM(peerId) {
+    setPeers(prev => prev.map(p => p.id === peerId ? { ...p, status: 'left' } : p))
+    setActivePeer(null)
+    setView('hub')
+  }
 
   return (
     <>
       <style>{PS_STYLES}</style>
-      {view === 'onboarding' && <OnboardingView anonName={anonName} onDone={() => setView('hub')} />}
-      {view === 'hub'        && <HubView anonName={anonName} peers={peers} onRoom={() => setView('room')} onPeers={() => setView('peers')} />}
-      {view === 'room'       && <RoomView anonName={anonName} onBack={() => setView('hub')} onLeave={() => setView('hub')} />}
-      {view === 'peers'      && <PeersView peers={peers} setPeers={setPeers} onDM={openDM} onBack={() => setView('hub')} />}
-      {view === 'dm'         && activePeer && <DMView peer={activePeer} anonName={anonName} onBack={() => setView('peers')} />}
+      {view === 'onboarding' && <OnboardingView anonName={anonName} onDone={finishOnboarding} />}
+      {view === 'hub'        && <HubView anonName={anonName} peers={peers} setPeers={setPeers} onRoom={() => setView('room')} onDM={openDM} />}
+      {view === 'room'       && <RoomView anonName={anonName} messages={roomMessages} setMessages={setRoomMessages} onBack={() => setView('hub')} onLeave={() => setView('hub')} />}
+      {view === 'dm'         && activePeer && (
+        <DMView
+          peer={activePeer}
+          anonName={anonName}
+          messages={dmHistories[activePeer.id] ?? makeInitialDmMessages(activePeer, anonName)}
+          setMessages={(updater) => setDmMessages(activePeer.id, updater)}
+          onBack={() => setView('hub')}
+          onLeave={leaveDM}
+        />
+      )}
     </>
   )
 }
 
-// ─── styles ───────────────────────────────────────────────────────────────────
+// Styles
 
 const PS_STYLES = `
   .ps-eyebrow {
@@ -564,19 +731,19 @@ const PS_STYLES = `
   .ps-hub-name { margin: 0; font-weight: 700; font-size: 1rem; }
   .ps-hub-name-sub { margin: 2px 0 0; font-size: 0.76rem; color: var(--muted); }
 
-  .ps-rematch-banner {
-    display: flex; align-items: center; gap: 12px;
-    background: rgba(251,191,36,0.10); border: 1px solid rgba(251,191,36,0.32);
-    border-radius: 16px; padding: 14px 16px; margin-bottom: 14px;
-  }
-  .ps-rematch-dot { width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; box-shadow: 0 0 0 3px rgba(245,158,11,0.2); }
-  .ps-rematch-text { flex: 1; }
-  .ps-rematch-text strong { font-size: 0.9rem; color: #92400e; display: block; }
-  .ps-rematch-text p { margin: 2px 0 0; font-size: 0.8rem; color: #78350f; }
-  .ps-rematch-cta { padding: 7px 14px; border-radius: 999px; border: 1.5px solid #d97706; background: transparent; color: #92400e; font-size: 0.82rem; font-weight: 700; white-space: nowrap; }
-  .ps-rematch-x { background: none; border: none; color: #d97706; font-size: 1.2rem; cursor: pointer; padding: 0 4px; }
-
   .ps-hub-cards { display: grid; gap: 12px; margin-bottom: 14px; }
+  .ps-hub-cards + .page {
+    gap: 14px;
+  }
+  .ps-hub-cards + .page > .ps-back-btn {
+    display: none;
+  }
+  .ps-hub-cards + .page .page-header h2 {
+    font-size: 1.2rem;
+  }
+  .ps-hub-cards + .page .page-header p {
+    font-size: 0.86rem;
+  }
   .ps-hub-card {
     display: flex; align-items: center; gap: 14px;
     background: var(--panel-strong); border: 1px solid var(--line);
@@ -598,6 +765,16 @@ const PS_STYLES = `
   .ps-pill { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 0.76rem; color: var(--muted); background: rgba(255,255,255,0.7); }
 
   /* peers */
+  .ps-section-heading {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 8px 0 10px; color: var(--muted);
+    font-size: 0.76rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .ps-section-heading strong {
+    display: flex; align-items: center; justify-content: center;
+    min-width: 24px; height: 24px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent); font-size: 0.74rem;
+  }
   .ps-peers-list { display: grid; gap: 12px; }
   .ps-peer-card {
     display: flex; align-items: center; gap: 14px;
@@ -607,12 +784,18 @@ const PS_STYLES = `
     transition: transform 140ms;
   }
   .ps-peer-card:hover { transform: translateY(-1px); }
+  .ps-peer-card--active {
+    border-color: rgba(15,118,110,0.26);
+    background: rgba(218,243,236,0.34);
+  }
+  .ps-active-empty {
+    border: 1px dashed var(--line); border-radius: 18px;
+    padding: 16px 18px; color: var(--muted); font-size: 0.88rem;
+    background: rgba(255,255,255,0.58);
+  }
   .ps-peer-info { flex: 1; }
   .ps-peer-info strong { display: block; font-size: 0.95rem; margin-bottom: 3px; }
   .ps-peer-concerns { margin: 0; font-size: 0.78rem; color: var(--muted); }
-  .ps-sim-block { text-align: center; width: 54px; }
-  .ps-sim-num { font-size: 1.4rem; font-weight: 900; letter-spacing: -0.03em; color: var(--accent); }
-  .ps-sim-lbl { font-size: 0.68rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
   .ps-req-btn {
     padding: 8px 16px; border-radius: 999px;
     border: 1.5px solid var(--accent); background: transparent;
@@ -626,14 +809,20 @@ const PS_STYLES = `
   /* chat shell */
   .ps-chat-root {
     display: flex; flex-direction: column;
-    height: calc(100vh - 180px); min-height: 500px;
-    background: var(--panel-strong); border: 1px solid var(--line);
-    border-radius: 22px; overflow: hidden;
+    width: 100%;
+    height: calc(100dvh - 168px);
+    max-height: calc(100dvh - 168px);
+    min-height: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    overflow: hidden;
+    box-sizing: border-box;
   }
   .ps-chat-header {
     display: flex; align-items: center; gap: 10px;
-    padding: 14px 18px; border-bottom: 1px solid var(--line);
-    background: rgba(255,255,255,0.92); flex-shrink: 0;
+    padding: 0 0 14px; border-bottom: 1px solid var(--line);
+    background: transparent; flex-shrink: 0;
   }
   .ps-chat-name { display: block; font-size: 0.92rem; }
   .ps-chat-sub { font-size: 0.72rem; color: var(--muted); }
@@ -643,11 +832,58 @@ const PS_STYLES = `
     color: #dc2626; font-size: 0.8rem; font-weight: 700; transition: background 140ms;
   }
   .ps-leave-btn:hover { background: rgba(220,38,38,0.06); }
+  .ps-leave-wrap {
+    position: relative;
+    margin-left: auto;
+  }
+  .ps-leave-wrap .ps-leave-btn {
+    margin-left: 0;
+  }
+  .ps-leave-confirm {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 20;
+    width: 220px;
+    padding: 12px;
+    border: 1px solid rgba(220,38,38,0.20);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(23,48,66,0.14);
+  }
+  .ps-leave-confirm p {
+    margin: 0 0 10px;
+    color: var(--ink);
+    font-size: 0.84rem;
+    font-weight: 700;
+  }
+  .ps-leave-confirm-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  .ps-confirm-cancel,
+  .ps-confirm-danger {
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+  .ps-confirm-cancel {
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+  }
+  .ps-confirm-danger {
+    border: 1px solid #dc2626;
+    background: #dc2626;
+    color: #fff;
+  }
   .ps-room-badge { width: 34px; height: 34px; border-radius: 10px; background: rgba(124,58,237,0.1); color: #7c3aed; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .ps-anon-notice { padding: 7px 18px; font-size: 0.74rem; color: var(--muted); background: rgba(218,243,236,0.4); border-bottom: 1px solid var(--line); text-align: center; flex-shrink: 0; }
+  .ps-anon-notice { padding: 9px 0; font-size: 0.74rem; color: var(--muted); background: transparent; border-bottom: 1px solid var(--line); text-align: center; flex-shrink: 0; }
 
   /* messages */
-  .ps-messages { flex: 1; overflow-y: auto; padding: 16px 18px 8px; display: flex; flex-direction: column; gap: 10px; }
+  .ps-messages { flex: 1; overflow-y: auto; padding: 16px 0 8px; display: flex; flex-direction: column; gap: 10px; }
   .ps-messages::-webkit-scrollbar { width: 5px; }
   .ps-messages::-webkit-scrollbar-thumb { background: rgba(23,48,66,0.12); border-radius: 999px; }
   .ps-day-sep { text-align: center; font-size: 0.72rem; font-weight: 600; color: var(--muted); padding: 6px 0; letter-spacing: 0.04em; }
@@ -675,7 +911,7 @@ const PS_STYLES = `
   .ps-mod-dismiss { background: none; border: none; font-size: 1.3rem; color: var(--muted); cursor: pointer; padding: 0; flex-shrink: 0; }
 
   /* input bar */
-  .ps-input-bar { display: flex; align-items: flex-end; gap: 10px; padding: 12px 14px; border-top: 1px solid var(--line); background: rgba(255,255,255,0.96); flex-shrink: 0; }
+  .ps-input-bar { display: flex; align-items: flex-end; gap: 10px; padding: 12px 0 0; border-top: 1px solid var(--line); background: transparent; flex-shrink: 0; }
 
   /* typing dots */
   .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); margin: 0 2px; animation: dot-bounce 1.2s infinite ease-in-out; }
@@ -688,7 +924,11 @@ const PS_STYLES = `
 
   @media (max-width: 640px) {
     .ps-peer-card { flex-wrap: wrap; }
-    .ps-chat-root { height: calc(100vh - 130px); }
+    .ps-chat-root {
+      height: calc(100dvh - 120px);
+      max-height: calc(100dvh - 120px);
+    }
     .ps-bubble { max-width: 85%; }
   }
 `
+
