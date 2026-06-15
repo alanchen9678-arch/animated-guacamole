@@ -28,6 +28,7 @@ staticfiles/
 venv/
 .venv/
 env/
+backend/venv/
 
 # Django local files
 *.log
