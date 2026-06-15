@@ -191,8 +191,8 @@ const DISORDERS = [
     id: 'neuro',
     title: 'Neurodevelopmental Disorders',
     color: '#15803d',
-    source: 'World Health Organization (WHO)',
-    sourceUrl: 'https://www.who.int/news-room/fact-sheets/detail/mental-disorders',
+    source: 'Mayo Clinic Laboratories',
+    sourceUrl: 'https://news.mayocliniclabs.com/pediatrics/neurology/neurodevelopmental-disorders/',
     what: 'Neurodevelopmental disorders are conditions that affect brain development and emerge in early childhood. They include autism spectrum disorder (ASD), attention-deficit/hyperactivity disorder (ADHD), intellectual disabilities, and learning disorders. These conditions often persist into adulthood.',
     symptoms: [
       'Delays in reaching developmental milestones (speech, motor skills, social interaction)',
