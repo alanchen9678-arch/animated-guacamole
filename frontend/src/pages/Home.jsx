@@ -1,4 +1,5 @@
 import { useUser } from '../context/UserContext.jsx'
+import { useNavigation } from '../context/NavigationContext.jsx'
 import { dashboardSnapshot } from '../services/api.js'
 
 const features = [
@@ -41,7 +42,8 @@ const features = [
 ]
 
 export default function Home() {
-  const user = useUser()
+  const user       = useUser()
+  const { navigate } = useNavigation()
 
   return (
     <section className="page">
@@ -103,6 +105,24 @@ export default function Home() {
           color: var(--muted);
           font-size: 0.9rem;
           line-height: 1.5;
+          flex: 1;
+        }
+
+        .feature-card-btn {
+          margin-top: 4px;
+          padding: 8px 14px;
+          border-radius: 999px;
+          border: 1.5px solid var(--accent);
+          background: transparent;
+          color: var(--accent);
+          font-size: 0.82rem;
+          font-weight: 700;
+          align-self: flex-start;
+          transition: background 140ms, color 140ms;
+        }
+        .feature-card-btn:hover {
+          background: var(--accent);
+          color: #fff;
         }
 
         .today-bar {
@@ -269,6 +289,14 @@ export default function Home() {
               <span className="feature-tag">{f.tag}</span>
               <h4>{f.title}</h4>
               <p>{f.desc}</p>
+              {f.id === 'chatbot' && (
+                <button
+                  className="feature-card-btn"
+                  onClick={() => navigate('chatbot')}
+                >
+                  Start chatting →
+                </button>
+              )}
             </div>
           ))}
         </div>

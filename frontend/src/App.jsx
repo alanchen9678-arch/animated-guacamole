@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { UserProvider } from './context/UserContext.jsx'
+import { NavigationProvider, useNavigation } from './context/NavigationContext.jsx'
 import { pageConfig } from './routes/AppRoutes.jsx'
 import Home from './pages/Home.jsx'
 
@@ -28,7 +29,7 @@ function BellIcon() {
 }
 
 function AppShell() {
-  const [activePage, setActivePage]   = useState('home')
+  const { activePage, navigate }      = useNavigation()
   const [isLoggedIn, setIsLoggedIn]   = useState(false)
   const [notifOpen, setNotifOpen]     = useState(false)
 
@@ -38,7 +39,7 @@ function AppShell() {
   )
 
   function handleLogin()  { setIsLoggedIn(true) }
-  function handleLogout() { setIsLoggedIn(false); setActivePage('home') }
+  function handleLogout() { setIsLoggedIn(false); navigate('home') }
 
   return (
     <div className="app-root">
@@ -588,7 +589,7 @@ function AppShell() {
                       key={page.id}
                       type="button"
                       className={`nav-item${page.id === activePage ? ' active' : ''}`}
-                      onClick={() => setActivePage(page.id)}
+                      onClick={() => navigate(page.id)}
                     >
                       {page.label}
                     </button>
@@ -659,8 +660,10 @@ function AppShell() {
 
 export default function App() {
   return (
-    <UserProvider>
-      <AppShell />
-    </UserProvider>
+    <NavigationProvider>
+      <UserProvider>
+        <AppShell />
+      </UserProvider>
+    </NavigationProvider>
   )
 }
