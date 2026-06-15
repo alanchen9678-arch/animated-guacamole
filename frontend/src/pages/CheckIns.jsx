@@ -180,25 +180,6 @@ function fmtDate(str) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-function miniSparkline(history, catId) {
-  const vals = history.map(h => h.scores[catId])
-  if (vals.length < 2) return null
-  const min = Math.min(...vals) - 5
-  const max = Math.max(...vals) + 5
-  const w = 60, h = 22
-  const pts = vals.map((v, i) => {
-    const x = (i / (vals.length - 1)) * w
-    const y = h - ((v - min) / (max - min)) * h
-    return `${x},${y}`
-  }).join(' ')
-  const color = CATEGORIES.find(c => c.id === catId)?.color || '#94a3b8'
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: 'block' }}>
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 // ─── hub view ─────────────────────────────────────────────────────────────────
 
 function HubView({ history, streak, onStart, onStartInitial }) {
@@ -237,45 +218,6 @@ function HubView({ history, streak, onStart, onStartInitial }) {
           </button>
         </div>
       </div>
-
-      {/* last results mini bars */}
-      {latest && (
-        <div className="ci-last-wrap">
-          <div className="ci-section-label">Last check-in — {fmtDate(latest.date)}</div>
-          <div className="ci-mini-bars">
-            {CATEGORIES.map(cat => {
-              const score = latest.scores[cat.id]
-              const prev  = prevEntry?.scores[cat.id]
-              const band  = scoreBand(score)
-              const trend = prev != null ? trendArrow(score, prev) : null
-              return (
-                <div key={cat.id} className="ci-mini-bar-row">
-                  <span className="ci-mini-label">{cat.label}</span>
-                  <div className="ci-mini-track">
-                    <div
-                      className="ci-mini-fill"
-                      style={{ width: `${score}%`, background: cat.color }}
-                    />
-                  </div>
-                  <span className="ci-mini-score" style={{ color: band.color }}>{score}</span>
-                  {trend && <span className="ci-mini-trend" style={{ color: trend.col }} title={trend.tip}>{trend.sym}</span>}
-                </div>
-              )
-            })}
-          </div>
-
-          {/* sparklines row */}
-          <div className="ci-section-label" style={{ marginTop: 18 }}>4-week trend</div>
-          <div className="ci-sparklines">
-            {CATEGORIES.map(cat => (
-              <div key={cat.id} className="ci-spark-item">
-                {miniSparkline(history, cat.id)}
-                <span className="ci-spark-label" style={{ color: cat.color }}>{cat.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* history list */}
       <button className="ci-history-toggle" onClick={() => setShowHistory(v => !v)}>
@@ -347,14 +289,6 @@ function IntroView({ type, onStart, onBack }) {
         </div>
       </div>
 
-      <div className="ci-intro-cats">
-        {CATEGORIES.map(cat => (
-          <span key={cat.id} className="ci-cat-chip" style={{ background: cat.bg, borderColor: cat.border, color: cat.color }}>
-            {cat.label}
-          </span>
-        ))}
-      </div>
-
       <p className="ci-intro-note">
         Answer based on how you've been feeling over the past 1–2 weeks, not just today. There are no right or wrong answers.
       </p>
@@ -399,7 +333,6 @@ function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
       </div>
       <div className="ci-prog-row">
         <span className="ci-prog-count">Question {idx + 1} of {total}</span>
-        {cat && <span className="ci-cat-tag" style={{ background: cat.bg, color: cat.color, borderColor: cat.border }}>{cat.label}</span>}
       </div>
 
       {/* question */}
@@ -412,7 +345,7 @@ function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
             <button
               key={v}
               className={`ci-scale-btn${selected === v ? ' ci-scale-btn--on' : ''}`}
-              style={selected === v && cat ? { background: cat.color, borderColor: cat.color, color: '#fff' } : {}}
+              style={selected === v ? { background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff' } : {}}
               onClick={() => pick(v)}
               title={SCALE_LABELS[v - 1]}
             >
@@ -461,49 +394,9 @@ function ResultsView({ scores, prevScores, surveyType, onDone }) {
       </div>
 
       <div className="ci-score-bars">
-        {CATEGORIES.map(cat => {
-          const score = scores[cat.id]
-          const prev  = prevScores?.[cat.id]
-          const band  = scoreBand(score)
-          const trend = prev != null ? trendArrow(score, prev) : null
-          return (
-            <div key={cat.id} className="ci-score-row">
-              <div className="ci-score-meta">
-                <span className="ci-score-cat">{cat.label}</span>
-                <div className="ci-score-right">
-                  {trend && (
-                    <span className="ci-trend-chip" style={{ color: trend.col }} title={trend.tip}>
-                      {trend.sym} {trend.tip}
-                    </span>
-                  )}
-                  <span className="ci-score-num">{score}</span>
-                  <span className="ci-band-label" style={{ color: band.color }}>{band.label}</span>
-                </div>
-              </div>
-              <div className="ci-score-track">
-                {prev != null && (
-                  <div
-                    className="ci-score-prev"
-                    style={{ width: `${prev}%`, background: 'rgba(23,48,66,0.10)' }}
-                    title={`Previous: ${prev}`}
-                  />
-                )}
-                <div
-                  className="ci-score-fill"
-                  style={{ width: `${score}%`, background: cat.color }}
-                />
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* legend */}
-      <div className="ci-band-legend">
-        {[['Very Low','#22c55e'],['Low','#34d399'],['Moderate','#fbbf24'],['Elevated','#fb923c'],['High','#ef4444']].map(([l, c]) => (
-          <div key={l} className="ci-band-item">
-            <div className="ci-band-dot" style={{ background: c }} />
-            <span>{l}</span>
+        {CATEGORIES.map(cat => (
+          <div key={cat.id} className="ci-score-row">
+            <span className="ci-score-cat">{cat.label}</span>
           </div>
         ))}
       </div>
@@ -681,17 +574,11 @@ const CI_STYLES = `
   }
 
   .ci-mini-bars { display: flex; flex-direction: column; gap: 10px; }
-  .ci-mini-bar-row { display: grid; grid-template-columns: 110px 1fr 38px 22px; align-items: center; gap: 10px; }
+  .ci-mini-bar-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .ci-mini-label { font-size: 0.82rem; font-weight: 600; color: var(--ink); }
   .ci-mini-track { height: 8px; border-radius: 999px; background: rgba(23,48,66,0.08); overflow: hidden; }
   .ci-mini-fill  { height: 100%; border-radius: inherit; transition: width 600ms cubic-bezier(0.22,1,0.36,1); }
   .ci-mini-score { font-size: 0.82rem; font-weight: 700; text-align: right; }
-  .ci-mini-trend { font-size: 1rem; text-align: center; font-weight: 700; }
-
-  /* sparklines */
-  .ci-sparklines { display: flex; flex-wrap: wrap; gap: 14px; }
-  .ci-spark-item { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-  .ci-spark-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; }
 
   /* history */
   .ci-history-toggle {
@@ -820,18 +707,9 @@ const CI_STYLES = `
   .ci-results-title { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
   .ci-results-sub   { margin: 6px 0 0; color: var(--muted); font-size: 0.88rem; }
 
-  .ci-score-bars { display: flex; flex-direction: column; gap: 14px; }
-  .ci-score-row { display: flex; flex-direction: column; gap: 6px; }
-  .ci-score-meta { display: flex; align-items: center; justify-content: space-between; }
+  .ci-score-bars { display: flex; flex-direction: column; gap: 10px; }
+  .ci-score-row  { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .ci-score-cat  { font-size: 0.88rem; font-weight: 700; }
-  .ci-score-right { display: flex; align-items: center; gap: 10px; }
-  .ci-trend-chip { font-size: 0.78rem; font-weight: 600; }
-  .ci-score-num  { font-size: 0.9rem; font-weight: 800; color: var(--ink); }
-  .ci-band-label { font-size: 0.75rem; font-weight: 700; min-width: 68px; text-align: right; }
-
-  .ci-score-track { position: relative; height: 10px; border-radius: 999px; background: rgba(23,48,66,0.08); overflow: hidden; }
-  .ci-score-prev  { position: absolute; top: 0; left: 0; height: 100%; border-radius: inherit; }
-  .ci-score-fill  { position: absolute; top: 0; left: 0; height: 100%; border-radius: inherit; transition: width 700ms cubic-bezier(0.22,1,0.36,1); }
 
   .ci-band-legend { display: flex; flex-wrap: wrap; gap: 12px; }
   .ci-band-item { display: flex; align-items: center; gap: 5px; font-size: 0.78rem; color: var(--muted); }

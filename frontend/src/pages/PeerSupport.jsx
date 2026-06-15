@@ -365,11 +365,6 @@ function PeersView({ peers, setPeers, onDM, onBack }) {
             <AnonAvatar name={p.name} color={p.color} size={48} />
             <div className="ps-peer-info">
               <strong>{p.name}</strong>
-              <p className="ps-peer-concerns">{p.concerns.join(' · ')}</p>
-            </div>
-            <div className="ps-sim-block">
-              <div className="ps-sim-num">{p.similarity}%</div>
-              <div className="ps-sim-lbl">match</div>
             </div>
             <div>
               {p.status === 'none'      && <button className="ps-req-btn" onClick={() => sendRequest(p.id)}>Send request</button>}
@@ -439,7 +434,7 @@ function DMView({ peer, anonName, onBack }) {
         <AnonAvatar name={peer.name} color={peer.color} size={34} />
         <div>
           <strong className="ps-chat-name">{peer.name}</strong>
-          <span className="ps-chat-sub">Anonymous · {peer.concerns[0]}</span>
+          <span className="ps-chat-sub">Anonymous</span>
         </div>
         <button className="ps-leave-btn" onClick={() => setLeft(true)}>Leave chat</button>
       </div>

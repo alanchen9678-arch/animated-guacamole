@@ -252,35 +252,9 @@ function NeedsProfileView({ profile, onFind }) {
           </button>
         </div>
 
-        <div className="tm-concerns-card">
-          <p className="tm-section-label">Concern breakdown</p>
-          <div className="tm-bar-list">
-            {Object.entries(profile.concerns)
-              .sort(([,a],[,b]) => b - a)
-              .map(([key, val]) => (
-                <ConcernBar key={key} label={CONCERN_LABEL[key]} value={val} />
-              ))}
-          </div>
-          <p className="tm-bar-legend">
-            <span style={{ color: '#dc2626' }}>● High (61–100)</span>
-            <span style={{ color: '#d97706' }}>● Moderate (31–60)</span>
-            <span style={{ color: '#16a34a' }}>● Low (0–30)</span>
-          </p>
-        </div>
-
         <div className="tm-top3-card">
-          <p className="tm-section-label">Top 3 concerns — used for matching</p>
-          {top3.map(([key, val], i) => (
-            <div key={key} className="tm-top3-row">
-              <div className="tm-top3-rank">{i + 1}</div>
-              <div>
-                <strong>{CONCERN_LABEL[key]}</strong>
-                <div className="tm-top3-sub">Severity {val}/100</div>
-              </div>
-            </div>
-          ))}
           <p className="tm-privacy-note">
-            Your therapist will always see this profile and your check-in scores.
+            Your therapist will see your wellness profile and check-in data.
             Chatbot transcripts and journal entries are shared only with your permission.
           </p>
         </div>
@@ -540,36 +514,6 @@ function DetailView({ therapist: t, prefs, onChat, onBack }) {
 
         {/* ── right panel ── */}
         <div className="tm-detail-right">
-          <div className="tm-match-score-card">
-            <p className="tm-section-label">Match score</p>
-            <div className="tm-big-score" style={{ color: '#0f766e' }}>{t.score}</div>
-            <p className="tm-score-breakdown-title">Score breakdown</p>
-            <div className="tm-breakdown">
-              {getTop3(PROFILE.concerns).map(([key, val]) => {
-                const hit = t.expertise.includes(key)
-                return (
-                  <div key={key} className="tm-breakdown-row">
-                    <span>{CONCERN_LABEL[key]}</span>
-                    <span style={{ color: hit ? '#0f766e' : 'var(--muted)' }}>
-                      {hit ? `+${(val / 10).toFixed(1)}` : '—'}
-                    </span>
-                  </div>
-                )
-              })}
-              <div className="tm-breakdown-row">
-                <span>Insurance match</span>
-                <span style={{ color: t.insurance.includes(prefs.insurance) ? '#0f766e' : 'var(--muted)' }}>
-                  {t.insurance.includes(prefs.insurance) ? '+10' : '—'}
-                </span>
-              </div>
-              <div className="tm-breakdown-row">
-                <span>Session type match</span>
-                <span style={{ color: (prefs.mode === 'either' || t.mode.includes(prefs.mode)) ? '#0f766e' : 'var(--muted)' }}>
-                  {(prefs.mode === 'either' || t.mode.includes(prefs.mode)) ? '+5' : '—'}
-                </span>
-              </div>
-            </div>
-          </div>
 
           {/* ── insurance + booking ── */}
           <div className="tm-booking-card">
