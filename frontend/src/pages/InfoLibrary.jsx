@@ -111,7 +111,7 @@ const DISORDERS = [
   {
     id: 'schizophrenia',
     title: 'Schizophrenia',
-    color: '#4f7c3a',
+    color: '#4d6b58',
     source: 'Mayo Clinic Staff',
     sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/schizophrenia/symptoms-causes/syc-20354443',
     what: 'Schizophrenia is a serious mental disorder in which people interpret reality abnormally. It may result in some combination of hallucinations, delusions, and extremely disordered thinking and behavior. Symptoms are divided into "positive" (added experiences) and "negative" (loss of normal functioning).',
@@ -545,7 +545,7 @@ const IL_STYLES = `
   .il-who-note {
     padding: 12px 16px; border-radius: 14px; font-size: 0.84rem;
     background: var(--accent-soft); color: var(--accent);
-    border: 1px solid rgba(79,124,58,0.18); line-height: 1.55;
+    border: 1px solid rgba(77,107,88,0.18); line-height: 1.55;
   }
 
   /* library */
@@ -600,12 +600,12 @@ const IL_STYLES = `
   .il-quiz { display: flex; flex-direction: column; gap: 20px; max-width: 620px; }
   .il-quiz-header { display: flex; align-items: center; gap: 12px; }
   .il-progress-bar { flex: 1; height: 8px; background: #ede8df; border-radius: 999px; overflow: hidden; }
-  .il-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #8aaa72); border-radius: inherit; transition: width 300ms ease; }
+  .il-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #7a9e8a); border-radius: inherit; transition: width 300ms ease; }
   .il-progress-label { font-size: 0.8rem; font-weight: 700; color: var(--muted); flex-shrink: 0; }
 
   .il-clue-card {
-    background: linear-gradient(135deg, rgba(214,234,204,0.5), rgba(255,255,255,0.95));
-    border: 1px solid rgba(79,124,58,0.18); border-radius: 20px;
+    background: linear-gradient(135deg, rgba(210,228,220,0.5), rgba(255,255,255,0.95));
+    border: 1px solid rgba(77,107,88,0.18); border-radius: 20px;
     padding: 24px 26px;
     box-shadow: 0 6px 18px rgba(46,42,38,0.07);
   }

@@ -56,7 +56,7 @@ function AppShell() {
           font-weight: 400;
           color: #2e2a26;
           background:
-            radial-gradient(circle at top, rgba(79,124,58,0.10), transparent 40%),
+            radial-gradient(circle at top, rgba(77,107,88,0.10), transparent 40%),
             linear-gradient(180deg, #faf4e8 0%, #f0e8d8 100%);
           -webkit-font-smoothing: antialiased;
           --ink:          #2e2a26;
@@ -64,9 +64,9 @@ function AppShell() {
           --line:         rgba(46,42,38,0.16);
           --panel:        rgba(250,244,232,0.85);
           --panel-strong: #faf4e8;
-          --accent:       #4f7c3a;
-          --accent-dark:  #3a5c29;
-          --accent-soft:  #d6eacc;
+          --accent:       #4d6b58;
+          --accent-dark:  #3a5244;
+          --accent-soft:  #d2e4dc;
           --blue:         #3a6898;
           --blue-dark:    #2a5080;
           --blue-soft:    #d6e8f5;
@@ -157,7 +157,7 @@ function AppShell() {
           width: 30px;
           height: 30px;
           border-radius: 9px;
-          background: linear-gradient(135deg, #4f7c3a 0%, #3a6898 100%);
+          background: linear-gradient(135deg, #4d6b58 0%, #3a6898 100%);
           flex: none;
           box-shadow: 0 4px 12px rgba(58,104,152,0.28);
         }
@@ -358,7 +358,7 @@ function AppShell() {
           background: var(--accent);
           color: white;
           border-color: var(--accent-dark);
-          box-shadow: 0 2px 8px rgba(79,124,58,0.25);
+          box-shadow: 0 2px 8px rgba(77,107,88,0.25);
         }
 
         .content {
@@ -422,8 +422,8 @@ function AppShell() {
           min-height: 150px;
           padding: 16px;
           border-radius: 18px;
-          border: 1px dashed rgba(79,124,58,0.28);
-          background: rgba(214,234,204,0.3);
+          border: 1px dashed rgba(77,107,88,0.28);
+          background: rgba(210,228,220,0.3);
           color: var(--muted);
         }
 
@@ -437,7 +437,7 @@ function AppShell() {
           display: block;
           height: 100%;
           border-radius: inherit;
-          background: linear-gradient(90deg, #4f7c3a, #8aaa72);
+          background: linear-gradient(90deg, #4d6b58, #7a9e8a);
         }
 
         .settings-list { display: grid; gap: 12px; }
@@ -455,7 +455,7 @@ function AppShell() {
         .toggle {
           width: 54px; height: 30px;
           border-radius: 999px;
-          background: #d6eacc;
+          background: #d2e4dc;
           position: relative; flex: none;
         }
         .toggle::after {

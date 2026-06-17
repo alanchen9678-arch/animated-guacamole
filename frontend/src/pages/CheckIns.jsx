@@ -523,10 +523,10 @@ const CI_STYLES = `
   .ci-top-row { display: grid; grid-template-columns: 160px 1fr; gap: 14px; align-items: start; }
 
   .ci-streak-card {
-    background: linear-gradient(135deg, #4f7c3a, #3a5c29);
+    background: linear-gradient(135deg, #4d6b58, #3a5244);
     color: #fff; border-radius: 20px; padding: 20px;
     display: flex; flex-direction: column; align-items: center; gap: 4px;
-    box-shadow: 0 8px 24px rgba(79,124,58,0.28);
+    box-shadow: 0 8px 24px rgba(77,107,88,0.28);
     text-align: center;
   }
   .ci-streak-num   { font-size: 3rem; font-weight: 900; line-height: 1; }
@@ -539,7 +539,7 @@ const CI_STYLES = `
     display: flex; flex-direction: column; gap: 10px;
     box-shadow: 0 6px 18px rgba(46,42,38,0.06);
   }
-  .ci-due-card--due { border-color: rgba(79,124,58,0.28); background: rgba(214,234,204,0.4); }
+  .ci-due-card--due { border-color: rgba(77,107,88,0.28); background: rgba(210,228,220,0.4); }
 
   .ci-due-badge {
     display: inline-block; font-size: 0.7rem; font-weight: 700;
@@ -717,7 +717,7 @@ const CI_STYLES = `
 
   .ci-insight {
     display: flex; gap: 12px; padding: 16px 18px;
-    background: rgba(79,124,58,0.06); border: 1px solid rgba(79,124,58,0.18);
+    background: rgba(77,107,88,0.06); border: 1px solid rgba(77,107,88,0.18);
     border-radius: 16px; animation: fade-up 220ms ease;
   }
   .ci-insight-icon {

@@ -39,7 +39,7 @@ const THERAPISTS = [
     bio: 'Dr. Sharma specializes in cognitive-behavioral therapy (CBT) for anxiety and burnout, with 12 years of experience helping high-achieving professionals find sustainable balance. Her approach is warm but direct — she will tell you what you need to hear.',
   },
   {
-    id: 2, initials: 'JW', color: '#4f7c3a',
+    id: 2, initials: 'JW', color: '#4d6b58',
     name: 'Dr. James Walker',
     credentials: { license: 'LCSW', state: 'CA', location: 'Los Angeles, CA' },
     expertise: ['loneliness', 'grief', 'anxiety'],
@@ -465,7 +465,7 @@ function ResultsView({ matches, prefs, onSelect, onBack }) {
             </div>
 
             <div className="tm-score-block">
-              <div className="tm-score-num" style={{ color: t.score === maxScore ? '#4f7c3a' : '#2e2a26' }}>
+              <div className="tm-score-num" style={{ color: t.score === maxScore ? '#4d6b58' : '#2e2a26' }}>
                 {t.score.toFixed(1)}
               </div>
               <div className="tm-score-label">match score</div>
@@ -1028,7 +1028,7 @@ const TM_STYLES = `
     padding: 12px;
     border: 1px solid var(--line);
     border-radius: 16px;
-    background: rgba(214,234,204,0.22);
+    background: rgba(210,228,220,0.22);
   }
   .tm-active-info {
     flex: 1;
@@ -1065,8 +1065,8 @@ const TM_STYLES = `
   .tm-top3-sub { font-size: 0.78rem; color: var(--muted); }
   .tm-privacy-note {
     margin-top: 14px; font-size: 0.78rem; color: var(--muted);
-    padding: 10px; background: rgba(79,124,58,0.06);
-    border-radius: 10px; border: 1px solid rgba(79,124,58,0.15);
+    padding: 10px; background: rgba(77,107,88,0.06);
+    border-radius: 10px; border: 1px solid rgba(77,107,88,0.15);
     line-height: 1.55;
   }
 
@@ -1262,9 +1262,9 @@ const TM_STYLES = `
   }
   .tm-chat-profile-trigger:hover,
   .tm-chat-profile-trigger--open {
-    background: rgba(214,234,204,0.42);
-    border-color: rgba(79,124,58,0.18);
-    box-shadow: 0 6px 16px rgba(79,124,58,0.08);
+    background: rgba(210,228,220,0.42);
+    border-color: rgba(77,107,88,0.18);
+    box-shadow: 0 6px 16px rgba(77,107,88,0.08);
   }
   .tm-chat-profile-copy {
     display: flex;
@@ -1323,7 +1323,7 @@ const TM_STYLES = `
   .tm-appt-form {
     display: grid; gap: 8px; padding: 14px 18px;
     border-bottom: 1px solid var(--line);
-    background: rgba(214,234,204,0.3);
+    background: rgba(210,228,220,0.3);
     flex-shrink: 0;
   }
   .tm-appt-hanger {
@@ -1358,15 +1358,15 @@ const TM_STYLES = `
   .tm-appt-banner {
     display: flex; gap: 12px; align-items: flex-start;
     text-align: left;
-    background: linear-gradient(135deg,rgba(214,234,204,0.8),rgba(255,255,255,0.9));
-    border: 1px solid rgba(79,124,58,0.2); border-radius: 16px;
+    background: linear-gradient(135deg,rgba(210,228,220,0.8),rgba(255,255,255,0.9));
+    border: 1px solid rgba(77,107,88,0.2); border-radius: 16px;
     padding: 12px 14px; width: 100%;
-    box-shadow: 0 4px 14px rgba(79,124,58,0.1);
+    box-shadow: 0 4px 14px rgba(77,107,88,0.1);
     color: var(--ink);
     cursor: pointer;
   }
   .tm-appt-banner--expanded {
-    box-shadow: 0 8px 22px rgba(79,124,58,0.14);
+    box-shadow: 0 8px 22px rgba(77,107,88,0.14);
   }
   .tm-appt-icon {
     flex-shrink: 0;
@@ -1390,7 +1390,7 @@ const TM_STYLES = `
     gap: 4px;
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px solid rgba(79,124,58,0.16);
+    border-top: 1px solid rgba(77,107,88,0.16);
     color: var(--muted);
     font-size: 0.78rem;
     line-height: 1.45;

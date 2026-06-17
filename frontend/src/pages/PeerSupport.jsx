@@ -133,7 +133,7 @@ const PEER_LIST = [
   { id: 5, name: 'GentleTide27',  color: '#be185d', status: 'none' },
   { id: 6, name: 'ClearBrook64',  color: '#2563eb', status: 'none' },
   { id: 7, name: 'WarmPine82',    color: '#c2410c', status: 'none' },
-  { id: 8, name: 'StillLake38',   color: '#4f7c3a', status: 'none' },
+  { id: 8, name: 'StillLake38',   color: '#4d6b58', status: 'none' },
   { id: 9, name: 'LightStone73',  color: '#a21caf', status: 'none' },
   { id: 10, name: 'KindMaple46',  color: '#047857', status: 'none' },
 ]
@@ -238,7 +238,7 @@ function OnboardingView({ anonName, onDone }) {
             This name represents you in the Aurora community. No one will ever know your real identity.
           </p>
           <div className="ps-name-reveal">
-            <AnonAvatar name={anonName} color="#4f7c3a" size={72} />
+            <AnonAvatar name={anonName} color="#4d6b58" size={72} />
             <div className="ps-name-big">{anonName}</div>
             <p className="ps-name-note">Randomly assigned - cannot be changed</p>
           </div>
@@ -291,7 +291,7 @@ function HubView({ anonName, peers, setPeers, onRoom, onDM }) {
   return (
     <section className="page">
       <div className="ps-hub-identity">
-        <AnonAvatar name={anonName} color="#4f7c3a" size={42} />
+        <AnonAvatar name={anonName} color="#4d6b58" size={42} />
         <div>
           <p className="ps-hub-name">{anonName}</p>
           <p className="ps-hub-name-sub">Your anonymous identity</p>
@@ -363,7 +363,7 @@ function RoomView({ anonName, messages, setMessages, onBack, onLeave }) {
     if (flag?.blocked) { setModAlert(flag); setInput(''); return }
     if (flag) setModAlert(flag)
     shouldScrollRef.current = true
-    setMessages(prev => [...prev, { id: Date.now(), user: anonName, color: '#4f7c3a', text, day: 0, self: true }])
+    setMessages(prev => [...prev, { id: Date.now(), user: anonName, color: '#4d6b58', text, day: 0, self: true }])
     setInput('')
   }
 
@@ -406,7 +406,7 @@ function RoomView({ anonName, messages, setMessages, onBack, onLeave }) {
                   <p className="ps-bubble-text">{m.text}</p>
                   {m.self && <span className="ps-bubble-time">Now</span>}
                 </div>
-                {m.self && <div className="ps-self-dot" style={{ background: '#4f7c3a' }}>{anonName.slice(0, 2)}</div>}
+                {m.self && <div className="ps-self-dot" style={{ background: '#4d6b58' }}>{anonName.slice(0, 2)}</div>}
               </div>
             ))}
           </div>
@@ -579,7 +579,7 @@ function DMView({ peer, anonName, messages, setMessages, onBack, onLeave }) {
                 <p className="ps-bubble-text">{m.text}</p>
                 <span className="ps-bubble-time">{m.time}</span>
               </div>
-              {isMe && <div className="ps-self-dot" style={{ background: '#4f7c3a' }}>{anonName.slice(0, 2)}</div>}
+              {isMe && <div className="ps-self-dot" style={{ background: '#4d6b58' }}>{anonName.slice(0, 2)}</div>}
             </div>
           )
         })}
@@ -755,7 +755,7 @@ const PS_STYLES = `
   .ps-hub-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(46,42,38,0.10); }
   .ps-hub-card-icon { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .ps-hub-card-icon--purple { background: rgba(58,104,152,0.10); color: #3a6898; }
-  .ps-hub-card-icon--teal   { background: rgba(79,124,58,0.10); color: var(--accent); }
+  .ps-hub-card-icon--teal   { background: rgba(77,107,88,0.10); color: var(--accent); }
   .ps-hub-card-text { flex: 1; }
   .ps-hub-card-text strong { display: block; font-size: 0.95rem; margin-bottom: 3px; }
   .ps-hub-card-text p { margin: 0; font-size: 0.8rem; color: var(--muted); }
@@ -785,8 +785,8 @@ const PS_STYLES = `
   }
   .ps-peer-card:hover { transform: translateY(-1px); }
   .ps-peer-card--active {
-    border-color: rgba(79,124,58,0.26);
-    background: rgba(214,234,204,0.34);
+    border-color: rgba(77,107,88,0.26);
+    background: rgba(210,228,220,0.34);
   }
   .ps-active-empty {
     border: 1px dashed var(--line); border-radius: 18px;

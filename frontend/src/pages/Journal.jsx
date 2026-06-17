@@ -201,7 +201,7 @@ function Calendar({ moodData, setMoodData }) {
 
 // ─── doodle canvas ────────────────────────────────────────────────────────────
 
-const PRESET_COLORS = ['#2e2a26','#dc2626','#4f7c3a','#d97706','#3a6898','#be185d','#1d4ed8','#15803d','#f97316','#ec4899']
+const PRESET_COLORS = ['#2e2a26','#dc2626','#4d6b58','#d97706','#3a6898','#be185d','#1d4ed8','#15803d','#f97316','#ec4899']
 const BRUSH_SIZES   = [2, 4, 8, 16]
 
 function DoodleCanvas({ bgColor }) {
@@ -325,7 +325,7 @@ export default function Journal() {
   const TONE_STYLE = {
     crisis:   { bg: 'rgba(220,38,38,0.06)',   border: 'rgba(220,38,38,0.22)',  icon: '!', ic: '#dc2626' },
     alert:    { bg: 'rgba(217,119,6,0.06)',   border: 'rgba(217,119,6,0.22)',  icon: '!', ic: '#d97706' },
-    positive: { bg: 'rgba(22,163,74,0.06)',   border: 'rgba(22,163,74,0.2)',   icon: 'A', ic: '#4f7c3a' },
+    positive: { bg: 'rgba(22,163,74,0.06)',   border: 'rgba(22,163,74,0.2)',   icon: 'A', ic: '#4d6b58' },
     negative: { bg: 'rgba(58,104,152,0.07)',  border: 'rgba(58,104,152,0.22)', icon: 'A', ic: '#3a6898' },
     neutral:  { bg: 'rgba(46,42,38,0.04)',  border: 'rgba(46,42,38,0.12)', icon: 'A', ic: '#6b6460' },
   }
@@ -485,7 +485,7 @@ const JN_STYLES = `
     transition: transform 120ms, box-shadow 120ms, border-color 120ms;
   }
   .jn-cal-day:not(:disabled):hover { transform: scale(1.08); box-shadow: 0 4px 12px rgba(46,42,38,0.14); }
-  .jn-cal-day--today { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 0 2px rgba(79,124,58,0.15); }
+  .jn-cal-day--today { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 0 2px rgba(77,107,88,0.15); }
   .jn-cal-day--sel   { outline: 2.5px solid var(--ink); outline-offset: 2px; }
   .jn-cal-day--future { opacity: 0.3; }
 
@@ -500,7 +500,7 @@ const JN_STYLES = `
   /* mood picker */
   .jn-mood-picker {
     margin-top: 14px; padding: 16px; border-radius: 16px;
-    background: rgba(214,234,204,0.3); border: 1px solid rgba(79,124,58,0.16);
+    background: rgba(210,228,220,0.3); border: 1px solid rgba(77,107,88,0.16);
     animation: fade-up 180ms ease;
   }
   .jn-picker-label { margin: 0 0 12px; font-size: 0.82rem; font-weight: 600; color: var(--ink); }

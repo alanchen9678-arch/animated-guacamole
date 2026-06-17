@@ -289,7 +289,7 @@ const styles = `
   }
   .chat-header-avatar {
     width: 38px; height: 38px; border-radius: 50%;
-    background: linear-gradient(135deg,#4f7c3a,#3a6898);
+    background: linear-gradient(135deg,#4d6b58,#3a6898);
     display: flex; align-items: center; justify-content: center;
     color: #fff; font-weight: 800; font-size: 0.9rem; flex: none;
   }
@@ -313,7 +313,7 @@ const styles = `
 
   .msg-avatar {
     flex: none; width: 30px; height: 30px; border-radius: 50%;
-    background: linear-gradient(135deg,#4f7c3a,#3a6898);
+    background: linear-gradient(135deg,#4d6b58,#3a6898);
     display: flex; align-items: center; justify-content: center;
     color: #fff; font-size: 0.65rem; font-weight: 800;
     margin-bottom: 2px;
