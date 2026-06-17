@@ -1,4 +1,22 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
+
+const CHATBOT_ONBOARDING_STORAGE_KEY = 'aurora.chatbot.onboarding'
+
+function loadChatbotOnboardingState() {
+  try {
+    return window.localStorage.getItem(CHATBOT_ONBOARDING_STORAGE_KEY) === 'started'
+  } catch {
+    return false
+  }
+}
+
+function saveChatbotOnboardingState() {
+  try {
+    window.localStorage.setItem(CHATBOT_ONBOARDING_STORAGE_KEY, 'started')
+  } catch {
+    // Storage can be unavailable in some private browsing modes.
+  }
+}
 
 // ── mock AI logic ────────────────────────────────────────────────────────────
 
@@ -138,12 +156,7 @@ function ChatbotChat() {
   ])
   const [input, setInput]       = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const bottomRef               = useRef(null)
   const inputRef                = useRef(null)
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isTyping])
 
   function sendMessage() {
     const text = input.trim()
@@ -186,7 +199,6 @@ function ChatbotChat() {
       <div className="chat-messages">
         {messages.map((m) => <Message key={m.id} msg={m} />)}
         {isTyping && <TypingIndicator />}
-        <div ref={bottomRef} />
       </div>
 
       <div className="chat-input-bar">
@@ -400,14 +412,19 @@ const styles = `
 // ── root export ──────────────────────────────────────────────────────────────
 
 export default function Chatbot() {
-  const [started, setStarted] = useState(false)
+  const [started, setStarted] = useState(loadChatbotOnboardingState)
+
+  function handleStart() {
+    saveChatbotOnboardingState()
+    setStarted(true)
+  }
 
   return (
     <>
       <style>{styles}</style>
       {started
         ? <ChatbotChat />
-        : <ChatbotIntro onStart={() => setStarted(true)} />
+        : <ChatbotIntro onStart={handleStart} />
       }
     </>
   )

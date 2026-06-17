@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 // ─── mood config ───────────────────────────────────────────────────────────────
 
@@ -21,7 +21,70 @@ const MOCK_MOODS = {
   '2026-6-13':'anxious','2026-6-14':'calm',
 }
 
+const MOCK_ENTRIES = {
+  '2026-6-8': {
+    text: 'Felt lighter today. I got outside for a walk and noticed how much easier it was to breathe afterward.',
+  },
+  '2026-6-13': {
+    text: 'Today felt tense and scattered. I kept replaying the same worries, but writing them down made them feel a little less loud.',
+  },
+  '2026-6-14': {
+    text: 'A quieter day. I made tea, cleaned my desk, and felt a little more settled by the evening.',
+  },
+}
+
 // ─── AI analysis ───────────────────────────────────────────────────────────────
+
+const JOURNAL_ENTRIES_STORAGE_KEY = 'aurora.journal.entries'
+const JOURNAL_MOODS_STORAGE_KEY = 'aurora.journal.moods'
+
+function loadJournalEntries() {
+  try {
+    const stored = window.localStorage.getItem(JOURNAL_ENTRIES_STORAGE_KEY)
+    if (!stored) return MOCK_ENTRIES
+
+    const parsed = JSON.parse(stored)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return { ...MOCK_ENTRIES, ...parsed }
+    }
+  } catch {
+    return MOCK_ENTRIES
+  }
+
+  return MOCK_ENTRIES
+}
+
+function saveJournalEntries(entries) {
+  try {
+    window.localStorage.setItem(JOURNAL_ENTRIES_STORAGE_KEY, JSON.stringify(entries))
+  } catch {
+    // Storage can be unavailable in some private browsing modes.
+  }
+}
+
+function loadJournalMoods() {
+  try {
+    const stored = window.localStorage.getItem(JOURNAL_MOODS_STORAGE_KEY)
+    if (!stored) return MOCK_MOODS
+
+    const parsed = JSON.parse(stored)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return { ...MOCK_MOODS, ...parsed }
+    }
+  } catch {
+    return MOCK_MOODS
+  }
+
+  return MOCK_MOODS
+}
+
+function saveJournalMoods(moods) {
+  try {
+    window.localStorage.setItem(JOURNAL_MOODS_STORAGE_KEY, JSON.stringify(moods))
+  } catch {
+    // Storage can be unavailable in some private browsing modes.
+  }
+}
 
 const CRISIS_TERMS  = ['suicide','kill myself','end my life','want to die','dont want to live']
 const ALERT_TERMS   = ["don't care","dont care",'no appetite','lost interest','gave up','no motivation','worthless','hopeless',"can't go on",'no point']
@@ -77,11 +140,29 @@ function pickResponse(tone) {
 const DAY_NAMES = ['Su','Mo','Tu','We','Th','Fr','Sa']
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
-function Calendar({ moodData, setMoodData }) {
+function makeDateKey(date) {
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+}
+
+function makeDayKey(year, month, day) {
+  return `${year}-${month + 1}-${day}`
+}
+
+function formatDateKey(dateKey) {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  return `${MONTH_NAMES[month - 1]} ${day}, ${year}`
+}
+
+function isFutureDay(year, month, day, now) {
+  const candidate = new Date(year, month, day)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  return candidate > today
+}
+
+function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEntry }) {
   const now     = new Date()
   const [year, setYear]   = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())
-  const [selected, setSelected] = useState(null)
 
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const startDay    = new Date(year, month, 1).getDay()
@@ -90,30 +171,10 @@ function Calendar({ moodData, setMoodData }) {
   function prevMonth() {
     if (month === 0) { setMonth(11); setYear(y => y - 1) }
     else setMonth(m => m - 1)
-    setSelected(null)
   }
   function nextMonth() {
     if (month === 11) { setMonth(0); setYear(y => y + 1) }
     else setMonth(m => m + 1)
-    setSelected(null)
-  }
-
-  function dayKey(d) { return `${year}-${month + 1}-${d}` }
-
-  function clickDay(d) {
-    const k = dayKey(d)
-    setSelected(prev => prev === k ? null : k)
-  }
-
-  function setMood(moodId) {
-    if (!selected) return
-    setMoodData(prev => ({ ...prev, [selected]: moodId }))
-  }
-
-  function clearMood() {
-    if (!selected) return
-    setMoodData(prev => { const n = { ...prev }; delete n[selected]; return n })
-    setSelected(null)
   }
 
   const cells = [
@@ -121,17 +182,15 @@ function Calendar({ moodData, setMoodData }) {
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ]
 
-  const selectedMood = selected && moodData[selected]
-  const selectedLabel = selected
-    ? `${MONTH_NAMES[month]} ${parseInt(selected.split('-')[2])}, ${year}`
-    : null
+  const selectedMood = selectedDate && moodData[selectedDate]
+  const selectedEntry = selectedDate && entryHistory[selectedDate]
 
   return (
     <div className="jn-cal-wrap">
       <div className="jn-cal-nav">
-        <button className="jn-cal-nav-btn" onClick={prevMonth}>‹</button>
+        <button className="jn-cal-nav-btn" onClick={prevMonth} aria-label="Previous month">&lt;</button>
         <span className="jn-cal-month-label">{MONTH_NAMES[month]} {year}</span>
-        <button className="jn-cal-nav-btn" onClick={nextMonth}>›</button>
+        <button className="jn-cal-nav-btn" onClick={nextMonth} aria-label="Next month">&gt;</button>
       </div>
 
       <div className="jn-cal-daynames">
@@ -141,17 +200,17 @@ function Calendar({ moodData, setMoodData }) {
       <div className="jn-cal-grid">
         {cells.map((day, i) => {
           if (!day) return <div key={`e-${i}`} />
-          const k = dayKey(day)
+          const k = makeDayKey(year, month, day)
           const mood = moodData[k]
           const isToday = isCurrent && day === now.getDate()
-          const isSel   = selected === k
-          const isFuture = isCurrent && day > now.getDate()
+          const isSel   = selectedDate === k
+          const isFuture = isFutureDay(year, month, day, now)
           return (
             <button
               key={k}
               className={`jn-cal-day${isToday ? ' jn-cal-day--today' : ''}${isSel ? ' jn-cal-day--sel' : ''}${isFuture ? ' jn-cal-day--future' : ''}`}
               style={mood ? { background: MOOD_MAP[mood]?.color, color: '#fff', borderColor: MOOD_MAP[mood]?.color } : {}}
-              onClick={() => !isFuture && clickDay(day)}
+              onClick={() => !isFuture && onSelectDate(k)}
               disabled={isFuture}
               title={mood ? `${MOOD_MAP[mood]?.label}` : 'No mood logged'}
             >
@@ -171,27 +230,21 @@ function Calendar({ moodData, setMoodData }) {
         ))}
       </div>
 
-      {/* mood picker panel */}
-      {selected && (
-        <div className="jn-mood-picker">
-          <p className="jn-picker-label">
-            {selectedLabel} — {selectedMood ? `Logged: ${MOOD_MAP[selectedMood]?.label}` : 'How did you feel?'}
-          </p>
-          <div className="jn-mood-options">
-            {MOODS.map(m => (
-              <button
-                key={m.id}
-                className={`jn-mood-opt${selectedMood === m.id ? ' jn-mood-opt--active' : ''}`}
-                style={{ '--mc': m.color }}
-                onClick={() => setMood(m.id)}
-              >
-                <div className="jn-mood-circle" style={{ background: m.color }} />
-                <span>{m.label}</span>
-              </button>
-            ))}
+      {selectedDate && (
+        <div className="jn-history-preview">
+          <div className="jn-history-meta">
+            <span>{formatDateKey(selectedDate)}</span>
+            <strong>{selectedMood ? MOOD_MAP[selectedMood]?.label : 'No mood logged'}</strong>
           </div>
-          {selectedMood && (
-            <button className="jn-clear-mood" onClick={clearMood}>Clear mood</button>
+          {(selectedEntry?.text || selectedEntry?.doodleData) ? (
+            <button className="jn-history-open" onClick={() => onOpenEntry(selectedDate)}>
+              {selectedEntry?.text && <p>{selectedEntry.text}</p>}
+              {selectedEntry?.doodleData && (
+                <img className="jn-history-doodle" src={selectedEntry.doodleData} alt="Saved doodle" />
+              )}
+            </button>
+          ) : (
+            <p>No journal entry saved for this day.</p>
           )}
         </div>
       )}
@@ -201,25 +254,65 @@ function Calendar({ moodData, setMoodData }) {
 
 // ─── doodle canvas ────────────────────────────────────────────────────────────
 
-const PRESET_COLORS = ['#2e2a26','#dc2626','#4d6b58','#d97706','#3a6898','#be185d','#1d4ed8','#15803d','#f97316','#ec4899']
+const JOURNAL_PAGE_COLOR = '#fffbf0'
+const PRESET_COLORS = ['#dc2626','#f97316','#fbbf24','#16a34a','#2563eb','#7c3aed','#111827']
 const BRUSH_SIZES   = [2, 4, 8, 16]
 
-function DoodleCanvas({ bgColor }) {
+function DoodleCanvas({ bgColor, value, onChange, disabled = false }) {
   const canvasRef   = useRef(null)
   const drawing     = useRef(false)
   const lastPos     = useRef(null)
-  const [brushColor, setBrushColor] = useState('#2e2a26')
+  const currentSnapshot = useRef(value ?? null)
+  const [brushColor, setBrushColor] = useState('#111827')
   const [brushSize, setBrushSize]   = useState(3)
   const [eraser, setEraser]         = useState(false)
+  const [undoStack, setUndoStack]   = useState([])
 
   const fill = bgColor || '#fffbf0'
 
   useEffect(() => {
+    currentSnapshot.current = value ?? null
+    drawSnapshot(value ?? null)
+  }, [value, fill])
+
+  function fillCanvas() {
     const canvas = canvasRef.current
+    if (!canvas) return
     const ctx = canvas.getContext('2d')
     ctx.fillStyle = fill
     ctx.fillRect(0, 0, canvas.width, canvas.height)
-  }, [])
+  }
+
+  function drawSnapshot(snapshot) {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    fillCanvas()
+    if (!snapshot) return
+
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+    img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    img.src = snapshot
+  }
+
+  function captureSnapshot() {
+    return canvasRef.current?.toDataURL('image/png') ?? null
+  }
+
+  function commitSnapshot(snapshot) {
+    currentSnapshot.current = snapshot
+    onChange(snapshot)
+  }
+
+  function pushUndoState() {
+    setUndoStack(prev => [...prev.slice(-19), currentSnapshot.current])
+  }
+
+  function restoreSnapshot(snapshot) {
+    drawSnapshot(snapshot)
+    commitSnapshot(snapshot)
+  }
 
   function getXY(e) {
     const rect = canvasRef.current.getBoundingClientRect()
@@ -229,8 +322,16 @@ function DoodleCanvas({ bgColor }) {
     return { x: (src.clientX - rect.left) * sx, y: (src.clientY - rect.top) * sy }
   }
 
-  function onStart(e) { e.preventDefault(); drawing.current = true; lastPos.current = getXY(e) }
+  function onStart(e) {
+    if (disabled) return
+    e.preventDefault()
+    pushUndoState()
+    drawing.current = true
+    lastPos.current = getXY(e)
+  }
+
   function onMove(e) {
+    if (disabled) return
     e.preventDefault()
     if (!drawing.current) return
     const pos = getXY(e)
@@ -244,13 +345,26 @@ function DoodleCanvas({ bgColor }) {
     ctx.stroke()
     lastPos.current = pos
   }
-  function onEnd() { drawing.current = false; lastPos.current = null }
+
+  function onEnd() {
+    if (!drawing.current) return
+    drawing.current = false
+    lastPos.current = null
+    commitSnapshot(captureSnapshot())
+  }
 
   function clear() {
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
-    ctx.fillStyle = fill
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    if (disabled) return
+    pushUndoState()
+    drawSnapshot(null)
+    commitSnapshot(null)
+  }
+
+  function undo() {
+    if (disabled || !undoStack.length) return
+    const next = undoStack[undoStack.length - 1]
+    setUndoStack(prev => prev.slice(0, -1))
+    restoreSnapshot(next)
   }
 
   return (
@@ -263,6 +377,7 @@ function DoodleCanvas({ bgColor }) {
               className={`jn-swatch${brushColor === c && !eraser ? ' jn-swatch--active' : ''}`}
               style={{ background: c }}
               onClick={() => { setBrushColor(c); setEraser(false) }}
+              disabled={disabled}
               aria-label={c}
             />
           ))}
@@ -270,6 +385,8 @@ function DoodleCanvas({ bgColor }) {
             type="color" value={brushColor}
             onChange={e => { setBrushColor(e.target.value); setEraser(false) }}
             className="jn-color-input" title="Custom color"
+            aria-label="Custom color"
+            disabled={disabled}
           />
         </div>
         <div className="jn-toolbar-right">
@@ -279,13 +396,15 @@ function DoodleCanvas({ bgColor }) {
                 key={s}
                 className={`jn-size-btn${brushSize === s ? ' jn-size-btn--active' : ''}`}
                 onClick={() => setBrushSize(s)}
+                disabled={disabled}
               >
                 <div style={{ width: Math.min(s * 1.5, 16), height: Math.min(s * 1.5, 16), borderRadius: '50%', background: 'currentColor', margin: 'auto' }} />
               </button>
             ))}
           </div>
-          <button className={`jn-tool-btn${eraser ? ' jn-tool-btn--active' : ''}`} onClick={() => setEraser(v => !v)}>Eraser</button>
-          <button className="jn-tool-btn" onClick={clear}>Clear</button>
+          <button className="jn-tool-btn" onClick={undo} disabled={disabled || !undoStack.length}>Undo</button>
+          <button className={`jn-tool-btn${eraser ? ' jn-tool-btn--active' : ''}`} onClick={() => setEraser(v => !v)} disabled={disabled}>Eraser</button>
+          <button className="jn-tool-btn jn-tool-btn--danger" onClick={clear} disabled={disabled || !value}>Clear</button>
         </div>
       </div>
       <canvas
@@ -294,7 +413,7 @@ function DoodleCanvas({ bgColor }) {
         width={800} height={220}
         onMouseDown={onStart} onMouseMove={onMove} onMouseUp={onEnd} onMouseLeave={onEnd}
         onTouchStart={onStart} onTouchMove={onMove} onTouchEnd={onEnd}
-        style={{ touchAction: 'none', cursor: eraser ? 'cell' : 'crosshair' }}
+        style={{ touchAction: 'none', cursor: disabled ? 'not-allowed' : eraser ? 'cell' : 'crosshair' }}
       />
     </div>
   )
@@ -303,72 +422,116 @@ function DoodleCanvas({ bgColor }) {
 // ─── root journal ─────────────────────────────────────────────────────────────
 
 export default function Journal() {
-  const [moodData, setMoodData]     = useState(MOCK_MOODS)
-  const [innerColor, setInnerColor] = useState('#fffbf0')
-  const [marginColor, setMarginColor] = useState('#9a6b2a')
-  const [entryText, setEntryText]   = useState('')
+  const todayKey = makeDateKey(new Date())
+  const [initialJournalState] = useState(() => {
+    const entryHistory = loadJournalEntries()
+    const savedToday = entryHistory[todayKey]
+    return { entryHistory, savedToday }
+  })
+  const [moodData, setMoodData]     = useState(loadJournalMoods)
+  const [entryHistory, setEntryHistory] = useState(initialJournalState.entryHistory)
+  const [entryText, setEntryText]   = useState(() => initialJournalState.savedToday?.text ?? '')
+  const [doodleData, setDoodleData] = useState(() => initialJournalState.savedToday?.doodleData ?? null)
   const [tab, setTab]               = useState('write')   // write | doodle
-  const [aiResponse, setAiResponse] = useState(null)
-  const [submitted, setSubmitted]   = useState(false)
+  const [submitted, setSubmitted]   = useState(() => Boolean(
+    initialJournalState.savedToday?.text || initialJournalState.savedToday?.doodleData,
+  ))
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  const [selectedHistoryDate, setSelectedHistoryDate] = useState(todayKey)
+  const [expandedEntryDate, setExpandedEntryDate] = useState(null)
+
+  const todayMood = moodData[todayKey]
+  const marginColor = todayMood ? MOOD_MAP[todayMood]?.color : '#ffffff'
+  const hasEntryContent = Boolean(entryText.trim() || doodleData)
+  const expandedEntry = expandedEntryDate ? entryHistory[expandedEntryDate] : null
+  const expandedMood = expandedEntryDate ? moodData[expandedEntryDate] : null
+
+  useEffect(() => {
+    if (!calendarOpen && !expandedEntryDate) return
+
+    function handleKeyDown(e) {
+      if (e.key !== 'Escape') return
+      if (expandedEntryDate) setExpandedEntryDate(null)
+      else setCalendarOpen(false)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [calendarOpen, expandedEntryDate])
+
+  useEffect(() => {
+    saveJournalEntries(entryHistory)
+  }, [entryHistory])
+
+  useEffect(() => {
+    saveJournalMoods(moodData)
+  }, [moodData])
 
   function submit() {
-    if (!entryText.trim()) return
-    const tone = analyzeEntry(entryText)
-    setAiResponse(pickResponse(tone))
+    if (!hasEntryContent) return
+    const tone = entryText.trim() ? analyzeEntry(entryText) : 'neutral'
+    setEntryHistory(prev => ({ ...prev, [todayKey]: { text: entryText, doodleData, tone } }))
     setSubmitted(true)
   }
 
-  function newEntry() {
-    setEntryText(''); setAiResponse(null); setSubmitted(false)
+  function editEntry() {
+    setSubmitted(false)
   }
 
-  const TONE_STYLE = {
-    crisis:   { bg: 'rgba(220,38,38,0.06)',   border: 'rgba(220,38,38,0.22)',  icon: '!', ic: '#dc2626' },
-    alert:    { bg: 'rgba(217,119,6,0.06)',   border: 'rgba(217,119,6,0.22)',  icon: '!', ic: '#d97706' },
-    positive: { bg: 'rgba(22,163,74,0.06)',   border: 'rgba(22,163,74,0.2)',   icon: 'A', ic: '#4d6b58' },
-    negative: { bg: 'rgba(58,104,152,0.07)',  border: 'rgba(58,104,152,0.22)', icon: 'A', ic: '#3a6898' },
-    neutral:  { bg: 'rgba(46,42,38,0.04)',  border: 'rgba(46,42,38,0.12)', icon: 'A', ic: '#6b6460' },
+  function setTodayMood(moodId) {
+    setMoodData(prev => ({ ...prev, [todayKey]: moodId }))
   }
 
   return (
     <section className="page">
       <style>{JN_STYLES}</style>
 
-      <header className="page-header">
-        <h2>Thought Journal</h2>
-        <p>Track your mood, write freely, and doodle. Aurora reflects back when you're ready.</p>
+      <header className="page-header jn-page-header">
+        <div>
+          <h2>Thought Journal</h2>
+          <p>Track your mood, write freely, and doodle. Aurora reflects back when you're ready.</p>
+        </div>
+        <button className="jn-calendar-btn" onClick={() => setCalendarOpen(true)}>
+          View calendar
+        </button>
       </header>
 
-      {/* ── mood calendar ── */}
-      <div className="jn-section-label">Mood calendar</div>
-      <Calendar moodData={moodData} setMoodData={setMoodData} />
+      {/* main journal editor */}
+      <section className="jn-entry-focus">
 
-      {/* ── journal editor ── */}
-      <div className="jn-section-label" style={{ marginTop: 8 }}>Today's entry</div>
-
-      <div className="jn-color-controls">
-        <label className="jn-color-ctrl">
-          <span>Page color</span>
-          <div className="jn-color-ctrl-row">
-            <input type="color" value={innerColor} onChange={e => setInnerColor(e.target.value)} className="jn-page-color-input" />
-            <div className="jn-color-preview" style={{ background: innerColor }} />
+        <div className="jn-entry-topline">
+          <div>
+            <div className="jn-section-label">Today's entry</div>
+            <strong>{formatDateKey(todayKey)}</strong>
           </div>
-        </label>
-        <label className="jn-color-ctrl">
-          <span>Margin color</span>
-          <div className="jn-color-ctrl-row">
-            <input type="color" value={marginColor} onChange={e => setMarginColor(e.target.value)} className="jn-page-color-input" />
-            <div className="jn-color-preview" style={{ background: marginColor }} />
+        </div>
+
+        <div className="jn-color-controls">
+        <label className="jn-color-ctrl jn-mood-marker-ctrl">
+          <span>Mood</span>
+          <div className="jn-today-mood-row" aria-label="Today's mood">
+            {MOODS.map(m => (
+              <button
+                key={m.id}
+                className={`jn-today-mood${todayMood === m.id ? ' jn-today-mood--active' : ''}`}
+                style={{ '--mc': m.color }}
+                onClick={() => setTodayMood(m.id)}
+                title={m.label}
+                aria-label={m.label}
+              >
+                <span style={{ background: m.color }} />
+              </button>
+            ))}
           </div>
         </label>
         <div className="jn-tab-toggle">
           <button className={`jn-tab-btn${tab === 'write' ? ' jn-tab-btn--on' : ''}`} onClick={() => setTab('write')}>Write</button>
           <button className={`jn-tab-btn${tab === 'doodle' ? ' jn-tab-btn--on' : ''}`} onClick={() => setTab('doodle')}>Doodle</button>
         </div>
-      </div>
+        </div>
 
       {tab === 'write' && (
-        <div className="jn-notebook" style={{ background: innerColor }}>
+        <div className="jn-notebook" style={{ background: JOURNAL_PAGE_COLOR }}>
           <div className="jn-margin" style={{ background: marginColor }} />
           <div
             className="jn-lines-overlay"
@@ -389,7 +552,12 @@ export default function Journal() {
           <p className="jn-doodle-note">
             Doodling lowers cortisol and helps regulate emotions. No skill needed — just express.
           </p>
-          <DoodleCanvas bgColor={innerColor} />
+          <DoodleCanvas
+            bgColor={JOURNAL_PAGE_COLOR}
+            value={doodleData}
+            onChange={setDoodleData}
+            disabled={submitted}
+          />
         </div>
       )}
 
@@ -397,17 +565,17 @@ export default function Journal() {
         <button
           className="jn-submit-btn"
           onClick={submit}
-          disabled={!entryText.trim()}
-          style={{ opacity: entryText.trim() ? 1 : 0.45, cursor: entryText.trim() ? 'pointer' : 'not-allowed' }}
+          disabled={!hasEntryContent}
+          style={{ opacity: hasEntryContent ? 1 : 0.45, cursor: hasEntryContent ? 'pointer' : 'not-allowed' }}
         >
           Submit entry →
         </button>
       ) : (
-        <button className="jn-new-btn" onClick={newEntry}>Start new entry</button>
+        <button className="jn-new-btn" onClick={editEntry}>Edit entry</button>
       )}
 
       {/* ── AI response ── */}
-      {aiResponse && (
+      {false && (
         <div
           className="jn-ai-response"
           style={{
@@ -431,6 +599,52 @@ export default function Journal() {
           </div>
         </div>
       )}
+      </section>
+
+      {calendarOpen && (
+        <div className="jn-modal-backdrop" onClick={() => setCalendarOpen(false)}>
+          <div className="jn-calendar-modal" role="dialog" aria-modal="true" aria-labelledby="journal-calendar-title" onClick={e => e.stopPropagation()}>
+            <div className="jn-modal-header">
+              <div>
+                <h3 id="journal-calendar-title">Journal calendar</h3>
+                <p>Saved days are view-only.</p>
+              </div>
+              <button className="jn-modal-close" onClick={() => setCalendarOpen(false)} aria-label="Close calendar">
+                x
+              </button>
+            </div>
+            <Calendar
+              moodData={moodData}
+              entryHistory={entryHistory}
+              selectedDate={selectedHistoryDate}
+              onSelectDate={setSelectedHistoryDate}
+              onOpenEntry={setExpandedEntryDate}
+            />
+          </div>
+        </div>
+      )}
+
+      {expandedEntryDate && expandedEntry && (
+        <div className="jn-modal-backdrop jn-detail-backdrop" onClick={() => setExpandedEntryDate(null)}>
+          <div className="jn-entry-detail-modal" role="dialog" aria-modal="true" aria-labelledby="journal-entry-detail-title" onClick={e => e.stopPropagation()}>
+            <div className="jn-modal-header">
+              <div>
+                <h3 id="journal-entry-detail-title">{formatDateKey(expandedEntryDate)}</h3>
+                <p>{expandedMood ? MOOD_MAP[expandedMood]?.label : 'No mood logged'}</p>
+              </div>
+              <button className="jn-modal-close" onClick={() => setExpandedEntryDate(null)} aria-label="Close entry">
+                x
+              </button>
+            </div>
+            <div className="jn-entry-detail-body">
+              {expandedEntry.text && <p>{expandedEntry.text}</p>}
+              {expandedEntry.doodleData && (
+                <img className="jn-entry-detail-doodle" src={expandedEntry.doodleData} alt="Saved doodle" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
@@ -438,11 +652,55 @@ export default function Journal() {
 // ─── styles ───────────────────────────────────────────────────────────────────
 
 const JN_STYLES = `
+  .jn-page-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 14px;
+    margin-bottom: -6px;
+  }
+  .jn-page-header h2 { font-size: 1.65rem; }
+  .jn-page-header p {
+    margin-top: 4px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  .jn-calendar-btn {
+    flex: none; padding: 8px 16px; border-radius: 999px;
+    border: 1.5px solid var(--line); background: var(--panel-strong);
+    color: var(--ink); font-size: 0.9rem; font-weight: 700;
+    box-shadow: 0 4px 12px rgba(46,42,38,0.06);
+    transition: border-color 140ms, transform 140ms;
+  }
+  .jn-calendar-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+
   .jn-section-label {
     font-size: 0.74rem; font-weight: 700;
     letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
-    margin-bottom: 10px;
+    margin-bottom: 4px;
   }
+
+  .jn-entry-focus {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 14px; border-radius: 16px;
+    background: rgba(255,255,255,0.56); border: 1px solid var(--line);
+    box-shadow: 0 10px 30px rgba(46,42,38,0.08);
+  }
+  .jn-entry-topline {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .jn-entry-topline strong { display: block; font-size: 1rem; color: var(--ink); }
+  .jn-today-mood-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .jn-today-mood {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid transparent; background: var(--panel-strong);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(46,42,38,0.08);
+    transition: transform 120ms, border-color 120ms;
+  }
+  .jn-today-mood span { width: 15px; height: 15px; border-radius: 50%; display: block; }
+  .jn-today-mood:hover,
+  .jn-today-mood--active { border-color: var(--mc); transform: translateY(-1px); }
+  .jn-mood-marker-ctrl { min-width: 232px; }
 
   /* calendar */
   .jn-cal-wrap {
@@ -522,44 +780,157 @@ const JN_STYLES = `
   }
   .jn-clear-mood:hover { border-color: var(--accent); color: var(--accent); }
 
+  .jn-history-preview {
+    margin-top: 14px; padding: 16px; border-radius: 14px;
+    background: rgba(255,255,255,0.78); border: 1px solid var(--line);
+  }
+  .jn-history-meta {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 10px;
+    font-size: 0.86rem; color: var(--muted);
+  }
+  .jn-history-meta strong { color: var(--ink); font-size: 0.84rem; }
+  .jn-history-preview p {
+    margin: 0; color: var(--ink); font-size: 0.92rem; line-height: 1.65;
+    white-space: pre-wrap;
+  }
+  .jn-history-open {
+    display: block; width: 100%; padding: 0; border: 0; background: transparent;
+    color: inherit; text-align: left;
+  }
+  .jn-history-open:hover p { color: var(--blue-dark); }
+  .jn-history-doodle {
+    display: block; width: 100%; max-height: 120px; object-fit: contain;
+    margin-top: 8px; border: 1px solid var(--line); border-radius: 10px;
+    background: #fffbf0;
+  }
+
+  .jn-modal-backdrop {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: center;
+    padding: 18px; background: rgba(46,42,38,0.42);
+  }
+  .jn-calendar-modal {
+    width: min(540px, 100%); max-height: calc(100vh - 36px);
+    overflow: hidden; border-radius: 18px;
+    background: var(--panel); border: 1px solid var(--line);
+    box-shadow: 0 24px 80px rgba(46,42,38,0.28);
+  }
+  .jn-modal-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 14px; padding: 14px 16px 0;
+  }
+  .jn-modal-header h3 { margin: 0 0 2px; font-size: 1.05rem; color: var(--ink); }
+  .jn-modal-header p { margin: 0; color: var(--muted); font-size: 0.8rem; }
+  .jn-modal-close {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 1.5px solid var(--line); background: var(--panel-strong);
+    color: var(--ink); font-size: 1rem; font-weight: 800;
+  }
+  .jn-calendar-modal .jn-cal-wrap {
+    margin: 12px 16px 16px;
+    padding: 14px;
+    box-shadow: none;
+  }
+  .jn-calendar-modal .jn-cal-nav { margin-bottom: 10px; }
+  .jn-calendar-modal .jn-cal-nav-btn { width: 28px; height: 28px; font-size: 0.92rem; }
+  .jn-calendar-modal .jn-cal-month-label { font-size: 0.9rem; }
+  .jn-calendar-modal .jn-cal-daynames,
+  .jn-calendar-modal .jn-cal-grid {
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .jn-calendar-modal .jn-cal-daynames { margin-bottom: 4px; }
+  .jn-calendar-modal .jn-cal-grid { gap: 3px; }
+  .jn-calendar-modal .jn-cal-day {
+    border-radius: 8px;
+    font-size: 0.72rem;
+  }
+  .jn-calendar-modal .jn-mood-legend {
+    gap: 7px;
+    margin-top: 10px;
+    padding-top: 8px;
+  }
+  .jn-calendar-modal .jn-legend-item { font-size: 0.7rem; }
+  .jn-calendar-modal .jn-history-preview {
+    margin-top: 10px;
+    padding: 10px 12px;
+  }
+  .jn-calendar-modal .jn-history-meta {
+    margin-bottom: 5px;
+    font-size: 0.78rem;
+  }
+  .jn-calendar-modal .jn-history-preview p {
+    font-size: 0.8rem;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+  }
+  .jn-calendar-modal .jn-history-doodle { max-height: 68px; margin-top: 6px; }
+  .jn-detail-backdrop { z-index: 70; }
+  .jn-entry-detail-modal {
+    width: min(640px, 100%); max-height: calc(100vh - 42px);
+    overflow: hidden; border-radius: 18px;
+    background: var(--panel); border: 1px solid var(--line);
+    box-shadow: 0 24px 80px rgba(46,42,38,0.32);
+  }
+  .jn-entry-detail-body {
+    margin: 14px 16px 16px; padding: 14px;
+    max-height: calc(100vh - 170px); overflow-y: auto;
+    border: 1px solid var(--line); border-radius: 14px;
+    background: rgba(255,255,255,0.74);
+  }
+  .jn-entry-detail-body p {
+    margin: 0; color: var(--ink); font-size: 0.95rem; line-height: 1.6;
+    white-space: pre-wrap;
+  }
+  .jn-entry-detail-doodle {
+    display: block; width: 100%; max-height: 420px; object-fit: contain;
+    margin-top: 12px; border: 1px solid var(--line); border-radius: 12px;
+    background: #fffbf0;
+  }
+
   /* color controls */
   .jn-color-controls {
-    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin-bottom: 4px;
   }
-  .jn-color-ctrl { display: flex; flex-direction: column; gap: 5px; font-size: 0.8rem; font-weight: 600; color: var(--muted); }
-  .jn-color-ctrl-row { display: flex; align-items: center; gap: 8px; }
-  .jn-page-color-input { width: 36px; height: 28px; border-radius: 6px; border: 1px solid var(--line); padding: 2px; cursor: pointer; }
-  .jn-color-preview { width: 36px; height: 28px; border-radius: 6px; border: 1px solid var(--line); }
+  .jn-color-ctrl { display: flex; flex-direction: column; gap: 3px; font-size: 0.76rem; font-weight: 600; color: var(--muted); }
+  .jn-color-ctrl-row { display: flex; align-items: center; gap: 6px; }
   .jn-tab-toggle { display: flex; gap: 4px; background: rgba(255,255,255,0.6); border: 1px solid var(--line); border-radius: 12px; padding: 3px; margin-left: auto; }
-  .jn-tab-btn { padding: 6px 18px; border-radius: 9px; border: none; background: transparent; font-size: 0.86rem; font-weight: 600; color: var(--muted); transition: background 140ms, color 140ms; }
+  .jn-tab-btn { padding: 5px 16px; border-radius: 9px; border: none; background: transparent; font-size: 0.82rem; font-weight: 600; color: var(--muted); transition: background 140ms, color 140ms; }
   .jn-tab-btn--on { background: var(--panel-strong); color: var(--ink); box-shadow: 0 2px 6px rgba(46,42,38,0.08); }
 
   /* notebook */
   .jn-notebook {
     position: relative; display: flex;
-    border-radius: 18px; overflow: hidden;
+    border-radius: 14px; overflow: hidden;
     border: 1.5px solid var(--line);
     box-shadow: 0 8px 24px rgba(46,42,38,0.10);
-    min-height: 260px;
+    min-height: 250px;
   }
   .jn-margin { width: 56px; flex-shrink: 0; border-right: 2px solid rgba(0,0,0,0.12); }
   .jn-lines-overlay {
     position: absolute; inset: 0; left: 58px; pointer-events: none;
-    background-size: 100% 32px; background-position: 0 8px;
+    background-size: 100% 28px; background-position: 0 6px;
   }
   .jn-textarea {
     flex: 1; resize: none; border: none; background: transparent;
-    padding: 10px 18px; font-size: 0.94rem; line-height: 32px;
-    color: var(--ink); outline: none; min-height: 260px;
+    padding: 8px 16px; font-size: 0.9rem; line-height: 28px;
+    color: var(--ink); outline: none; min-height: 250px;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
   .jn-textarea:disabled { opacity: 0.7; }
   .jn-textarea::placeholder { color: rgba(46,42,38,0.3); }
 
   /* doodle */
-  .jn-doodle-section { display: flex; flex-direction: column; gap: 8px; }
-  .jn-doodle-note { margin: 0; font-size: 0.82rem; color: var(--muted); font-style: italic; }
+  .jn-doodle-section { display: flex; flex-direction: column; gap: 6px; }
+  .jn-doodle-note { margin: 0; font-size: 0.78rem; color: var(--muted); font-style: italic; }
   .jn-doodle-wrap {
     border: 1.5px solid var(--line); border-radius: 18px; overflow: hidden;
     box-shadow: 0 8px 24px rgba(46,42,38,0.10);
@@ -575,25 +946,43 @@ const JN_STYLES = `
   }
   .jn-swatch:hover { transform: scale(1.2); }
   .jn-swatch--active { border-color: var(--ink); transform: scale(1.15); }
-  .jn-color-input { width: 28px; height: 22px; border-radius: 5px; border: 1.5px solid var(--line); padding: 1px; cursor: pointer; }
+  .jn-swatch:disabled { cursor: not-allowed; opacity: 0.45; transform: none; }
+  .jn-color-input {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 2px solid var(--line); padding: 0; cursor: pointer;
+    background: conic-gradient(#dc2626, #f97316, #fbbf24, #16a34a, #2563eb, #7c3aed, #dc2626);
+    overflow: hidden;
+  }
+  .jn-color-input::-webkit-color-swatch-wrapper { padding: 0; }
+  .jn-color-input::-webkit-color-swatch {
+    border: 0;
+    background: transparent;
+  }
+  .jn-color-input::-moz-color-swatch {
+    border: 0;
+    background: transparent;
+  }
+  .jn-color-input:disabled { cursor: not-allowed; opacity: 0.45; }
   .jn-toolbar-right { display: flex; align-items: center; gap: 6px; margin-left: auto; }
   .jn-size-row { display: flex; align-items: center; gap: 4px; }
   .jn-size-btn { width: 30px; height: 30px; border-radius: 8px; border: 1.5px solid var(--line); background: transparent; display: flex; align-items: center; justify-content: center; transition: border-color 120ms, background 120ms; }
   .jn-size-btn--active { border-color: var(--accent); background: var(--accent-soft); }
   .jn-tool-btn { padding: 6px 12px; border-radius: 8px; border: 1.5px solid var(--line); background: transparent; font-size: 0.8rem; font-weight: 600; color: var(--muted); transition: border-color 120ms, color 120ms; }
   .jn-tool-btn--active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-  .jn-tool-btn:last-child:hover { border-color: #dc2626; color: #dc2626; }
+  .jn-tool-btn--danger:hover:not(:disabled) { border-color: #dc2626; color: #dc2626; }
+  .jn-tool-btn:disabled,
+  .jn-size-btn:disabled { cursor: not-allowed; opacity: 0.45; }
   .jn-canvas { display: block; width: 100%; height: 220px; }
 
   /* submit */
   .jn-submit-btn {
-    margin-top: 4px; padding: 12px 28px; border-radius: 999px; border: none;
-    background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 700;
+    margin-top: 2px; padding: 9px 22px; border-radius: 999px; border: none;
+    background: var(--accent); color: #fff; font-size: 0.9rem; font-weight: 700;
     transition: opacity 140ms, transform 140ms; align-self: flex-start;
   }
   .jn-submit-btn:hover { opacity: 0.88; transform: translateY(-1px); }
   .jn-new-btn {
-    margin-top: 4px; padding: 11px 26px; border-radius: 999px;
+    margin-top: 2px; padding: 9px 22px; border-radius: 999px;
     border: 1.5px solid var(--line); background: transparent;
     font-size: 0.92rem; font-weight: 600; color: var(--muted);
     transition: border-color 140ms, color 140ms;
@@ -602,25 +991,36 @@ const JN_STYLES = `
 
   /* AI response */
   .jn-ai-response {
-    display: flex; gap: 14px; padding: 18px 20px;
-    border: 1px solid; border-radius: 18px;
+    display: flex; gap: 10px; padding: 12px 14px;
+    border: 1px solid; border-radius: 14px;
     animation: fade-up 220ms ease;
   }
   .jn-ai-avatar {
-    width: 38px; height: 38px; border-radius: 50%;
+    width: 32px; height: 32px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     color: #fff; font-weight: 900; font-size: 0.88rem; flex-shrink: 0;
   }
   .jn-ai-body { flex: 1; }
   .jn-ai-label { display: block; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
-  .jn-ai-text  { margin: 0 0 10px; font-size: 0.92rem; line-height: 1.65; color: var(--ink); }
+  .jn-ai-text  { margin: 0 0 6px; font-size: 0.86rem; line-height: 1.45; color: var(--ink); }
   .jn-ai-links { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 0.82rem; color: var(--muted); }
   .jn-ai-sep   { opacity: 0.4; }
 
   @media (max-width: 640px) {
+    .jn-page-header { flex-direction: column; }
+    .jn-calendar-btn { width: 100%; }
+    .jn-entry-focus { padding: 12px; }
+    .jn-mood-marker-ctrl { min-width: 0; width: 100%; }
     .jn-cal-day { font-size: 0.72rem; border-radius: 8px; }
     .jn-color-controls { flex-direction: column; align-items: flex-start; }
     .jn-tab-toggle { margin-left: 0; }
+    .jn-notebook,
+    .jn-textarea { min-height: 240px; }
+    .jn-modal-backdrop { padding: 12px; align-items: flex-start; }
+    .jn-calendar-modal { max-height: calc(100vh - 24px); }
+    .jn-entry-detail-modal { max-height: calc(100vh - 24px); }
+    .jn-entry-detail-body { max-height: calc(100vh - 146px); }
+    .jn-history-meta { flex-direction: column; align-items: flex-start; }
     .jn-mood-options { gap: 6px; }
     .jn-doodle-toolbar { flex-direction: column; align-items: flex-start; }
     .jn-toolbar-right { margin-left: 0; }
