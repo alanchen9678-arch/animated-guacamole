@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 const CHATBOT_ONBOARDING_STORAGE_KEY = 'aurora.chatbot.onboarding'
 
@@ -156,7 +156,20 @@ function ChatbotChat() {
   ])
   const [input, setInput]       = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const messagesRef             = useRef(null)
   const inputRef                = useRef(null)
+
+  useEffect(() => {
+    const messagesEl = messagesRef.current
+    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'auto' })
+    inputRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
+    const messagesEl = messagesRef.current
+    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' })
+    if (!isTyping) inputRef.current?.focus()
+  }, [messages, isTyping])
 
   function sendMessage() {
     const text = input.trim()
@@ -196,7 +209,7 @@ function ChatbotChat() {
         </div>
       </div>
 
-      <div className="chat-messages">
+      <div className="chat-messages" ref={messagesRef}>
         {messages.map((m) => <Message key={m.id} msg={m} />)}
         {isTyping && <TypingIndicator />}
       </div>
@@ -378,29 +391,45 @@ const styles = `
   /* input bar */
   .chat-input-bar {
     display: flex; align-items: flex-end; gap: 10px;
-    padding: 14px 16px;
-    border-top: 1px solid var(--line);
-    background: rgba(255,255,255,0.95);
+    padding: 12px 14px;
+    border-top: 1px solid rgba(46,42,38,0.12);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.88), rgba(250,244,232,0.96)),
+      var(--panel-strong);
     flex: none;
+    box-shadow: 0 -8px 24px rgba(46,42,38,0.04);
   }
   .chat-textarea {
-    flex: 1; resize: none; border: 1.5px solid var(--line);
-    border-radius: 16px; padding: 10px 14px;
-    font-size: 0.92rem; line-height: 1.5;
-    background: #f8fafc; color: var(--ink);
-    outline: none; max-height: 120px; overflow-y: auto;
-    transition: border-color 140ms;
+    flex: 1; resize: none; border: 1.5px solid rgba(77,107,88,0.18);
+    border-radius: 18px; padding: 12px 15px;
+    min-height: 44px; max-height: 120px; overflow-y: auto;
+    font-size: 0.92rem; line-height: 1.45;
+    background: rgba(255,255,255,0.82); color: var(--ink);
+    outline: none; cursor: text;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.92), 0 4px 14px rgba(46,42,38,0.05);
+    transition: border-color 140ms, box-shadow 140ms, background 140ms;
   }
-  .chat-textarea:focus { border-color: var(--accent); background: #fff; }
+  .chat-textarea::placeholder { color: rgba(46,42,38,0.38); }
+  .chat-textarea:focus {
+    border-color: rgba(77,107,88,0.58);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(77,107,88,0.12), 0 8px 20px rgba(46,42,38,0.07);
+  }
   .chat-textarea:disabled { opacity: 0.6; }
   .send-btn {
-    flex: none; width: 42px; height: 42px; border-radius: 50%;
-    border: none; background: var(--accent); color: #fff;
+    flex: none; width: 44px; height: 44px; border-radius: 15px;
+    border: 1px solid rgba(58,82,68,0.24);
+    background: linear-gradient(135deg,var(--accent),var(--blue));
+    color: #fff;
     display: flex; align-items: center; justify-content: center;
-    transition: opacity 140ms, transform 140ms;
+    box-shadow: 0 10px 22px rgba(77,107,88,0.22);
+    transition: opacity 140ms, transform 140ms, box-shadow 140ms;
   }
-  .send-btn:hover:not(:disabled) { opacity: 0.88; transform: scale(1.05); }
-  .send-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+  .send-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(58,104,152,0.25); }
+  .send-btn:disabled {
+    background: #d8ded8; color: rgba(46,42,38,0.38);
+    box-shadow: none; cursor: not-allowed; border-color: transparent;
+  }
 
   @media (max-width: 640px) {
     .highlights-grid { grid-template-columns: 1fr; }
