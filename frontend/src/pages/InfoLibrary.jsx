@@ -6,7 +6,7 @@ const DISORDERS = [
   {
     id: 'anxiety',
     title: 'Anxiety Disorders',
-    color: '#879ebf',
+    color: '#3a6898',
     source: 'Mayo Clinic Staff',
     sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/anxiety/symptoms-causes/syc-20350961',
     what: 'Anxiety disorders involve excessive, persistent fear or worry that is difficult to control and significantly interferes with daily activities. They are among the most common mental health conditions worldwide and include generalized anxiety disorder, panic disorder, and social anxiety disorder.',
@@ -111,7 +111,7 @@ const DISORDERS = [
   {
     id: 'schizophrenia',
     title: 'Schizophrenia',
-    color: '#a6b58a',
+    color: '#4f7c3a',
     source: 'Mayo Clinic Staff',
     sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/schizophrenia/symptoms-causes/syc-20354443',
     what: 'Schizophrenia is a serious mental disorder in which people interpret reality abnormally. It may result in some combination of hallucinations, delusions, and extremely disordered thinking and behavior. Symptoms are divided into "positive" (added experiences) and "negative" (loss of normal functioning).',
@@ -539,13 +539,13 @@ const IL_STYLES = `
     background: transparent; font-size: 0.9rem; font-weight: 600;
     color: var(--muted); transition: background 140ms, color 140ms;
   }
-  .il-tab--active { background: var(--panel-strong); color: var(--ink); box-shadow: 0 2px 8px rgba(104,98,93,0.08); }
+  .il-tab--active { background: var(--panel-strong); color: var(--blue-dark); box-shadow: 0 2px 8px rgba(46,42,38,0.08); border-bottom: 2px solid var(--blue); }
 
   /* who note */
   .il-who-note {
     padding: 12px 16px; border-radius: 14px; font-size: 0.84rem;
     background: var(--accent-soft); color: var(--accent);
-    border: 1px solid rgba(166,181,138,0.18); line-height: 1.55;
+    border: 1px solid rgba(79,124,58,0.18); line-height: 1.55;
   }
 
   /* library */
@@ -556,10 +556,10 @@ const IL_STYLES = `
   .il-card {
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 18px; overflow: hidden;
-    box-shadow: 0 4px 12px rgba(104,98,93,0.06);
+    box-shadow: 0 4px 12px rgba(46,42,38,0.06);
     transition: box-shadow 140ms;
   }
-  .il-card--open { box-shadow: 0 8px 24px rgba(104,98,93,0.10); }
+  .il-card--open { box-shadow: 0 8px 24px rgba(46,42,38,0.10); }
   .il-card-header {
     display: flex; align-items: center; gap: 12px; width: 100%;
     padding: 16px 18px; background: none; border: none; cursor: pointer; text-align: left;
@@ -600,14 +600,14 @@ const IL_STYLES = `
   .il-quiz { display: flex; flex-direction: column; gap: 20px; max-width: 620px; }
   .il-quiz-header { display: flex; align-items: center; gap: 12px; }
   .il-progress-bar { flex: 1; height: 8px; background: #ede8df; border-radius: 999px; overflow: hidden; }
-  .il-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #c5d4ad); border-radius: inherit; transition: width 300ms ease; }
+  .il-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #8aaa72); border-radius: inherit; transition: width 300ms ease; }
   .il-progress-label { font-size: 0.8rem; font-weight: 700; color: var(--muted); flex-shrink: 0; }
 
   .il-clue-card {
-    background: linear-gradient(135deg, rgba(221,232,212,0.5), rgba(255,255,255,0.95));
-    border: 1px solid rgba(166,181,138,0.18); border-radius: 20px;
+    background: linear-gradient(135deg, rgba(214,234,204,0.5), rgba(255,255,255,0.95));
+    border: 1px solid rgba(79,124,58,0.18); border-radius: 20px;
     padding: 24px 26px;
-    box-shadow: 0 6px 18px rgba(104,98,93,0.07);
+    box-shadow: 0 6px 18px rgba(46,42,38,0.07);
   }
   .il-clue-eyebrow { margin: 0 0 10px; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
   .il-clue-text { margin: 0; font-size: 1.05rem; line-height: 1.65; color: var(--ink); }
@@ -646,7 +646,7 @@ const IL_STYLES = `
   .il-results { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
   .il-results-score-ring {
     width: 140px; height: 140px; border-radius: 50%;
-    background: conic-gradient(var(--accent) calc(var(--pct) * 1%), #ede8df 0%);
+    background: conic-gradient(#3a6898 calc(var(--pct) * 1%), #ede8df 0%);
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 0 0 8px var(--panel-strong);
   }

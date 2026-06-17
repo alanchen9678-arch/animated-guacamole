@@ -247,7 +247,7 @@ const styles = `
   .highlight-card {
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 18px; padding: 18px 20px;
-    box-shadow: 0 4px 14px rgba(104,98,93,0.06);
+    box-shadow: 0 4px 14px rgba(46,42,38,0.06);
   }
   .highlight-card strong { display: block; margin-bottom: 6px; font-size: 0.92rem; }
   .highlight-card p { margin: 0; font-size: 0.86rem; color: var(--muted); line-height: 1.55; }
@@ -289,7 +289,7 @@ const styles = `
   }
   .chat-header-avatar {
     width: 38px; height: 38px; border-radius: 50%;
-    background: linear-gradient(135deg,#a6b58a,#879ebf);
+    background: linear-gradient(135deg,#4f7c3a,#3a6898);
     display: flex; align-items: center; justify-content: center;
     color: #fff; font-weight: 800; font-size: 0.9rem; flex: none;
   }
@@ -303,7 +303,7 @@ const styles = `
     scroll-behavior: smooth;
   }
   .chat-messages::-webkit-scrollbar { width: 6px; }
-  .chat-messages::-webkit-scrollbar-thumb { background: rgba(104,98,93,0.12); border-radius: 999px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: rgba(46,42,38,0.12); border-radius: 999px; }
 
   .msg-row {
     display: flex; align-items: flex-end; gap: 10px;
@@ -313,7 +313,7 @@ const styles = `
 
   .msg-avatar {
     flex: none; width: 30px; height: 30px; border-radius: 50%;
-    background: linear-gradient(135deg,#a6b58a,#879ebf);
+    background: linear-gradient(135deg,#4f7c3a,#3a6898);
     display: flex; align-items: center; justify-content: center;
     color: #fff; font-size: 0.65rem; font-weight: 800;
     margin-bottom: 2px;
@@ -327,7 +327,7 @@ const styles = `
     border-radius: 20px; display: flex; flex-direction: column; gap: 4px;
   }
   .bubble--ai {
-    background: #f1f5f9;
+    background: #e8f1f9; border: 1px solid rgba(58,104,152,0.14);
     border-bottom-left-radius: 6px;
   }
   .bubble--user {
@@ -341,7 +341,7 @@ const styles = `
   }
   .bubble--user .bubble-text { color: #fff; }
   .bubble-time {
-    font-size: 0.68rem; color: rgba(104,98,93,0.4);
+    font-size: 0.68rem; color: rgba(46,42,38,0.4);
     align-self: flex-end; white-space: nowrap;
   }
   .bubble--user .bubble-time { color: rgba(255,255,255,0.65); }

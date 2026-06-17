@@ -26,7 +26,7 @@ const ACTIVE_THERAPIST_CHATS_KEY = 'aurora.therapistMatch.activeChats'
 
 const THERAPISTS = [
   {
-    id: 1, initials: 'PS', color: '#879ebf',
+    id: 1, initials: 'PS', color: '#3a6898',
     name: 'Dr. Priya Sharma',
     credentials: { license: 'PhD, LMFT', state: 'CA', location: 'San Francisco, CA' },
     expertise: ['anxiety', 'stress', 'burnout'],
@@ -39,7 +39,7 @@ const THERAPISTS = [
     bio: 'Dr. Sharma specializes in cognitive-behavioral therapy (CBT) for anxiety and burnout, with 12 years of experience helping high-achieving professionals find sustainable balance. Her approach is warm but direct — she will tell you what you need to hear.',
   },
   {
-    id: 2, initials: 'JW', color: '#a6b58a',
+    id: 2, initials: 'JW', color: '#4f7c3a',
     name: 'Dr. James Walker',
     credentials: { license: 'LCSW', state: 'CA', location: 'Los Angeles, CA' },
     expertise: ['loneliness', 'grief', 'anxiety'],
@@ -465,7 +465,7 @@ function ResultsView({ matches, prefs, onSelect, onBack }) {
             </div>
 
             <div className="tm-score-block">
-              <div className="tm-score-num" style={{ color: t.score === maxScore ? '#a6b58a' : '#68625d' }}>
+              <div className="tm-score-num" style={{ color: t.score === maxScore ? '#4f7c3a' : '#2e2a26' }}>
                 {t.score.toFixed(1)}
               </div>
               <div className="tm-score-label">match score</div>
@@ -956,7 +956,7 @@ const TM_STYLES = `
     border: 1px solid var(--line);
     border-radius: 20px;
     padding: 20px;
-    box-shadow: 0 6px 18px rgba(104,98,93,0.06);
+    box-shadow: 0 6px 18px rgba(46,42,38,0.06);
   }
   .tm-big-score {
     font-size: 3.2rem; font-weight: 900;
@@ -984,7 +984,7 @@ const TM_STYLES = `
     border: 1px solid var(--line);
     border-radius: 20px;
     padding: 20px;
-    box-shadow: 0 6px 18px rgba(104,98,93,0.06);
+    box-shadow: 0 6px 18px rgba(46,42,38,0.06);
   }
   .tm-active-head {
     display: flex;
@@ -1028,7 +1028,7 @@ const TM_STYLES = `
     padding: 12px;
     border: 1px solid var(--line);
     border-radius: 16px;
-    background: rgba(221,232,212,0.22);
+    background: rgba(214,234,204,0.22);
   }
   .tm-active-info {
     flex: 1;
@@ -1065,8 +1065,8 @@ const TM_STYLES = `
   .tm-top3-sub { font-size: 0.78rem; color: var(--muted); }
   .tm-privacy-note {
     margin-top: 14px; font-size: 0.78rem; color: var(--muted);
-    padding: 10px; background: rgba(166,181,138,0.06);
-    border-radius: 10px; border: 1px solid rgba(166,181,138,0.15);
+    padding: 10px; background: rgba(79,124,58,0.06);
+    border-radius: 10px; border: 1px solid rgba(79,124,58,0.15);
     line-height: 1.55;
   }
 
@@ -1094,7 +1094,7 @@ const TM_STYLES = `
   .tm-pref-card {
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 20px; padding: 20px;
-    box-shadow: 0 6px 18px rgba(104,98,93,0.06);
+    box-shadow: 0 6px 18px rgba(46,42,38,0.06);
     display: flex; flex-direction: column; gap: 10px;
   }
   .tm-pref-label { font-size: 0.88rem; font-weight: 600; }
@@ -1129,10 +1129,10 @@ const TM_STYLES = `
     display: flex; align-items: center; gap: 16px;
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 20px; padding: 20px;
-    box-shadow: 0 6px 18px rgba(104,98,93,0.06);
+    box-shadow: 0 6px 18px rgba(46,42,38,0.06);
     transition: transform 140ms, box-shadow 140ms;
   }
-  .tm-result-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(104,98,93,0.10); }
+  .tm-result-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(46,42,38,0.10); }
   .tm-result-rank {
     font-size: 1.4rem; font-weight: 900; color: var(--accent);
     width: 36px; text-align: center; flex-shrink: 0;
@@ -1208,7 +1208,7 @@ const TM_STYLES = `
   .tm-match-score-card, .tm-booking-card {
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 20px; padding: 20px;
-    box-shadow: 0 6px 18px rgba(104,98,93,0.06);
+    box-shadow: 0 6px 18px rgba(46,42,38,0.06);
     margin-bottom: 14px;
   }
   .tm-score-breakdown-title { font-size: 0.8rem; color: var(--muted); margin: 10px 0 8px; font-weight: 600; }
@@ -1262,9 +1262,9 @@ const TM_STYLES = `
   }
   .tm-chat-profile-trigger:hover,
   .tm-chat-profile-trigger--open {
-    background: rgba(221,232,212,0.42);
-    border-color: rgba(166,181,138,0.18);
-    box-shadow: 0 6px 16px rgba(166,181,138,0.08);
+    background: rgba(214,234,204,0.42);
+    border-color: rgba(79,124,58,0.18);
+    box-shadow: 0 6px 16px rgba(79,124,58,0.08);
   }
   .tm-chat-profile-copy {
     display: flex;
@@ -1323,7 +1323,7 @@ const TM_STYLES = `
   .tm-appt-form {
     display: grid; gap: 8px; padding: 14px 18px;
     border-bottom: 1px solid var(--line);
-    background: rgba(221,232,212,0.3);
+    background: rgba(214,234,204,0.3);
     flex-shrink: 0;
   }
   .tm-appt-hanger {
@@ -1344,7 +1344,7 @@ const TM_STYLES = `
     display: flex; flex-direction: column; gap: 14px;
   }
   .tm-chat-messages::-webkit-scrollbar { width: 5px; }
-  .tm-chat-messages::-webkit-scrollbar-thumb { background: rgba(104,98,93,0.12); border-radius: 999px; }
+  .tm-chat-messages::-webkit-scrollbar-thumb { background: rgba(46,42,38,0.12); border-radius: 999px; }
   .tm-msg-row { display: flex; align-items: flex-end; gap: 8px; animation: fade-up 180ms ease; }
   .tm-msg-row--user { flex-direction: row-reverse; }
   .tm-bubble { max-width: 70%; padding: 10px 14px 7px; border-radius: 18px; display: flex; flex-direction: column; gap: 4px; }
@@ -1352,21 +1352,21 @@ const TM_STYLES = `
   .tm-bubble--user { background: var(--accent); border-bottom-right-radius: 5px; }
   .tm-bubble-text { margin: 0; font-size: 0.9rem; line-height: 1.55; color: var(--ink); word-break: break-word; }
   .tm-bubble--user .tm-bubble-text { color: #fff; }
-  .tm-bubble-time { font-size: 0.66rem; color: rgba(104,98,93,0.35); align-self: flex-end; }
+  .tm-bubble-time { font-size: 0.66rem; color: rgba(46,42,38,0.35); align-self: flex-end; }
   .tm-bubble--user .tm-bubble-time { color: rgba(255,255,255,0.6); }
   .tm-appt-msg { display: flex; flex-direction: column; align-items: center; gap: 4px; }
   .tm-appt-banner {
     display: flex; gap: 12px; align-items: flex-start;
     text-align: left;
-    background: linear-gradient(135deg,rgba(221,232,212,0.8),rgba(255,255,255,0.9));
-    border: 1px solid rgba(166,181,138,0.2); border-radius: 16px;
+    background: linear-gradient(135deg,rgba(214,234,204,0.8),rgba(255,255,255,0.9));
+    border: 1px solid rgba(79,124,58,0.2); border-radius: 16px;
     padding: 12px 14px; width: 100%;
-    box-shadow: 0 4px 14px rgba(166,181,138,0.1);
+    box-shadow: 0 4px 14px rgba(79,124,58,0.1);
     color: var(--ink);
     cursor: pointer;
   }
   .tm-appt-banner--expanded {
-    box-shadow: 0 8px 22px rgba(166,181,138,0.14);
+    box-shadow: 0 8px 22px rgba(79,124,58,0.14);
   }
   .tm-appt-icon {
     flex-shrink: 0;
@@ -1390,7 +1390,7 @@ const TM_STYLES = `
     gap: 4px;
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px solid rgba(166,181,138,0.16);
+    border-top: 1px solid rgba(79,124,58,0.16);
     color: var(--muted);
     font-size: 0.78rem;
     line-height: 1.45;

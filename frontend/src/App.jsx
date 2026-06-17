@@ -54,19 +54,25 @@ function AppShell() {
           font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
           line-height: 1.5;
           font-weight: 400;
-          color: #68625d;
+          color: #2e2a26;
           background:
-            radial-gradient(circle at top, rgba(166,181,138,0.18), transparent 40%),
+            radial-gradient(circle at top, rgba(79,124,58,0.10), transparent 40%),
             linear-gradient(180deg, #faf4e8 0%, #f0e8d8 100%);
           -webkit-font-smoothing: antialiased;
-          --ink:          #68625d;
-          --muted:        #9e9892;
-          --line:         rgba(104,98,93,0.15);
-          --panel:        rgba(250,244,232,0.80);
+          --ink:          #2e2a26;
+          --muted:        #6b6460;
+          --line:         rgba(46,42,38,0.16);
+          --panel:        rgba(250,244,232,0.85);
           --panel-strong: #faf4e8;
-          --accent:       #a6b58a;
-          --accent-soft:  #dde8d4;
-          --shadow:       0 24px 60px rgba(104,98,93,0.10);
+          --accent:       #4f7c3a;
+          --accent-dark:  #3a5c29;
+          --accent-soft:  #d6eacc;
+          --blue:         #3a6898;
+          --blue-dark:    #2a5080;
+          --blue-soft:    #d6e8f5;
+          --amber:        #9a6b2a;
+          --amber-soft:   #f0e2c8;
+          --shadow:       0 24px 60px rgba(46,42,38,0.12);
         }
 
         /* ── root shell ────────────────────────────────────── */
@@ -107,11 +113,12 @@ function AppShell() {
           color: var(--ink);
           font-size: 0.88rem;
           font-weight: 600;
-          transition: border-color 140ms, background 140ms;
+          transition: border-color 140ms, background 140ms, color 140ms;
         }
         .btn-outline:hover {
-          border-color: var(--accent);
-          background: var(--accent-soft);
+          border-color: var(--blue);
+          background: var(--blue-soft);
+          color: var(--blue-dark);
         }
 
         .btn-primary {
@@ -122,9 +129,21 @@ function AppShell() {
           color: #fff;
           font-size: 0.88rem;
           font-weight: 600;
-          transition: opacity 140ms;
+          transition: background 140ms;
         }
-        .btn-primary:hover { opacity: 0.88; }
+        .btn-primary:hover { background: var(--accent-dark); }
+
+        .btn-blue {
+          padding: 8px 18px;
+          border-radius: 999px;
+          border: none;
+          background: var(--blue);
+          color: #fff;
+          font-size: 0.88rem;
+          font-weight: 600;
+          transition: background 140ms;
+        }
+        .btn-blue:hover { background: var(--blue-dark); }
 
         /* ── aurora logo ────────────────────────────────────── */
         .aurora-logo {
@@ -138,9 +157,9 @@ function AppShell() {
           width: 30px;
           height: 30px;
           border-radius: 9px;
-          background: linear-gradient(135deg, #a6b58a 0%, #879ebf 100%);
+          background: linear-gradient(135deg, #4f7c3a 0%, #3a6898 100%);
           flex: none;
-          box-shadow: 0 4px 12px rgba(135,158,191,0.28);
+          box-shadow: 0 4px 12px rgba(58,104,152,0.28);
         }
 
         .logo-text {
@@ -202,9 +221,9 @@ function AppShell() {
           color: #fff;
           font-size: 1rem;
           font-weight: 700;
-          transition: opacity 140ms, transform 140ms;
+          transition: background 140ms, transform 140ms;
         }
-        .btn-primary-lg:hover { opacity: 0.88; transform: translateY(-1px); }
+        .btn-primary-lg:hover { background: var(--accent-dark); transform: translateY(-1px); }
 
         .btn-outline-lg {
           padding: 14px 32px;
@@ -214,9 +233,13 @@ function AppShell() {
           color: var(--ink);
           font-size: 1rem;
           font-weight: 600;
-          transition: border-color 140ms;
+          transition: border-color 140ms, color 140ms, background 140ms;
         }
-        .btn-outline-lg:hover { border-color: var(--accent); }
+        .btn-outline-lg:hover {
+          border-color: var(--blue);
+          background: var(--blue-soft);
+          color: var(--blue-dark);
+        }
 
         .features-label {
           text-align: center;
@@ -242,12 +265,12 @@ function AppShell() {
           display: flex;
           flex-direction: column;
           gap: 10px;
-          box-shadow: 0 6px 18px rgba(104,98,93,0.06);
+          box-shadow: 0 6px 18px rgba(46,42,38,0.06);
           transition: transform 140ms, box-shadow 140ms;
         }
         .feature-card-landing:hover {
           transform: translateY(-3px);
-          box-shadow: 0 16px 36px rgba(104,98,93,0.10);
+          box-shadow: 0 16px 36px rgba(46,42,38,0.10);
         }
 
         .feature-tag {
@@ -256,8 +279,8 @@ function AppShell() {
           font-weight: 700;
           letter-spacing: 0.14em;
           text-transform: uppercase;
-          color: var(--accent);
-          background: var(--accent-soft);
+          color: var(--blue-dark);
+          background: var(--blue-soft);
           padding: 3px 10px;
           border-radius: 999px;
           width: fit-content;
@@ -327,13 +350,15 @@ function AppShell() {
         }
         .nav-item:hover {
           transform: translateX(2px);
-          background: rgba(250,244,232,0.65);
-          border-color: var(--line);
+          background: var(--blue-soft);
+          border-color: var(--blue);
+          color: var(--blue-dark);
         }
         .nav-item.active {
           background: var(--accent);
           color: white;
-          border-color: var(--accent);
+          border-color: var(--accent-dark);
+          box-shadow: 0 2px 8px rgba(79,124,58,0.25);
         }
 
         .content {
@@ -371,7 +396,7 @@ function AppShell() {
           border: 1px solid var(--line);
           border-radius: 22px;
           padding: 20px;
-          box-shadow: 0 10px 24px rgba(104,98,93,0.06);
+          box-shadow: 0 10px 24px rgba(46,42,38,0.06);
         }
         .card h3 { margin: 0 0 10px; font-size: 1.05rem; }
         .card p, .card li { color: var(--muted); }
@@ -387,17 +412,18 @@ function AppShell() {
         .pill {
           padding: 10px 14px;
           border-radius: 999px;
-          background: var(--accent-soft);
-          color: var(--accent);
+          background: var(--blue-soft);
+          color: var(--blue-dark);
           font-weight: 600;
+          border: 1px solid rgba(58,104,152,0.20);
         }
 
         .journal-box {
           min-height: 150px;
           padding: 16px;
           border-radius: 18px;
-          border: 1px dashed rgba(166,181,138,0.28);
-          background: rgba(221,232,212,0.3);
+          border: 1px dashed rgba(79,124,58,0.28);
+          background: rgba(214,234,204,0.3);
           color: var(--muted);
         }
 
@@ -411,7 +437,7 @@ function AppShell() {
           display: block;
           height: 100%;
           border-radius: inherit;
-          background: linear-gradient(90deg, #a6b58a, #c5d4ad);
+          background: linear-gradient(90deg, #4f7c3a, #8aaa72);
         }
 
         .settings-list { display: grid; gap: 12px; }
@@ -429,7 +455,7 @@ function AppShell() {
         .toggle {
           width: 54px; height: 30px;
           border-radius: 999px;
-          background: #dde8d4;
+          background: #d6eacc;
           position: relative; flex: none;
         }
         .toggle::after {
@@ -447,11 +473,19 @@ function AppShell() {
           margin: 0 4px;
           padding: 2px 8px;
           border-radius: 999px;
-          background: rgba(255,255,255,0.8);
-          color: var(--accent);
+          background: var(--blue-soft);
+          color: var(--blue-dark);
           font-family: Consolas, monospace;
           font-size: 0.92rem;
+          border: 1px solid rgba(58,104,152,0.18);
         }
+
+        a:not([class]) {
+          color: var(--blue);
+          text-decoration: underline;
+          text-underline-offset: 2px;
+        }
+        a:not([class]):hover { color: var(--blue-dark); }
 
         /* ── notifications ──────────────────────────────────── */
         .notif-anchor {
@@ -469,7 +503,7 @@ function AppShell() {
           background: var(--panel-strong);
           border: 1px solid var(--line);
           border-radius: 18px;
-          box-shadow: 0 16px 40px rgba(104,98,93,0.14);
+          box-shadow: 0 16px 40px rgba(46,42,38,0.14);
           padding: 16px;
           width: 270px;
           animation: fade-up 180ms ease;
@@ -507,12 +541,12 @@ function AppShell() {
           border: 1.5px solid var(--line);
           background: var(--panel-strong);
           color: var(--ink);
-          box-shadow: 0 6px 18px rgba(104,98,93,0.10);
+          box-shadow: 0 6px 18px rgba(46,42,38,0.10);
           transition: transform 140ms, box-shadow 140ms;
         }
         .notif-btn:hover {
           transform: translateY(-2px);
-          box-shadow: 0 10px 24px rgba(104,98,93,0.14);
+          box-shadow: 0 10px 24px rgba(46,42,38,0.14);
         }
 
         .notif-badge {

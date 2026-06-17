@@ -82,7 +82,7 @@ const MOD_RULES = [
     patterns: [/@\S+/, /\b\d{3}[.\-\s]?\d{3}[.\-\s]?\d{4}\b/, /\.com\b|\.net\b|\.org\b/],
     label: 'Personal info blocked',
     message: "Sharing contact details, social handles, or links isn't allowed in anonymous chats. This keeps everyone safe. Your message was not sent.",
-    color: '#879ebf', bg: 'rgba(135,158,191,0.06)', border: 'rgba(135,158,191,0.22)',
+    color: '#3a6898', bg: 'rgba(58,104,152,0.06)', border: 'rgba(58,104,152,0.22)',
   },
   {
     type: 'harmful', blocked: true,
@@ -107,12 +107,12 @@ function moderate(text) {
 // Mock data
 
 const ROOM_SEED = [
-  { id: 1,  user: 'GentleStone28', color: '#879ebf', text: "Does anyone else get anxiety spikes first thing in the morning before anything has even happened?", day: 3 },
+  { id: 1,  user: 'GentleStone28', color: '#3a6898', text: "Does anyone else get anxiety spikes first thing in the morning before anything has even happened?", day: 3 },
   { id: 2,  user: 'SteadyTide44',  color: '#b45309', text: "Yes, every single morning. I wake up with this dread and I can't explain where it's coming from.", day: 3 },
   { id: 3,  user: 'BoldForest12',  color: '#15803d', text: "Morning anxiety is real. I've started 5 minutes of slow breathing before I check my phone. It helps a little.", day: 3 },
   { id: 4,  user: 'QuietDawn67',   color: '#1d4ed8', text: "I keep telling myself the feeling will pass and it usually does. It just takes a while.", day: 2 },
   { id: 5,  user: 'SoftCloud91',   color: '#be185d', text: "The hardest part is not knowing what triggered it. Makes it hard to address.", day: 2 },
-  { id: 6,  user: 'GentleStone28', color: '#879ebf', text: "Exactly. There's no clear trigger. It's just... there.", day: 2 },
+  { id: 6,  user: 'GentleStone28', color: '#3a6898', text: "Exactly. There's no clear trigger. It's just... there.", day: 2 },
   { id: 7,  user: 'CalmRidge35',   color: '#0891b2', text: "My therapist called it 'free-floating anxiety.' Knowing there's a name for it actually helped me.", day: 1 },
   { id: 8,  user: 'SteadyTide44',  color: '#b45309', text: "That's a great term. Has therapy been helping overall?", day: 1 },
   { id: 9,  user: 'CalmRidge35',   color: '#0891b2', text: "Slowly, yes. It's not a quick fix but I feel like I'm actually building tools.", day: 1 },
@@ -126,14 +126,14 @@ const DAY_LABEL = { 3: '3 days ago', 2: '2 days ago', 1: 'Yesterday', 0: 'Today'
 const VISIBLE_MATCH_COUNT = 5
 
 const PEER_LIST = [
-  { id: 1, name: 'QuietRiver33',  color: '#879ebf', status: 'none' },
+  { id: 1, name: 'QuietRiver33',  color: '#3a6898', status: 'none' },
   { id: 2, name: 'SteadyCloud19', color: '#0891b2', status: 'none' },
   { id: 3, name: 'BraveEmber55',  color: '#b45309', status: 'none' },
   { id: 4, name: 'SoftDawn41',    color: '#15803d', status: 'none' },
   { id: 5, name: 'GentleTide27',  color: '#be185d', status: 'none' },
   { id: 6, name: 'ClearBrook64',  color: '#2563eb', status: 'none' },
   { id: 7, name: 'WarmPine82',    color: '#c2410c', status: 'none' },
-  { id: 8, name: 'StillLake38',   color: '#a6b58a', status: 'none' },
+  { id: 8, name: 'StillLake38',   color: '#4f7c3a', status: 'none' },
   { id: 9, name: 'LightStone73',  color: '#a21caf', status: 'none' },
   { id: 10, name: 'KindMaple46',  color: '#047857', status: 'none' },
 ]
@@ -238,7 +238,7 @@ function OnboardingView({ anonName, onDone }) {
             This name represents you in the Aurora community. No one will ever know your real identity.
           </p>
           <div className="ps-name-reveal">
-            <AnonAvatar name={anonName} color="#a6b58a" size={72} />
+            <AnonAvatar name={anonName} color="#4f7c3a" size={72} />
             <div className="ps-name-big">{anonName}</div>
             <p className="ps-name-note">Randomly assigned - cannot be changed</p>
           </div>
@@ -291,7 +291,7 @@ function HubView({ anonName, peers, setPeers, onRoom, onDM }) {
   return (
     <section className="page">
       <div className="ps-hub-identity">
-        <AnonAvatar name={anonName} color="#a6b58a" size={42} />
+        <AnonAvatar name={anonName} color="#4f7c3a" size={42} />
         <div>
           <p className="ps-hub-name">{anonName}</p>
           <p className="ps-hub-name-sub">Your anonymous identity</p>
@@ -363,7 +363,7 @@ function RoomView({ anonName, messages, setMessages, onBack, onLeave }) {
     if (flag?.blocked) { setModAlert(flag); setInput(''); return }
     if (flag) setModAlert(flag)
     shouldScrollRef.current = true
-    setMessages(prev => [...prev, { id: Date.now(), user: anonName, color: '#a6b58a', text, day: 0, self: true }])
+    setMessages(prev => [...prev, { id: Date.now(), user: anonName, color: '#4f7c3a', text, day: 0, self: true }])
     setInput('')
   }
 
@@ -406,7 +406,7 @@ function RoomView({ anonName, messages, setMessages, onBack, onLeave }) {
                   <p className="ps-bubble-text">{m.text}</p>
                   {m.self && <span className="ps-bubble-time">Now</span>}
                 </div>
-                {m.self && <div className="ps-self-dot" style={{ background: '#a6b58a' }}>{anonName.slice(0, 2)}</div>}
+                {m.self && <div className="ps-self-dot" style={{ background: '#4f7c3a' }}>{anonName.slice(0, 2)}</div>}
               </div>
             ))}
           </div>
@@ -579,7 +579,7 @@ function DMView({ peer, anonName, messages, setMessages, onBack, onLeave }) {
                 <p className="ps-bubble-text">{m.text}</p>
                 <span className="ps-bubble-time">{m.time}</span>
               </div>
-              {isMe && <div className="ps-self-dot" style={{ background: '#a6b58a' }}>{anonName.slice(0, 2)}</div>}
+              {isMe && <div className="ps-self-dot" style={{ background: '#4f7c3a' }}>{anonName.slice(0, 2)}</div>}
             </div>
           )
         })}
@@ -717,7 +717,7 @@ const PS_STYLES = `
     display: flex; flex-direction: column; align-items: center; gap: 12px;
     background: var(--panel-strong); border: 1px solid var(--line); border-radius: 22px;
     padding: 32px; margin-bottom: 28px; text-align: center;
-    box-shadow: 0 8px 24px rgba(104,98,93,0.08);
+    box-shadow: 0 8px 24px rgba(46,42,38,0.08);
   }
   .ps-name-big { font-size: 2rem; font-weight: 900; letter-spacing: -0.03em; }
   .ps-name-note { font-size: 0.78rem; color: var(--muted); margin: 0; }
@@ -748,14 +748,14 @@ const PS_STYLES = `
     display: flex; align-items: center; gap: 14px;
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 20px; padding: 18px 20px;
-    box-shadow: 0 6px 18px rgba(104,98,93,0.06);
+    box-shadow: 0 6px 18px rgba(46,42,38,0.06);
     cursor: pointer; text-align: left; width: 100%;
     transition: transform 140ms, box-shadow 140ms;
   }
-  .ps-hub-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(104,98,93,0.10); }
+  .ps-hub-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(46,42,38,0.10); }
   .ps-hub-card-icon { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .ps-hub-card-icon--purple { background: rgba(135,158,191,0.10); color: #879ebf; }
-  .ps-hub-card-icon--teal   { background: rgba(166,181,138,0.10); color: var(--accent); }
+  .ps-hub-card-icon--purple { background: rgba(58,104,152,0.10); color: #3a6898; }
+  .ps-hub-card-icon--teal   { background: rgba(79,124,58,0.10); color: var(--accent); }
   .ps-hub-card-text { flex: 1; }
   .ps-hub-card-text strong { display: block; font-size: 0.95rem; margin-bottom: 3px; }
   .ps-hub-card-text p { margin: 0; font-size: 0.8rem; color: var(--muted); }
@@ -780,13 +780,13 @@ const PS_STYLES = `
     display: flex; align-items: center; gap: 14px;
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 18px; padding: 16px 18px;
-    box-shadow: 0 4px 14px rgba(104,98,93,0.06);
+    box-shadow: 0 4px 14px rgba(46,42,38,0.06);
     transition: transform 140ms;
   }
   .ps-peer-card:hover { transform: translateY(-1px); }
   .ps-peer-card--active {
-    border-color: rgba(166,181,138,0.26);
-    background: rgba(221,232,212,0.34);
+    border-color: rgba(79,124,58,0.26);
+    background: rgba(214,234,204,0.34);
   }
   .ps-active-empty {
     border: 1px dashed var(--line); border-radius: 18px;
@@ -849,7 +849,7 @@ const PS_STYLES = `
     border: 1px solid rgba(220,38,38,0.20);
     border-radius: 14px;
     background: #fff;
-    box-shadow: 0 12px 28px rgba(104,98,93,0.14);
+    box-shadow: 0 12px 28px rgba(46,42,38,0.14);
   }
   .ps-leave-confirm p {
     margin: 0 0 10px;
@@ -879,13 +879,13 @@ const PS_STYLES = `
     background: #dc2626;
     color: #fff;
   }
-  .ps-room-badge { width: 34px; height: 34px; border-radius: 10px; background: rgba(135,158,191,0.1); color: #879ebf; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .ps-room-badge { width: 34px; height: 34px; border-radius: 10px; background: rgba(58,104,152,0.1); color: #3a6898; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .ps-anon-notice { padding: 9px 0; font-size: 0.74rem; color: var(--muted); background: transparent; border-bottom: 1px solid var(--line); text-align: center; flex-shrink: 0; }
 
   /* messages */
   .ps-messages { flex: 1; overflow-y: auto; padding: 16px 0 8px; display: flex; flex-direction: column; gap: 10px; }
   .ps-messages::-webkit-scrollbar { width: 5px; }
-  .ps-messages::-webkit-scrollbar-thumb { background: rgba(104,98,93,0.12); border-radius: 999px; }
+  .ps-messages::-webkit-scrollbar-thumb { background: rgba(46,42,38,0.12); border-radius: 999px; }
   .ps-day-sep { text-align: center; font-size: 0.72rem; font-weight: 600; color: var(--muted); padding: 6px 0; letter-spacing: 0.04em; }
   .ps-msg-row { display: flex; align-items: flex-end; gap: 8px; animation: fade-up 180ms ease; }
   .ps-msg-row--self { flex-direction: row-reverse; }
@@ -895,7 +895,7 @@ const PS_STYLES = `
   .ps-bubble-name  { font-size: 0.7rem; font-weight: 700; margin-bottom: 2px; }
   .ps-bubble-text  { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--ink); word-break: break-word; }
   .ps-bubble--self .ps-bubble-text { color: #fff; }
-  .ps-bubble-time  { font-size: 0.66rem; color: rgba(104,98,93,0.35); align-self: flex-end; }
+  .ps-bubble-time  { font-size: 0.66rem; color: rgba(46,42,38,0.35); align-self: flex-end; }
   .ps-bubble--self .ps-bubble-time { color: rgba(255,255,255,0.6); }
   .ps-self-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.6rem; font-weight: 800; flex-shrink: 0; }
 
