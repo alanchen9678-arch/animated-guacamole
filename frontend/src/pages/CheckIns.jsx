@@ -403,9 +403,9 @@ function ResultsView({ scores, prevScores, surveyType, onDone }) {
 
       {/* insight */}
       <div className="ci-insight">
-        <div className="ci-insight-icon" style={{ background: allGood ? '#0f766e' : '#d97706' }}>A</div>
+        <div className="ci-insight-icon" style={{ background: allGood ? '#a6b58a' : '#d97706' }}>A</div>
         <div className="ci-insight-body">
-          <strong className="ci-insight-label" style={{ color: allGood ? '#0f766e' : '#d97706' }}>Aurora</strong>
+          <strong className="ci-insight-label" style={{ color: allGood ? '#a6b58a' : '#d97706' }}>Aurora</strong>
           <p className="ci-insight-text">{insight}</p>
         </div>
       </div>
@@ -523,10 +523,10 @@ const CI_STYLES = `
   .ci-top-row { display: grid; grid-template-columns: 160px 1fr; gap: 14px; align-items: start; }
 
   .ci-streak-card {
-    background: linear-gradient(135deg, #0f766e, #065f46);
+    background: linear-gradient(135deg, #a6b58a, #869470);
     color: #fff; border-radius: 20px; padding: 20px;
     display: flex; flex-direction: column; align-items: center; gap: 4px;
-    box-shadow: 0 8px 24px rgba(15,118,110,0.28);
+    box-shadow: 0 8px 24px rgba(166,181,138,0.28);
     text-align: center;
   }
   .ci-streak-num   { font-size: 3rem; font-weight: 900; line-height: 1; }
@@ -537,9 +537,9 @@ const CI_STYLES = `
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 20px; padding: 20px 22px;
     display: flex; flex-direction: column; gap: 10px;
-    box-shadow: 0 6px 18px rgba(23,48,66,0.06);
+    box-shadow: 0 6px 18px rgba(104,98,93,0.06);
   }
-  .ci-due-card--due { border-color: rgba(15,118,110,0.28); background: rgba(218,243,236,0.4); }
+  .ci-due-card--due { border-color: rgba(166,181,138,0.28); background: rgba(221,232,212,0.4); }
 
   .ci-due-badge {
     display: inline-block; font-size: 0.7rem; font-weight: 700;
@@ -570,13 +570,13 @@ const CI_STYLES = `
   .ci-last-wrap {
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 20px; padding: 18px 20px;
-    box-shadow: 0 4px 14px rgba(23,48,66,0.06);
+    box-shadow: 0 4px 14px rgba(104,98,93,0.06);
   }
 
   .ci-mini-bars { display: flex; flex-direction: column; gap: 10px; }
   .ci-mini-bar-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .ci-mini-label { font-size: 0.82rem; font-weight: 600; color: var(--ink); }
-  .ci-mini-track { height: 8px; border-radius: 999px; background: rgba(23,48,66,0.08); overflow: hidden; }
+  .ci-mini-track { height: 8px; border-radius: 999px; background: rgba(104,98,93,0.08); overflow: hidden; }
   .ci-mini-fill  { height: 100%; border-radius: inherit; transition: width 600ms cubic-bezier(0.22,1,0.36,1); }
   .ci-mini-score { font-size: 0.82rem; font-weight: 700; text-align: right; }
 
@@ -615,7 +615,7 @@ const CI_STYLES = `
   .ci-intro {
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 22px; padding: 28px;
-    box-shadow: 0 8px 24px rgba(23,48,66,0.08);
+    box-shadow: 0 8px 24px rgba(104,98,93,0.08);
     display: flex; flex-direction: column; gap: 16px;
     max-width: 580px;
     animation: fade-up 200ms ease;
@@ -663,7 +663,7 @@ const CI_STYLES = `
     animation: fade-up 180ms ease;
   }
 
-  .ci-prog-bar { height: 6px; border-radius: 999px; background: rgba(23,48,66,0.08); overflow: hidden; }
+  .ci-prog-bar { height: 6px; border-radius: 999px; background: rgba(104,98,93,0.08); overflow: hidden; }
   .ci-prog-fill { height: 100%; border-radius: inherit; background: var(--accent); transition: width 280ms ease; }
   .ci-prog-row { display: flex; align-items: center; justify-content: space-between; }
   .ci-prog-count { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
@@ -717,7 +717,7 @@ const CI_STYLES = `
 
   .ci-insight {
     display: flex; gap: 12px; padding: 16px 18px;
-    background: rgba(15,118,110,0.06); border: 1px solid rgba(15,118,110,0.18);
+    background: rgba(166,181,138,0.06); border: 1px solid rgba(166,181,138,0.18);
     border-radius: 16px; animation: fade-up 220ms ease;
   }
   .ci-insight-icon {

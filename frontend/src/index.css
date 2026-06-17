@@ -2,22 +2,22 @@
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #173042;
+  color: #68625d;
   background:
     radial-gradient(circle at top, rgba(188, 230, 210, 0.8), transparent 34%),
-    linear-gradient(180deg, #f9f6ef 0%, #eef4f5 100%);
+    linear-gradient(180deg, #faf4e8 0%, #f3ece0 100%);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  --ink: #173042;
-  --muted: #5d7280;
-  --line: rgba(23, 48, 66, 0.12);
-  --panel: rgba(255, 255, 255, 0.74);
-  --panel-strong: #ffffff;
-  --accent: #0f766e;
-  --accent-soft: #daf3ec;
-  --shadow: 0 24px 60px rgba(23, 48, 66, 0.12);
+  --ink: #68625d;
+  --muted: #9e9892;
+  --line: rgba(104,98,93,0.15);
+  --panel: rgba(250,244,232,0.80);
+  --panel-strong: #faf4e8;
+  --accent: #a6b58a;
+  --accent-soft: #dde8d4;
+  --shadow: 0 24px 60px rgba(104,98,93,0.10);
 }
 
 * {

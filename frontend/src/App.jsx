@@ -54,19 +54,19 @@ function AppShell() {
           font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
           line-height: 1.5;
           font-weight: 400;
-          color: #173042;
+          color: #68625d;
           background:
-            radial-gradient(circle at top, rgba(188,230,210,0.8), transparent 34%),
-            linear-gradient(180deg, #f9f6ef 0%, #eef4f5 100%);
+            radial-gradient(circle at top, rgba(166,181,138,0.18), transparent 40%),
+            linear-gradient(180deg, #faf4e8 0%, #f0e8d8 100%);
           -webkit-font-smoothing: antialiased;
-          --ink:          #173042;
-          --muted:        #5d7280;
-          --line:         rgba(23,48,66,0.12);
-          --panel:        rgba(255,255,255,0.74);
-          --panel-strong: #ffffff;
-          --accent:       #0f766e;
-          --accent-soft:  #daf3ec;
-          --shadow:       0 24px 60px rgba(23,48,66,0.12);
+          --ink:          #68625d;
+          --muted:        #9e9892;
+          --line:         rgba(104,98,93,0.15);
+          --panel:        rgba(250,244,232,0.80);
+          --panel-strong: #faf4e8;
+          --accent:       #a6b58a;
+          --accent-soft:  #dde8d4;
+          --shadow:       0 24px 60px rgba(104,98,93,0.10);
         }
 
         /* ── root shell ────────────────────────────────────── */
@@ -88,7 +88,7 @@ function AppShell() {
           justify-content: space-between;
           padding: 0 28px;
           height: 62px;
-          background: rgba(255,255,255,0.84);
+          background: rgba(250,244,232,0.90);
           backdrop-filter: blur(14px);
           border-bottom: 1px solid var(--line);
         }
@@ -138,9 +138,9 @@ function AppShell() {
           width: 30px;
           height: 30px;
           border-radius: 9px;
-          background: linear-gradient(135deg, #0f766e 0%, #7c3aed 100%);
+          background: linear-gradient(135deg, #a6b58a 0%, #879ebf 100%);
           flex: none;
-          box-shadow: 0 4px 12px rgba(124,58,237,0.28);
+          box-shadow: 0 4px 12px rgba(135,158,191,0.28);
         }
 
         .logo-text {
@@ -242,12 +242,12 @@ function AppShell() {
           display: flex;
           flex-direction: column;
           gap: 10px;
-          box-shadow: 0 6px 18px rgba(23,48,66,0.06);
+          box-shadow: 0 6px 18px rgba(104,98,93,0.06);
           transition: transform 140ms, box-shadow 140ms;
         }
         .feature-card-landing:hover {
           transform: translateY(-3px);
-          box-shadow: 0 16px 36px rgba(23,48,66,0.10);
+          box-shadow: 0 16px 36px rgba(104,98,93,0.10);
         }
 
         .feature-tag {
@@ -301,7 +301,7 @@ function AppShell() {
         .sidebar {
           padding: 24px 18px;
           border-right: 1px solid var(--line);
-          background: rgba(255,255,255,0.54);
+          background: rgba(250,244,232,0.54);
         }
 
         .sidebar h2 {
@@ -327,7 +327,7 @@ function AppShell() {
         }
         .nav-item:hover {
           transform: translateX(2px);
-          background: rgba(255,255,255,0.65);
+          background: rgba(250,244,232,0.65);
           border-color: var(--line);
         }
         .nav-item.active {
@@ -371,7 +371,7 @@ function AppShell() {
           border: 1px solid var(--line);
           border-radius: 22px;
           padding: 20px;
-          box-shadow: 0 10px 24px rgba(23,48,66,0.06);
+          box-shadow: 0 10px 24px rgba(104,98,93,0.06);
         }
         .card h3 { margin: 0 0 10px; font-size: 1.05rem; }
         .card p, .card li { color: var(--muted); }
@@ -396,22 +396,22 @@ function AppShell() {
           min-height: 150px;
           padding: 16px;
           border-radius: 18px;
-          border: 1px dashed rgba(15,118,110,0.28);
-          background: rgba(218,243,236,0.3);
+          border: 1px dashed rgba(166,181,138,0.28);
+          background: rgba(221,232,212,0.3);
           color: var(--muted);
         }
 
         .meter {
           height: 12px;
           border-radius: 999px;
-          background: #e7eff1;
+          background: #ede8df;
           overflow: hidden;
         }
         .meter > span {
           display: block;
           height: 100%;
           border-radius: inherit;
-          background: linear-gradient(90deg, #0f766e, #49a99f);
+          background: linear-gradient(90deg, #a6b58a, #c5d4ad);
         }
 
         .settings-list { display: grid; gap: 12px; }
@@ -429,7 +429,7 @@ function AppShell() {
         .toggle {
           width: 54px; height: 30px;
           border-radius: 999px;
-          background: #cfe3df;
+          background: #dde8d4;
           position: relative; flex: none;
         }
         .toggle::after {
@@ -469,7 +469,7 @@ function AppShell() {
           background: var(--panel-strong);
           border: 1px solid var(--line);
           border-radius: 18px;
-          box-shadow: 0 16px 40px rgba(23,48,66,0.14);
+          box-shadow: 0 16px 40px rgba(104,98,93,0.14);
           padding: 16px;
           width: 270px;
           animation: fade-up 180ms ease;
@@ -507,12 +507,12 @@ function AppShell() {
           border: 1.5px solid var(--line);
           background: var(--panel-strong);
           color: var(--ink);
-          box-shadow: 0 6px 18px rgba(23,48,66,0.10);
+          box-shadow: 0 6px 18px rgba(104,98,93,0.10);
           transition: transform 140ms, box-shadow 140ms;
         }
         .notif-btn:hover {
           transform: translateY(-2px);
-          box-shadow: 0 10px 24px rgba(23,48,66,0.14);
+          box-shadow: 0 10px 24px rgba(104,98,93,0.14);
         }
 
         .notif-badge {

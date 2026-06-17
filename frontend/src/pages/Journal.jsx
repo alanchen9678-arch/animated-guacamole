@@ -201,14 +201,14 @@ function Calendar({ moodData, setMoodData }) {
 
 // ─── doodle canvas ────────────────────────────────────────────────────────────
 
-const PRESET_COLORS = ['#173042','#dc2626','#0f766e','#d97706','#7c3aed','#be185d','#1d4ed8','#15803d','#f97316','#ec4899']
+const PRESET_COLORS = ['#68625d','#dc2626','#a6b58a','#d97706','#879ebf','#be185d','#1d4ed8','#15803d','#f97316','#ec4899']
 const BRUSH_SIZES   = [2, 4, 8, 16]
 
 function DoodleCanvas({ bgColor }) {
   const canvasRef   = useRef(null)
   const drawing     = useRef(false)
   const lastPos     = useRef(null)
-  const [brushColor, setBrushColor] = useState('#173042')
+  const [brushColor, setBrushColor] = useState('#68625d')
   const [brushSize, setBrushSize]   = useState(3)
   const [eraser, setEraser]         = useState(false)
 
@@ -325,9 +325,9 @@ export default function Journal() {
   const TONE_STYLE = {
     crisis:   { bg: 'rgba(220,38,38,0.06)',   border: 'rgba(220,38,38,0.22)',  icon: '!', ic: '#dc2626' },
     alert:    { bg: 'rgba(217,119,6,0.06)',   border: 'rgba(217,119,6,0.22)',  icon: '!', ic: '#d97706' },
-    positive: { bg: 'rgba(22,163,74,0.06)',   border: 'rgba(22,163,74,0.2)',   icon: 'A', ic: '#0f766e' },
-    negative: { bg: 'rgba(15,118,110,0.06)',  border: 'rgba(15,118,110,0.18)', icon: 'A', ic: '#0f766e' },
-    neutral:  { bg: 'rgba(15,118,110,0.06)',  border: 'rgba(15,118,110,0.18)', icon: 'A', ic: '#0f766e' },
+    positive: { bg: 'rgba(22,163,74,0.06)',   border: 'rgba(22,163,74,0.2)',   icon: 'A', ic: '#a6b58a' },
+    negative: { bg: 'rgba(166,181,138,0.06)',  border: 'rgba(166,181,138,0.18)', icon: 'A', ic: '#a6b58a' },
+    neutral:  { bg: 'rgba(166,181,138,0.06)',  border: 'rgba(166,181,138,0.18)', icon: 'A', ic: '#a6b58a' },
   }
 
   return (
@@ -448,7 +448,7 @@ const JN_STYLES = `
   .jn-cal-wrap {
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 20px; padding: 20px;
-    box-shadow: 0 6px 18px rgba(23,48,66,0.06);
+    box-shadow: 0 6px 18px rgba(104,98,93,0.06);
   }
   .jn-cal-nav {
     display: flex; align-items: center; justify-content: space-between;
@@ -484,8 +484,8 @@ const JN_STYLES = `
     display: flex; align-items: center; justify-content: center;
     transition: transform 120ms, box-shadow 120ms, border-color 120ms;
   }
-  .jn-cal-day:not(:disabled):hover { transform: scale(1.08); box-shadow: 0 4px 12px rgba(23,48,66,0.14); }
-  .jn-cal-day--today { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 0 2px rgba(15,118,110,0.15); }
+  .jn-cal-day:not(:disabled):hover { transform: scale(1.08); box-shadow: 0 4px 12px rgba(104,98,93,0.14); }
+  .jn-cal-day--today { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 0 2px rgba(166,181,138,0.15); }
   .jn-cal-day--sel   { outline: 2.5px solid var(--ink); outline-offset: 2px; }
   .jn-cal-day--future { opacity: 0.3; }
 
@@ -500,7 +500,7 @@ const JN_STYLES = `
   /* mood picker */
   .jn-mood-picker {
     margin-top: 14px; padding: 16px; border-radius: 16px;
-    background: rgba(218,243,236,0.3); border: 1px solid rgba(15,118,110,0.16);
+    background: rgba(221,232,212,0.3); border: 1px solid rgba(166,181,138,0.16);
     animation: fade-up 180ms ease;
   }
   .jn-picker-label { margin: 0 0 12px; font-size: 0.82rem; font-weight: 600; color: var(--ink); }
@@ -533,14 +533,14 @@ const JN_STYLES = `
   .jn-color-preview { width: 36px; height: 28px; border-radius: 6px; border: 1px solid var(--line); }
   .jn-tab-toggle { display: flex; gap: 4px; background: rgba(255,255,255,0.6); border: 1px solid var(--line); border-radius: 12px; padding: 3px; margin-left: auto; }
   .jn-tab-btn { padding: 6px 18px; border-radius: 9px; border: none; background: transparent; font-size: 0.86rem; font-weight: 600; color: var(--muted); transition: background 140ms, color 140ms; }
-  .jn-tab-btn--on { background: var(--panel-strong); color: var(--ink); box-shadow: 0 2px 6px rgba(23,48,66,0.08); }
+  .jn-tab-btn--on { background: var(--panel-strong); color: var(--ink); box-shadow: 0 2px 6px rgba(104,98,93,0.08); }
 
   /* notebook */
   .jn-notebook {
     position: relative; display: flex;
     border-radius: 18px; overflow: hidden;
     border: 1.5px solid var(--line);
-    box-shadow: 0 8px 24px rgba(23,48,66,0.10);
+    box-shadow: 0 8px 24px rgba(104,98,93,0.10);
     min-height: 260px;
   }
   .jn-margin { width: 56px; flex-shrink: 0; border-right: 2px solid rgba(0,0,0,0.12); }
@@ -555,14 +555,14 @@ const JN_STYLES = `
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
   .jn-textarea:disabled { opacity: 0.7; }
-  .jn-textarea::placeholder { color: rgba(23,48,66,0.3); }
+  .jn-textarea::placeholder { color: rgba(104,98,93,0.3); }
 
   /* doodle */
   .jn-doodle-section { display: flex; flex-direction: column; gap: 8px; }
   .jn-doodle-note { margin: 0; font-size: 0.82rem; color: var(--muted); font-style: italic; }
   .jn-doodle-wrap {
     border: 1.5px solid var(--line); border-radius: 18px; overflow: hidden;
-    box-shadow: 0 8px 24px rgba(23,48,66,0.10);
+    box-shadow: 0 8px 24px rgba(104,98,93,0.10);
   }
   .jn-doodle-toolbar {
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
