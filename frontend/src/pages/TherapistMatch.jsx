@@ -22,6 +22,8 @@ const CONCERN_LABEL = {
   loneliness: 'Loneliness', lowConfidence: 'Low Confidence', grief: 'Grief',
 }
 
+const ACTIVE_THERAPIST_CHATS_KEY = 'aurora.therapistMatch.activeChats'
+
 const THERAPISTS = [
   {
     id: 1, initials: 'PS', color: '#7c3aed',
@@ -138,6 +140,31 @@ const US_STATES = [
 const LANGUAGES = ['English','Spanish','French','Mandarin','Hindi','Arabic','Portuguese']
 const INSURERS  = ['Aetna','BlueCross BlueShield','United Healthcare','Cigna','Humana','Self-pay / Out-of-pocket']
 
+function loadActiveTherapistChats() {
+  try {
+    const stored = window.localStorage.getItem(ACTIVE_THERAPIST_CHATS_KEY)
+    const ids = stored ? JSON.parse(stored) : []
+    if (!Array.isArray(ids)) return []
+
+    return ids
+      .map(id => THERAPISTS.find(t => t.id === id))
+      .filter(Boolean)
+  } catch {
+    return []
+  }
+}
+
+function saveActiveTherapistChats(chats) {
+  try {
+    window.localStorage.setItem(
+      ACTIVE_THERAPIST_CHATS_KEY,
+      JSON.stringify(chats.map(t => t.id)),
+    )
+  } catch {
+    // Storage can be unavailable in some private browsing modes.
+  }
+}
+
 const THERAPIST_MESSAGES = [
   "Hello! I've reviewed your Aurora profile. I can see some real patterns worth working through together — I'm glad you reached out. How are you feeling today?",
   "That makes complete sense. Based on your profile, I'd like us to start by mapping out what's driving the stress peaks before we try to address them. Does that feel right?",
@@ -225,7 +252,37 @@ function Stars({ rating }) {
 
 // ─── needs profile view ───────────────────────────────────────────────────────
 
-function NeedsProfileView({ profile, onFind }) {
+function ActiveTherapistChats({ chats, onOpen }) {
+  return (
+    <div className="tm-active-card">
+      <div className="tm-active-head">
+        <p className="tm-section-label">Active therapist chats</p>
+        <span>{chats.length}</span>
+      </div>
+
+      {chats.length === 0 ? (
+        <div className="tm-active-empty">
+          Therapists you message or book through Find a Therapist will appear here.
+        </div>
+      ) : (
+        <div className="tm-active-list">
+          {chats.map(t => (
+            <div key={t.id} className="tm-active-row">
+              <Avatar initials={t.initials} color={t.color} size={44} />
+              <div className="tm-active-info">
+                <strong>{t.name}</strong>
+                <span>{t.credentials.license} - {t.credentials.location}</span>
+              </div>
+              <button className="tm-view-btn" onClick={() => onOpen(t)}>Open chat</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function NeedsProfileView({ profile, activeChats, onOpenChat, onFind }) {
   const top3 = getTop3(profile.concerns)
   const [refreshed, setRefreshed] = useState(false)
 
@@ -237,6 +294,8 @@ function NeedsProfileView({ profile, onFind }) {
       </header>
 
       <div className="tm-profile-grid">
+        <ActiveTherapistChats chats={activeChats} onOpen={onOpenChat} />
+
         <div className="tm-overall-card">
           <p className="tm-section-label">Overall score</p>
           <div className="tm-big-score">{profile.overall}</div>
@@ -566,11 +625,6 @@ function DetailView({ therapist: t, prefs, onChat, onBack }) {
             )}
           </div>
 
-          {!booked && (
-            <button className="tm-chat-btn" onClick={onChat}>
-              Message {t.name.split(' ')[1]} first →
-            </button>
-          )}
         </div>
       </div>
     </section>
@@ -583,7 +637,21 @@ function timestamp() {
   return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-function AppointmentBanner({ appt }) {
+function formatAppointmentDate(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+
+  return date.toLocaleString([], {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function AppointmentBanner({ appt, expanded, onToggle }) {
   return (
     <div className="tm-appt-banner">
       <div className="tm-appt-icon">📅</div>
@@ -596,6 +664,25 @@ function AppointmentBanner({ appt }) {
   )
 }
 
+function ActiveAppointmentBanner({ appt, expanded, onToggle }) {
+  return (
+    <button className={`tm-appt-banner${expanded ? ' tm-appt-banner--expanded' : ''}`} onClick={onToggle}>
+      <div className="tm-appt-icon">Cal</div>
+      <div className="tm-appt-banner-body">
+        <strong>{appt.title}</strong>
+        <p>{formatAppointmentDate(appt.date)}</p>
+        {expanded && (
+          <div className="tm-appt-expanded">
+            <span>Therapist: {appt.therapist}</span>
+            {appt.desc && <span>{appt.desc}</span>}
+          </div>
+        )}
+      </div>
+      <span className="tm-appt-chevron">{expanded ? 'Hide' : 'Details'}</span>
+    </button>
+  )
+}
+
 function ChatView({ therapist: t, onBack }) {
   const [messages, setMessages] = useState([
     { id: 0, role: 'therapist', text: "Hello! I've reviewed your Aurora profile. I can see some real patterns worth working through together — I'm glad you reached out. How are you feeling today?", time: timestamp(), type: 'text' },
@@ -603,24 +690,34 @@ function ChatView({ therapist: t, onBack }) {
   const [input, setInput]           = useState('')
   const [isTyping, setIsTyping]     = useState(false)
   const [showApptForm, setShowApptForm] = useState(false)
+  const [showProfileCard, setShowProfileCard] = useState(false)
+  const [activeAppointment, setActiveAppointment] = useState(null)
+  const [appointmentExpanded, setAppointmentExpanded] = useState(false)
   const [apptTitle, setApptTitle]   = useState('')
   const [apptDate, setApptDate]     = useState('')
   const [apptDesc, setApptDesc]     = useState('')
   const [msgIdx, setMsgIdx]         = useState(0)
-  const bottomRef                   = useRef(null)
+  const messagesRef                 = useRef(null)
+  const shouldScrollRef             = useRef(false)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isTyping, showApptForm])
+    if (!shouldScrollRef.current) return
+    shouldScrollRef.current = false
+    const messagesEl = messagesRef.current
+    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' })
+  }, [messages, isTyping])
 
   function sendMessage() {
     const text = input.trim()
     if (!text || isTyping) return
     const userMsg = { id: Date.now(), role: 'user', text, time: timestamp(), type: 'text' }
+    shouldScrollRef.current = true
     setMessages(prev => [...prev, userMsg])
     setInput('')
+    shouldScrollRef.current = true
     setIsTyping(true)
     setTimeout(() => {
+      shouldScrollRef.current = true
       setIsTyping(false)
       const reply = THERAPIST_MESSAGES[msgIdx % THERAPIST_MESSAGES.length]
       setMsgIdx(i => i + 1)
@@ -630,9 +727,19 @@ function ChatView({ therapist: t, onBack }) {
 
   function createAppointment() {
     if (!apptTitle || !apptDate) return
-    const appt = { title: apptTitle, date: apptDate, desc: apptDesc }
-    setMessages(prev => [...prev, { id: Date.now(), role: 'system', type: 'appointment', appt, time: timestamp() }])
-    setApptTitle(''); setApptDate(''); setApptDesc(''); setShowApptForm(false)
+    setActiveAppointment({ title: apptTitle, date: apptDate, desc: apptDesc, therapist: t.name })
+    setAppointmentExpanded(false)
+    setApptTitle('')
+    setApptDate('')
+    setApptDesc('')
+    setShowApptForm(false)
+  }
+
+  function cancelAppointmentForm() {
+    setApptTitle('')
+    setApptDate('')
+    setApptDesc('')
+    setShowApptForm(false)
   }
 
   return (
@@ -640,11 +747,17 @@ function ChatView({ therapist: t, onBack }) {
       {/* header */}
       <div className="tm-chat-header">
         <button className="tm-back tm-back--inline" onClick={onBack}>←</button>
-        <Avatar initials={t.initials} color={t.color} size={36} />
-        <div>
-          <strong className="tm-chat-name">{t.name}</strong>
-          <span className="tm-chat-status">{t.credentials.license} · {t.credentials.location}</span>
-        </div>
+        <button
+          className={`tm-chat-profile-trigger${showProfileCard ? ' tm-chat-profile-trigger--open' : ''}`}
+          onClick={() => setShowProfileCard(v => !v)}
+          aria-expanded={showProfileCard}
+        >
+          <Avatar initials={t.initials} color={t.color} size={36} />
+          <span className="tm-chat-profile-copy">
+            <strong className="tm-chat-name">{t.name}</strong>
+            <span className="tm-chat-status">{t.credentials.license} · {t.credentials.location}</span>
+          </span>
+        </button>
         <button
           className="tm-appt-trigger"
           onClick={() => setShowApptForm(v => !v)}
@@ -654,22 +767,35 @@ function ChatView({ therapist: t, onBack }) {
         </button>
       </div>
 
+      {activeAppointment && (
+        <div className="tm-appt-hanger">
+          <ActiveAppointmentBanner
+            appt={activeAppointment}
+            expanded={appointmentExpanded}
+            onToggle={() => setAppointmentExpanded(v => !v)}
+          />
+        </div>
+      )}
+
       {/* appointment form */}
       {showApptForm && (
         <div className="tm-appt-form">
           <strong style={{ fontSize: '0.9rem' }}>Schedule an appointment</strong>
           <input className="tm-input" placeholder="Title (e.g. Initial Consultation)" value={apptTitle} onChange={e => setApptTitle(e.target.value)} />
           <input className="tm-input" type="datetime-local" value={apptDate} onChange={e => setApptDate(e.target.value)} />
+          <p className="tm-selected-date">
+            {apptDate ? `Selected: ${formatAppointmentDate(apptDate)}` : 'Choose a date before creating the appointment.'}
+          </p>
           <input className="tm-input" placeholder="Description (optional)" value={apptDesc} onChange={e => setApptDesc(e.target.value)} />
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="tm-primary-btn" style={{ flex: 1 }} onClick={createAppointment}>Add to chat</button>
-            <button className="tm-outline-btn" onClick={() => setShowApptForm(false)}>Cancel</button>
+            <button className="tm-primary-btn" style={{ flex: 1 }} onClick={createAppointment}>Create appointment</button>
+            <button className="tm-outline-btn" onClick={cancelAppointmentForm}>Cancel</button>
           </div>
         </div>
       )}
 
       {/* messages */}
-      <div className="tm-chat-messages">
+      <div className="tm-chat-messages" ref={messagesRef}>
         {messages.map(m => {
           if (m.type === 'appointment') {
             return (
@@ -701,7 +827,6 @@ function ChatView({ therapist: t, onBack }) {
             </div>
           </div>
         )}
-        <div ref={bottomRef} />
       </div>
 
       {/* input */}
@@ -724,6 +849,53 @@ function ChatView({ therapist: t, onBack }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>
+
+      {showProfileCard && (
+        <div className="tm-profile-modal-backdrop" role="presentation" onClick={() => setShowProfileCard(false)}>
+          <div className="tm-profile-modal" role="dialog" aria-modal="true" aria-label={`${t.name} profile`} onClick={e => e.stopPropagation()}>
+            <button className="tm-profile-modal-close" onClick={() => setShowProfileCard(false)} aria-label="Close profile">x</button>
+            <div className="tm-detail-header">
+              <Avatar initials={t.initials} color={t.color} size={64} />
+              <div>
+                <h2 className="tm-detail-name">{t.name}</h2>
+                <p className="tm-detail-creds">{t.credentials.license} - {t.credentials.location}</p>
+                <Stars rating={t.rating} />
+                <span style={{ marginLeft: 8, fontSize: '0.82rem', color: 'var(--muted)' }}>{t.reviews} reviews</span>
+              </div>
+            </div>
+
+            <p className="tm-bio">{t.bio}</p>
+
+            <div className="tm-detail-section">
+              <p className="tm-section-label">Specialties</p>
+              <div className="tm-tag-row">{t.expertise.map(e => <ExpertiseTag key={e} label={e} />)}</div>
+            </div>
+
+            <div className="tm-chat-profile-grid">
+              <div className="tm-detail-row">
+                <span className="tm-dr-label">Experience</span>
+                <span>{t.yearsExp} years</span>
+              </div>
+              <div className="tm-detail-row">
+                <span className="tm-dr-label">Languages</span>
+                <span>{t.languages.join(', ')}</span>
+              </div>
+              <div className="tm-detail-row">
+                <span className="tm-dr-label">Session type</span>
+                <span style={{ textTransform: 'capitalize' }}>{t.mode.join(' / ')}</span>
+              </div>
+              <div className="tm-detail-row">
+                <span className="tm-dr-label">Price</span>
+                <span>{t.priceRange}</span>
+              </div>
+              <div className="tm-detail-row">
+                <span className="tm-dr-label">Availability</span>
+                <span>{t.availability}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -735,21 +907,34 @@ export default function TherapistMatch() {
   const [prefs,    setPrefs]    = useState(null)
   const [matches,  setMatches]  = useState([])
   const [selected, setSelected] = useState(null)
+  const [activeChats, setActiveChats] = useState(loadActiveTherapistChats)
+
+  useEffect(() => {
+    saveActiveTherapistChats(activeChats)
+  }, [activeChats])
 
   function handleMatch(p) {
     setPrefs(p)
-    setMatches(runMatching(PROFILE, p))
+    setMatches(runMatching(PROFILE, p).filter(t => !activeChats.some(active => active.id === t.id)))
     setView('results')
+  }
+
+  function openChat(therapist) {
+    setActiveChats(prev => (
+      prev.some(t => t.id === therapist.id) ? prev : [...prev, therapist]
+    ))
+    setSelected(therapist)
+    setView('chat')
   }
 
   return (
     <>
       <style>{TM_STYLES}</style>
-      {view === 'profile'  && <NeedsProfileView profile={PROFILE} onFind={() => setView('prefs')} />}
+      {view === 'profile'  && <NeedsProfileView profile={PROFILE} activeChats={activeChats} onOpenChat={openChat} onFind={() => setView('prefs')} />}
       {view === 'prefs'    && <PreferencesView onBack={() => setView('profile')} onMatch={handleMatch} />}
       {view === 'results'  && <ResultsView matches={matches} prefs={prefs} onSelect={t => { setSelected(t); setView('detail') }} onBack={() => setView('prefs')} />}
-      {view === 'detail'   && selected && <DetailView therapist={selected} prefs={prefs} onChat={() => setView('chat')} onBack={() => setView('results')} />}
-      {view === 'chat'     && selected && <ChatView therapist={selected} onBack={() => setView('detail')} />}
+      {view === 'detail'   && selected && <DetailView therapist={selected} prefs={prefs} onChat={() => openChat(selected)} onBack={() => setView('results')} />}
+      {view === 'chat'     && selected && <ChatView therapist={selected} onBack={() => setView('profile')} />}
     </>
   )
 }
@@ -760,8 +945,11 @@ const TM_STYLES = `
   /* layout */
   .tm-profile-grid {
     display: grid;
-    grid-template-columns: 180px 1fr 260px;
+    grid-template-columns: 1.2fr 1fr;
     gap: 16px;
+  }
+  .tm-overall-card {
+    display: none;
   }
   .tm-overall-card, .tm-concerns-card, .tm-top3-card {
     background: var(--panel-strong);
@@ -790,6 +978,72 @@ const TM_STYLES = `
     transition: border-color 140ms, color 140ms;
   }
   .tm-regen-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .tm-active-card {
+    background: var(--panel-strong);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 6px 18px rgba(23,48,66,0.06);
+  }
+  .tm-active-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .tm-active-head .tm-section-label {
+    margin-bottom: 0;
+  }
+  .tm-active-head span {
+    min-width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+  .tm-active-empty {
+    border: 1px dashed var(--line);
+    border-radius: 16px;
+    padding: 16px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.5;
+    background: rgba(255,255,255,0.58);
+  }
+  .tm-active-list {
+    display: grid;
+    gap: 10px;
+  }
+  .tm-active-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: rgba(218,243,236,0.22);
+  }
+  .tm-active-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .tm-active-info strong {
+    display: block;
+    font-size: 0.94rem;
+    margin-bottom: 3px;
+  }
+  .tm-active-info span {
+    display: block;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
 
   /* concern bars */
   .tm-bar-list { display: grid; gap: 10px; }
@@ -978,14 +1232,6 @@ const TM_STYLES = `
     margin: 0 auto 12px;
   }
   .tm-booked-confirm p { font-size: 0.86rem; color: var(--muted); margin: 6px 0 0; }
-  .tm-chat-btn {
-    width: 100%; padding: 12px; border-radius: 14px;
-    border: 1.5px solid var(--line); background: transparent;
-    color: var(--accent); font-size: 0.9rem; font-weight: 700;
-    transition: border-color 140ms, background 140ms;
-  }
-  .tm-chat-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
-
   /* chat */
   .tm-chat-root {
     display: flex; flex-direction: column;
@@ -1000,8 +1246,73 @@ const TM_STYLES = `
   }
   .tm-back { background: none; border: none; color: var(--muted); font-size: 0.9rem; font-weight: 600; padding: 0; }
   .tm-back--inline { font-size: 1.1rem; margin-right: 4px; }
+  .tm-chat-profile-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 6px 10px 6px 6px;
+    border: 1px solid transparent;
+    border-radius: 14px;
+    background: transparent;
+    text-align: left;
+    color: inherit;
+    cursor: pointer;
+    transition: background 140ms, border-color 140ms, box-shadow 140ms;
+  }
+  .tm-chat-profile-trigger:hover,
+  .tm-chat-profile-trigger--open {
+    background: rgba(218,243,236,0.42);
+    border-color: rgba(15,118,110,0.18);
+    box-shadow: 0 6px 16px rgba(15,118,110,0.08);
+  }
+  .tm-chat-profile-copy {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
   .tm-chat-name { display: block; font-size: 0.92rem; }
   .tm-chat-status { font-size: 0.72rem; color: var(--muted); }
+  .tm-chat-profile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .tm-profile-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15,23,42,0.38);
+    backdrop-filter: blur(4px);
+  }
+  .tm-profile-modal {
+    position: relative;
+    width: min(720px, 100%);
+    max-height: min(760px, calc(100vh - 48px));
+    overflow-y: auto;
+    background: var(--panel-strong);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 24px 70px rgba(15,23,42,0.24);
+  }
+  .tm-profile-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--muted);
+    font-weight: 900;
+    cursor: pointer;
+  }
   .tm-appt-trigger {
     margin-left: auto; padding: 7px 14px; border-radius: 999px;
     border: 1.5px solid var(--accent); background: transparent;
@@ -1014,6 +1325,19 @@ const TM_STYLES = `
     border-bottom: 1px solid var(--line);
     background: rgba(218,243,236,0.3);
     flex-shrink: 0;
+  }
+  .tm-appt-hanger {
+    padding: 0 18px 10px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(255,255,255,0.9);
+  }
+  .tm-appt-hanger .tm-appt-banner {
+    margin-top: -1px;
+  }
+  .tm-selected-date {
+    margin: -2px 0 2px;
+    color: var(--muted);
+    font-size: 0.78rem;
   }
   .tm-chat-messages {
     flex: 1; overflow-y: auto; padding: 18px;
@@ -1033,14 +1357,50 @@ const TM_STYLES = `
   .tm-appt-msg { display: flex; flex-direction: column; align-items: center; gap: 4px; }
   .tm-appt-banner {
     display: flex; gap: 12px; align-items: flex-start;
+    text-align: left;
     background: linear-gradient(135deg,rgba(218,243,236,0.8),rgba(255,255,255,0.9));
     border: 1px solid rgba(15,118,110,0.2); border-radius: 16px;
-    padding: 14px 18px; width: 90%; max-width: 400px;
+    padding: 12px 14px; width: 100%;
     box-shadow: 0 4px 14px rgba(15,118,110,0.1);
+    color: var(--ink);
+    cursor: pointer;
   }
-  .tm-appt-icon { font-size: 1.3rem; flex-shrink: 0; }
+  .tm-appt-banner--expanded {
+    box-shadow: 0 8px 22px rgba(15,118,110,0.14);
+  }
+  .tm-appt-icon {
+    flex-shrink: 0;
+    padding: 4px 7px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .tm-appt-banner-body {
+    flex: 1;
+    min-width: 0;
+  }
   .tm-appt-banner strong { display: block; font-size: 0.92rem; }
   .tm-appt-banner p { margin: 3px 0 0; font-size: 0.8rem; color: var(--muted); }
+  .tm-appt-expanded {
+    display: grid;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(15,118,110,0.16);
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+  .tm-appt-chevron {
+    align-self: center;
+    color: var(--accent);
+    font-size: 0.74rem;
+    font-weight: 800;
+  }
   .tm-appt-desc { font-style: italic; }
   .tm-appt-time { font-size: 0.7rem; color: var(--muted); }
   .tm-chat-input-bar {
@@ -1069,5 +1429,6 @@ const TM_STYLES = `
     .tm-prefs-grid   { grid-template-columns: 1fr; }
     .tm-detail-grid  { grid-template-columns: 1fr; }
     .tm-result-card  { flex-wrap: wrap; }
+    .tm-chat-profile-grid { grid-template-columns: 1fr; }
   }
 `
