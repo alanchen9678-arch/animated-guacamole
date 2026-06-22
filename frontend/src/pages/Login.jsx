@@ -4,7 +4,7 @@ import { useUser } from '../context/UserContext.jsx'
 export default function Login({ onClose }) {
   const { login, register } = useUser()
   const [mode, setMode] = useState('login')
-  const [form, setForm] = useState({ username: '', email: '', password: '', firstName: '' })
+  const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '', firstName: '' })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -15,6 +15,14 @@ export default function Login({ onClose }) {
 
   async function submit(e) {
     e.preventDefault()
+    if (mode === 'register' && form.password !== form.confirm) {
+      setError('Passwords do not match.')
+      return
+    }
+    if (mode === 'register' && form.password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
     setBusy(true)
     setError('')
     try {
@@ -29,6 +37,12 @@ export default function Login({ onClose }) {
     } finally {
       setBusy(false)
     }
+  }
+
+  function switchMode(next) {
+    setMode(next)
+    setError('')
+    setForm({ username: '', email: '', password: '', confirm: '', firstName: '' })
   }
 
   return (
@@ -114,6 +128,16 @@ export default function Login({ onClose }) {
         .auth-submit:hover:not(:disabled) { background: #3a5244; }
         .auth-submit:disabled { opacity: 0.6; cursor: default; }
 
+        .auth-hint {
+          text-align: center; margin-top: 16px;
+          font-size: 0.82rem; color: #6b6460;
+        }
+        .auth-hint button {
+          background: none; border: none; color: #4d6b58;
+          font-weight: 700; cursor: pointer; padding: 0; font-size: inherit;
+          text-decoration: underline; text-underline-offset: 2px;
+        }
+
         .auth-close {
           position: absolute; top: 16px; right: 16px;
           width: 32px; height: 32px; border-radius: 50%;
@@ -138,14 +162,14 @@ export default function Login({ onClose }) {
             <div className="auth-tabs">
               <button
                 className={`auth-tab${mode === 'login' ? ' active' : ''}`}
-                onClick={() => { setMode('login'); setError('') }}
+                onClick={() => switchMode('login')}
                 type="button"
               >
                 Log in
               </button>
               <button
                 className={`auth-tab${mode === 'register' ? ' active' : ''}`}
-                onClick={() => { setMode('register'); setError('') }}
+                onClick={() => switchMode('register')}
                 type="button"
               >
                 Sign up
@@ -190,12 +214,29 @@ export default function Login({ onClose }) {
                 />
               </div>
 
+              {mode === 'register' && (
+                <div className="auth-field">
+                  <label>Confirm password</label>
+                  <input
+                    name="confirm" type="password" value={form.confirm} onChange={update}
+                    placeholder="••••••••" required autoComplete="new-password"
+                  />
+                </div>
+              )}
+
               {error && <div className="auth-error">{error}</div>}
 
               <button className="auth-submit" type="submit" disabled={busy}>
                 {busy ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}
               </button>
             </form>
+
+            <p className="auth-hint">
+              {mode === 'login'
+                ? <>No account? <button type="button" onClick={() => switchMode('register')}>Sign up free</button></>
+                : <>Already have an account? <button type="button" onClick={() => switchMode('login')}>Log in</button></>
+              }
+            </p>
           </div>
 
           <button className="auth-close" onClick={onClose} aria-label="Close">✕</button>

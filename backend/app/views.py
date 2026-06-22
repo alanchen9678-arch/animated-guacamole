@@ -18,6 +18,7 @@ def _user_payload(user):
         'firstName': user.first_name,
         'plan': profile.plan,
         'streak': profile.streak,
+        'mood': profile.mood,
     }
 
 
@@ -33,6 +34,11 @@ class RegisterView(APIView):
         if not username or not password:
             return Response(
                 {'error': 'Username and password are required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if len(password) < 8:
+            return Response(
+                {'error': 'Password must be at least 8 characters.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if User.objects.filter(username=username).exists():
@@ -85,4 +91,23 @@ class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        return Response(_user_payload(request.user))
+
+    def patch(self, request):
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        user = request.user
+
+        if 'firstName' in request.data:
+            user.first_name = request.data['firstName'].strip()
+            user.save(update_fields=['first_name'])
+        if 'email' in request.data:
+            user.email = request.data['email'].strip()
+            user.save(update_fields=['email'])
+        if 'mood' in request.data:
+            profile.mood = request.data['mood']
+            profile.save(update_fields=['mood'])
+        if 'streak' in request.data:
+            profile.streak = int(request.data['streak'])
+            profile.save(update_fields=['streak'])
+
         return Response(_user_payload(request.user))

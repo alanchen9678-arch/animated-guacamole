@@ -58,8 +58,24 @@ export function UserProvider({ children }) {
     setUser(null)
   }, [token])
 
+  const updateProfile = useCallback(async (fields) => {
+    const currentToken = localStorage.getItem('aurora_token')
+    const res = await fetch(`${API}/me/`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Token ${currentToken}`,
+      },
+      body: JSON.stringify(fields),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Update failed.')
+    setUser(data)
+    return data
+  }, [])
+
   return (
-    <UserContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <UserContext.Provider value={{ user, token, loading, login, register, logout, updateProfile }}>
       {children}
     </UserContext.Provider>
   )

@@ -2,6 +2,8 @@ import { useUser } from '../context/UserContext.jsx'
 import { useNavigation } from '../context/NavigationContext.jsx'
 import { dashboardSnapshot } from '../services/api.js'
 
+const NEXT_CHECKIN = 'Today at 8:00 PM'
+
 const features = [
   {
     id: 'chatbot',
@@ -42,7 +44,7 @@ const features = [
 ]
 
 export default function Home() {
-  const user       = useUser()
+  const { user }   = useUser()
   const { navigate } = useNavigation()
 
   return (
@@ -234,7 +236,7 @@ export default function Home() {
       `}</style>
 
       <header className="page-header">
-        <h2 className="home-greeting">Good day, {user.firstName}.</h2>
+        <h2 className="home-greeting">Good day, {user?.firstName || user?.username}.</h2>
         <p className="home-sub">
           Here&apos;s your Aurora snapshot — your mood, your streak, and what to explore today.
         </p>
@@ -243,16 +245,18 @@ export default function Home() {
       <div className="today-bar">
         <div className="today-stat">
           <div className="label">Mood</div>
-          <div className="value" style={{ textTransform: 'capitalize' }}>{user.mood}</div>
+          <div className="value" style={{ textTransform: 'capitalize' }}>
+            {user?.mood || '—'}
+          </div>
         </div>
         <div className="today-stat">
           <div className="label">Streak</div>
-          <div className="value">{dashboardSnapshot.streakDays} days</div>
+          <div className="value">{user?.streak ?? 0} days</div>
         </div>
         <div className="today-stat">
           <div className="label">Next check-in</div>
           <div className="value" style={{ fontSize: '1rem', paddingTop: '4px' }}>
-            {dashboardSnapshot.nextCheckIn}
+            {NEXT_CHECKIN}
           </div>
         </div>
       </div>
