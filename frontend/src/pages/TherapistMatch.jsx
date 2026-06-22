@@ -482,12 +482,17 @@ function ResultsView({ matches, prefs, onSelect, onBack }) {
 
 // ─── detail view ──────────────────────────────────────────────────────────────
 
-function DetailView({ therapist: t, prefs, onChat, onBack }) {
+function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
   const [shareChat,    setShareChat]    = useState(false)
   const [shareJournal, setShareJournal] = useState(false)
   const [insurer, setInsurer]           = useState(prefs.insurance)
   const [memberId, setMemberId]         = useState('')
   const [booked, setBooked]             = useState(false)
+
+  function handleBook() {
+    setBooked(true)
+    onBook?.(t)
+  }
 
   return (
     <section className="page">
@@ -617,7 +622,7 @@ function DetailView({ therapist: t, prefs, onChat, onBack }) {
                 <button
                   className="tm-primary-btn"
                   style={{ width: '100%', marginTop: 4 }}
-                  onClick={() => setBooked(true)}
+                  onClick={handleBook}
                 >
                   Confirm &amp; book session
                 </button>
@@ -943,7 +948,7 @@ export default function TherapistMatch() {
       {view === 'profile'  && <NeedsProfileView profile={PROFILE} activeChats={activeChats} onOpenChat={openChat} onFind={() => setView('prefs')} />}
       {view === 'prefs'    && <PreferencesView onBack={() => setView('profile')} onMatch={handleMatch} />}
       {view === 'results'  && <ResultsView matches={matches} prefs={prefs} onSelect={t => { setSelected(t); setView('detail') }} onBack={() => setView('prefs')} />}
-      {view === 'detail'   && selected && <DetailView therapist={selected} prefs={prefs} onChat={() => openChat(selected)} onBack={() => setView('results')} />}
+      {view === 'detail'   && selected && <DetailView therapist={selected} prefs={prefs} onChat={() => openChat(selected)} onBook={openChat} onBack={() => setView('results')} />}
       {view === 'chat'     && selected && <ChatView therapist={selected} onBack={() => setView('profile')} />}
     </>
   )
