@@ -1,7 +1,13 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from .models import Conversation, Message
+from .models import (
+    Conversation,
+    JournalDoodle,
+    JournalPrivacySettings,
+    Message,
+    ThoughtJournalEntry,
+)
 
 
 class ConversationModelTests(TestCase):
@@ -51,3 +57,43 @@ class ConversationModelTests(TestCase):
         self.assertEqual(messages, [first_message, second_message])
         self.assertEqual(messages[0].role, 'user')
         self.assertEqual(messages[1].role, 'assistant')
+
+
+class JournalModelTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username='journal-user',
+            password='testpass123',
+        )
+
+    def test_thought_journal_entries_are_owned_by_user(self):
+        entry = ThoughtJournalEntry.objects.create(
+            user=self.user,
+            title='Evening reflection',
+            content='Today felt more manageable after my walk.',
+        )
+
+        self.assertEqual(entry.user, self.user)
+        self.assertEqual(self.user.thought_journal_entries.count(), 1)
+        self.assertEqual(entry.title, 'Evening reflection')
+
+    def test_doodle_can_be_linked_to_entry_and_user(self):
+        entry = ThoughtJournalEntry.objects.create(
+            user=self.user,
+            content='Sketching helped me slow down.',
+        )
+        doodle = JournalDoodle.objects.create(
+            user=self.user,
+            entry=entry,
+            doodle_data='data:image/png;base64,abc123',
+        )
+
+        self.assertEqual(doodle.user, self.user)
+        self.assertEqual(doodle.entry, entry)
+        self.assertEqual(entry.doodles.count(), 1)
+
+    def test_journal_privacy_settings_default_to_no_external_access(self):
+        privacy = JournalPrivacySettings.objects.create(user=self.user)
+
+        self.assertFalse(privacy.allow_ai_access)
+        self.assertFalse(privacy.allow_therapist_access)

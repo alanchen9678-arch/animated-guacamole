@@ -63,3 +63,71 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.conversation_id} - {self.role}"
+
+
+class JournalPrivacySettings(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='journal_privacy_settings',
+    )
+    allow_ai_access = models.BooleanField(default=False)
+    allow_therapist_access = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = 'journal privacy settings'
+
+    def __str__(self):
+        return f'Journal privacy settings for {self.user.username}'
+
+
+class ThoughtJournalEntry(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='thought_journal_entries',
+    )
+    title = models.CharField(max_length=255, blank=True, default='')
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'created_at']),
+        ]
+
+    def __str__(self):
+        label = self.title or 'Untitled entry'
+        return f'{self.user.username} - {label}'
+
+
+class JournalDoodle(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='journal_doodles',
+    )
+    entry = models.ForeignKey(
+        ThoughtJournalEntry,
+        on_delete=models.SET_NULL,
+        related_name='doodles',
+        null=True,
+        blank=True,
+    )
+    doodle_data = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'created_at']),
+            models.Index(fields=['entry', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f'Doodle {self.pk} for {self.user.username}'
