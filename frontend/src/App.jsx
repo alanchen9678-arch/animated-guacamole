@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
-import { UserProvider } from './context/UserContext.jsx'
+import { UserProvider, useUser } from './context/UserContext.jsx'
 import { NavigationProvider, useNavigation } from './context/NavigationContext.jsx'
 import { pageConfig } from './routes/AppRoutes.jsx'
 import Home from './pages/Home.jsx'
+import Login from './pages/Login.jsx'
 
 const features = [
   { id: 'chatbot',   title: 'AI Chatbot',       desc: "Talk through what's on your mind with Aurora's AI, available around the clock.",          tag: '24/7'        },
@@ -29,17 +30,19 @@ function BellIcon() {
 }
 
 function AppShell() {
-  const { activePage, navigate }      = useNavigation()
-  const [isLoggedIn, setIsLoggedIn]   = useState(false)
-  const [notifOpen, setNotifOpen]     = useState(false)
+  const { activePage, navigate }    = useNavigation()
+  const { user, logout, loading }   = useUser()
+  const [showAuth, setShowAuth]     = useState(false)
+  const [notifOpen, setNotifOpen]   = useState(false)
+
+  const isLoggedIn = !!user
 
   const ActiveComponent = useMemo(
     () => pageConfig.find((p) => p.id === activePage)?.component ?? Home,
     [activePage],
   )
 
-  function handleLogin()  { setIsLoggedIn(true) }
-  function handleLogout() { setIsLoggedIn(false); navigate('home') }
+  function handleLogout() { logout(); navigate('home') }
 
   return (
     <div className="app-root">
@@ -591,15 +594,17 @@ function AppShell() {
         }
       `}</style>
 
+      {showAuth && <Login onClose={() => setShowAuth(false)} />}
+
       {/* ── top bar ── */}
       <header className="topbar">
         <div className="topbar-actions">
           {isLoggedIn ? (
             <button className="btn-outline" onClick={handleLogout}>Log out</button>
-          ) : (
+          ) : loading ? null : (
             <>
-              <button className="btn-outline" onClick={handleLogin}>Log in</button>
-              <button className="btn-primary" onClick={handleLogin}>Sign up</button>
+              <button className="btn-outline" onClick={() => setShowAuth(true)}>Log in</button>
+              <button className="btn-primary" onClick={() => setShowAuth(true)}>Sign up</button>
             </>
           )}
         </div>
@@ -648,8 +653,8 @@ function AppShell() {
               peer community, and reflective tools — all in one safe, private space.
             </p>
             <div className="landing-cta">
-              <button className="btn-primary-lg" onClick={handleLogin}>Get started free</button>
-              <button className="btn-outline-lg" onClick={handleLogin}>Log in</button>
+              <button className="btn-primary-lg" onClick={() => setShowAuth(true)}>Get started free</button>
+              <button className="btn-outline-lg" onClick={() => setShowAuth(true)}>Log in</button>
             </div>
           </div>
 
