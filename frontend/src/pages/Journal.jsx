@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
+import { ColorSwatchPicker } from '../components/ui/heroui-color-swatch-picker.jsx'
+import ColorPickerMenu from '../components/ui/color-picker-menu.jsx'
 
 // ─── mood config ───────────────────────────────────────────────────────────────
 
@@ -133,6 +135,11 @@ function pickResponse(tone) {
   const pool = AI_RESPONSES[tone]
   if (typeof pool === 'object' && !Array.isArray(pool)) return pool
   return { tone, text: pool[Math.floor(Math.random() * pool.length)] }
+}
+
+function findMoodByColor(color) {
+  const normalized = color.toUpperCase()
+  return MOODS.find((mood) => mood.color.toUpperCase() === normalized) ?? null
 }
 
 // ─── calendar ─────────────────────────────────────────────────────────────────
@@ -371,22 +378,36 @@ function DoodleCanvas({ bgColor, value, onChange, disabled = false }) {
     <div className="jn-doodle-wrap">
       <div className="jn-doodle-toolbar">
         <div className="jn-color-row">
-          {PRESET_COLORS.map(c => (
-            <button
-              key={c}
-              className={`jn-swatch${brushColor === c && !eraser ? ' jn-swatch--active' : ''}`}
-              style={{ background: c }}
-              onClick={() => { setBrushColor(c); setEraser(false) }}
-              disabled={disabled}
-              aria-label={c}
-            />
-          ))}
-          <input
-            type="color" value={brushColor}
-            onChange={e => { setBrushColor(e.target.value); setEraser(false) }}
-            className="jn-color-input" title="Custom color"
-            aria-label="Custom color"
+          <ColorSwatchPicker
+            value={brushColor}
+            onChange={(color) => {
+              setBrushColor(color.toString('hex'))
+              setEraser(false)
+            }}
+            size="sm"
+            aria-label="Notebook brush color"
+          >
+            {PRESET_COLORS.map((color) => (
+              <ColorSwatchPicker.Item
+                key={color}
+                color={color}
+                isDisabled={disabled}
+                aria-label={`Brush color ${color}`}
+              >
+                <ColorSwatchPicker.Swatch />
+                <ColorSwatchPicker.Indicator />
+              </ColorSwatchPicker.Item>
+            ))}
+          </ColorSwatchPicker>
+          <ColorPickerMenu
+            color={brushColor}
+            onChange={(nextColor) => {
+              setBrushColor(nextColor)
+              setEraser(false)
+            }}
             disabled={disabled}
+            presetColors={PRESET_COLORS}
+            ariaLabel="Open custom brush color picker"
           />
         </div>
         <div className="jn-toolbar-right">
@@ -509,19 +530,31 @@ export default function Journal() {
         <div className="jn-color-controls">
         <label className="jn-color-ctrl jn-mood-marker-ctrl">
           <span>Mood</span>
-          <div className="jn-today-mood-row" aria-label="Today's mood">
-            {MOODS.map(m => (
-              <button
-                key={m.id}
-                className={`jn-today-mood${todayMood === m.id ? ' jn-today-mood--active' : ''}`}
-                style={{ '--mc': m.color }}
-                onClick={() => setTodayMood(m.id)}
-                title={m.label}
-                aria-label={m.label}
-              >
-                <span style={{ background: m.color }} />
-              </button>
-            ))}
+          <div className="jn-mood-picker-inline">
+            <ColorSwatchPicker
+              value={todayMood ? MOOD_MAP[todayMood]?.color : undefined}
+              onChange={(color) => {
+                const match = findMoodByColor(color.toString('hex'))
+                if (match) setTodayMood(match.id)
+              }}
+              size="sm"
+              aria-label="Today's mood"
+            >
+              {MOODS.map((mood) => (
+                <ColorSwatchPicker.Item
+                  key={mood.id}
+                  color={mood.color}
+                  aria-label={mood.label}
+                  title={mood.label}
+                >
+                  <ColorSwatchPicker.Swatch />
+                  <ColorSwatchPicker.Indicator />
+                </ColorSwatchPicker.Item>
+              ))}
+            </ColorSwatchPicker>
+            <strong className="jn-mood-selected-label">
+              {todayMood ? MOOD_MAP[todayMood]?.label : 'Pick a mood'}
+            </strong>
           </div>
         </label>
         <div className="jn-tab-toggle">
@@ -694,17 +727,18 @@ const JN_STYLES = `
     gap: 12px; flex-wrap: wrap;
   }
   .jn-entry-topline strong { display: block; font-size: 1rem; color: var(--ink); }
-  .jn-today-mood-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .jn-today-mood {
-    width: 28px; height: 28px; border-radius: 50%;
-    border: 2px solid transparent; background: var(--panel-strong);
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 8px rgba(46,42,38,0.08);
-    transition: transform 120ms, border-color 120ms;
+  .jn-mood-picker-inline {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   }
-  .jn-today-mood span { width: 15px; height: 15px; border-radius: 50%; display: block; }
-  .jn-today-mood:hover,
-  .jn-today-mood--active { border-color: var(--mc); transform: translateY(-1px); }
+  .jn-mood-picker-inline .color-swatch-picker { gap: 0.38rem; }
+  .jn-mood-picker-inline .color-swatch-picker__item {
+    box-shadow: inset 0 0 0 1px rgba(46,42,38,0.08);
+  }
+  .jn-mood-selected-label {
+    color: var(--ink);
+    font-size: 0.84rem;
+    font-weight: 700;
+  }
   .jn-mood-marker-ctrl { min-width: 232px; }
 
   /* calendar */
@@ -945,29 +979,95 @@ const JN_STYLES = `
     padding: 10px 14px; background: rgba(255,255,255,0.9); border-bottom: 1px solid var(--line);
   }
   .jn-color-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
-  .jn-swatch {
-    width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent;
-    transition: transform 120ms, border-color 120ms;
+  .jn-color-row .color-swatch-picker { gap: 0.38rem; }
+  .jn-color-row .color-swatch-picker__item {
+    box-shadow: inset 0 0 0 1px rgba(46,42,38,0.08);
   }
-  .jn-swatch:hover { transform: scale(1.2); }
-  .jn-swatch--active { border-color: var(--ink); transform: scale(1.15); }
-  .jn-swatch:disabled { cursor: not-allowed; opacity: 0.45; transform: none; }
-  .jn-color-input {
-    width: 24px; height: 24px; border-radius: 50%;
-    border: 2px solid var(--line); padding: 0; cursor: pointer;
-    background: conic-gradient(#dc2626, #f97316, #fbbf24, #16a34a, #2563eb, #7c3aed, #dc2626);
-    overflow: hidden;
+  .cp-wrap { position: relative; }
+  .cp-trigger {
+    position: relative;
+    width: 30px; height: 30px; padding: 0;
+    border-radius: 999px; border: 1.5px solid var(--line);
+    background: rgba(255,255,255,0.9);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(46,42,38,0.1);
+    transition: transform 120ms, border-color 120ms, box-shadow 120ms;
   }
-  .jn-color-input::-webkit-color-swatch-wrapper { padding: 0; }
-  .jn-color-input::-webkit-color-swatch {
-    border: 0;
-    background: transparent;
+  .cp-trigger:hover:not(:disabled),
+  .cp-trigger--open {
+    transform: translateY(-1px);
+    border-color: var(--accent);
+    box-shadow: 0 8px 18px rgba(46,42,38,0.14);
   }
-  .jn-color-input::-moz-color-swatch {
-    border: 0;
-    background: transparent;
+  .cp-trigger--selected {
+    border-color: var(--ink);
+    box-shadow: 0 4px 12px rgba(46,42,38,0.14);
   }
-  .jn-color-input:disabled { cursor: not-allowed; opacity: 0.45; }
+  .cp-trigger:disabled { cursor: not-allowed; opacity: 0.45; }
+  .cp-trigger-wheel {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: conic-gradient(#ff3b30, #ff9500, #ffcc00, #4cd964, #5ac8fa, #007aff, #5856d6, #ff2d55, #ff3b30);
+  }
+  .cp-trigger-check {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; pointer-events: none;
+  }
+  .cp-trigger-check--dark { color: var(--ink); }
+  .cp-trigger-check svg {
+    width: 11px; height: 11px;
+    stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+    filter: drop-shadow(0 1px 2px rgba(46,42,38,0.28));
+  }
+  .cp-trigger-dot {
+    position: absolute; right: -1px; bottom: -1px;
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid var(--panel-strong);
+    box-shadow: 0 2px 6px rgba(46,42,38,0.18);
+  }
+  .cp-popover {
+    position: absolute; top: calc(100% + 8px); left: 0; z-index: 30;
+    width: 220px; padding: 12px; border-radius: 16px;
+    background: rgba(250,244,232,0.98); border: 1px solid var(--line);
+    box-shadow: 0 18px 44px rgba(46,42,38,0.18);
+    display: flex; flex-direction: column; gap: 10px;
+    backdrop-filter: blur(10px);
+  }
+  .cp-square {
+    position: relative; width: 100%; height: 132px;
+    border-radius: 12px; overflow: hidden; cursor: crosshair;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
+  }
+  .cp-square-handle {
+    position: absolute; width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid #fff; box-shadow: 0 1px 8px rgba(0,0,0,0.2);
+    transform: translate(-50%, -50%);
+  }
+  .cp-hue {
+    width: 100%; margin: 0;
+    appearance: none; height: 10px; border-radius: 999px; outline: none;
+    background: linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+  }
+  .cp-hue::-webkit-slider-thumb {
+    appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid #fff; background: var(--ink); box-shadow: 0 1px 5px rgba(0,0,0,0.22);
+  }
+  .cp-hue::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid #fff; background: var(--ink); box-shadow: 0 1px 5px rgba(0,0,0,0.22);
+  }
+  .cp-input-row { display: flex; align-items: center; gap: 8px; }
+  .cp-input {
+    flex: 1; min-width: 0; height: 34px; padding: 0 10px;
+    border-radius: 10px; border: 1.5px solid var(--line);
+    background: rgba(255,255,255,0.85); color: var(--ink);
+    font-size: 0.82rem; font-weight: 600;
+  }
+  .cp-input:focus { outline: 2px solid rgba(58,104,152,0.2); border-color: var(--blue); }
+  .cp-preview {
+    width: 34px; height: 34px; border-radius: 10px;
+    border: 1.5px solid var(--line); flex-shrink: 0;
+  }
   .jn-toolbar-right { display: flex; align-items: center; gap: 6px; margin-left: auto; }
   .jn-size-row { display: flex; align-items: center; gap: 4px; }
   .jn-size-btn { width: 30px; height: 30px; border-radius: 8px; border: 1.5px solid var(--line); background: transparent; display: flex; align-items: center; justify-content: center; transition: border-color 120ms, background 120ms; }

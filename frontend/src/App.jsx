@@ -32,8 +32,9 @@ function BellIcon() {
 
 function AppShell() {
   const { activePage, navigate }    = useNavigation()
-  const { user, logout, loading }   = useUser()
+  const { user, loading }   = useUser()
   const [showAuth, setShowAuth]     = useState(false)
+  const [authMode, setAuthMode]     = useState('login')
   const [notifOpen, setNotifOpen]   = useState(false)
 
   const isLoggedIn = !!user
@@ -42,6 +43,11 @@ function AppShell() {
     () => pageConfig.find((p) => p.id === activePage)?.component ?? Home,
     [activePage],
   )
+
+  function openAuth(mode) {
+    setAuthMode(mode)
+    setShowAuth(true)
+  }
 
   return (
     <div className="app-root">
@@ -602,7 +608,7 @@ function AppShell() {
         }
       `}</style>
 
-      {showAuth && <Login onClose={() => setShowAuth(false)} />}
+      {showAuth && <Login initialMode={authMode} onClose={() => setShowAuth(false)} />}
 
       {/* ── top bar ── */}
       <header className="topbar">
@@ -661,8 +667,8 @@ function AppShell() {
               peer community, and reflective tools — all in one safe, private space.
             </p>
             <div className="landing-cta">
-              <button className="btn-primary-lg" onClick={() => setShowAuth(true)}>Get started free</button>
-              <button className="btn-outline-lg" onClick={() => setShowAuth(true)}>Log in</button>
+              <button className="btn-primary-lg" onClick={() => openAuth('register')}>Get started free</button>
+              <button className="btn-outline-lg" onClick={() => openAuth('login')}>Log in</button>
             </div>
           </div>
 

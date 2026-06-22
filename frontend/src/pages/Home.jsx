@@ -8,7 +8,7 @@ const features = [
   {
     id: 'chatbot',
     title: 'AI Chatbot',
-    desc: 'Talk through what\'s on your mind with Aurora\'s AI, available around the clock.',
+    desc: "Talk through what's on your mind with Aurora's AI, available around the clock.",
     tag: '24/7',
   },
   {
@@ -32,7 +32,7 @@ const features = [
   {
     id: 'community',
     title: 'Peer Support',
-    desc: 'Connect anonymously with others who understand what you\'re going through.',
+    desc: "Connect anonymously with others who understand what you're going through.",
     tag: 'Anonymous',
   },
   {
@@ -44,7 +44,7 @@ const features = [
 ]
 
 export default function Home() {
-  const { user }   = useUser()
+  const { user } = useUser()
   const { navigate } = useNavigation()
 
   return (
@@ -76,12 +76,20 @@ export default function Home() {
           display: flex;
           flex-direction: column;
           gap: 8px;
+          text-align: left;
+          width: 100%;
+          cursor: pointer;
           transition: transform 140ms ease, box-shadow 140ms ease;
         }
 
         .feature-card:hover {
           transform: translateY(-2px);
           box-shadow: 0 14px 32px rgba(23, 48, 66, 0.1);
+        }
+
+        .feature-card:focus-visible {
+          outline: 3px solid rgba(58, 104, 152, 0.28);
+          outline-offset: 3px;
         }
 
         .feature-tag {
@@ -108,23 +116,6 @@ export default function Home() {
           font-size: 0.9rem;
           line-height: 1.5;
           flex: 1;
-        }
-
-        .feature-card-btn {
-          margin-top: 4px;
-          padding: 8px 14px;
-          border-radius: 999px;
-          border: 1.5px solid var(--accent);
-          background: transparent;
-          color: var(--accent);
-          font-size: 0.82rem;
-          font-weight: 700;
-          align-self: flex-start;
-          transition: background 140ms, color 140ms;
-        }
-        .feature-card-btn:hover {
-          background: var(--accent);
-          color: #fff;
         }
 
         .today-bar {
@@ -238,7 +229,7 @@ export default function Home() {
       <header className="page-header">
         <h2 className="home-greeting">Good day, {user?.firstName || user?.username}.</h2>
         <p className="home-sub">
-          Here&apos;s your Aurora snapshot — your mood, your streak, and what to explore today.
+          Here&apos;s your Aurora snapshot: your mood, your streak, and what to explore today.
         </p>
       </header>
 
@@ -246,7 +237,7 @@ export default function Home() {
         <div className="today-stat">
           <div className="label">Mood</div>
           <div className="value" style={{ textTransform: 'capitalize' }}>
-            {user?.mood || '—'}
+            {user?.mood || '-'}
           </div>
         </div>
         <div className="today-stat">
@@ -288,20 +279,18 @@ export default function Home() {
           Aurora tools
         </h3>
         <div className="feature-grid">
-          {features.map((f) => (
-            <div key={f.id} className="feature-card">
-              <span className="feature-tag">{f.tag}</span>
-              <h4>{f.title}</h4>
-              <p>{f.desc}</p>
-              {f.id === 'chatbot' && (
-                <button
-                  className="feature-card-btn"
-                  onClick={() => navigate('chatbot')}
-                >
-                  Start chatting →
-                </button>
-              )}
-            </div>
+          {features.map((feature) => (
+            <button
+              key={feature.id}
+              className="feature-card"
+              onClick={() => navigate(feature.id)}
+              type="button"
+              aria-label={`Open ${feature.title}`}
+            >
+              <span className="feature-tag">{feature.tag}</span>
+              <h4>{feature.title}</h4>
+              <p>{feature.desc}</p>
+            </button>
           ))}
         </div>
       </div>
