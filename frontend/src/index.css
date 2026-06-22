@@ -24,6 +24,8 @@
   --amber:        #9a6b2a;
   --amber-soft:   #f0e2c8;
   --shadow:       0 24px 60px rgba(46,42,38,0.12);
+  --demo-bg:      #ffffff;
+  --demo-text:    #1a1a1a;
 }
 
 * {
@@ -58,4 +60,12 @@ button {
 
 a {
   color: inherit;
+}
+
+.cascade-demo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100vh;
 }

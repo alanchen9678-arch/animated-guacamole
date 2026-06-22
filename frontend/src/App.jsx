@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { TextReveal } from './components/ui/cascade-text.jsx'
 import { UserProvider, useUser } from './context/UserContext.jsx'
 import { NavigationProvider, useNavigation } from './context/NavigationContext.jsx'
 import { pageConfig } from './routes/AppRoutes.jsx'
@@ -41,8 +42,6 @@ function AppShell() {
     () => pageConfig.find((p) => p.id === activePage)?.component ?? Home,
     [activePage],
   )
-
-  function handleLogout() { logout(); navigate('home') }
 
   return (
     <div className="app-root">
@@ -94,7 +93,7 @@ function AppShell() {
           z-index: 50;
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: center;
           padding: 0 28px;
           height: 62px;
           background: rgba(250,244,232,0.90);
@@ -103,6 +102,8 @@ function AppShell() {
         }
 
         .topbar-actions {
+          position: absolute;
+          left: 28px;
           display: flex;
           align-items: center;
           gap: 10px;
@@ -170,6 +171,10 @@ function AppShell() {
           font-weight: 800;
           letter-spacing: -0.03em;
           color: var(--ink);
+        }
+        .logo-reveal {
+          background: transparent;
+          border: none;
         }
 
         /* ── landing (not logged in) ────────────────────────── */
@@ -601,20 +606,20 @@ function AppShell() {
 
       {/* ── top bar ── */}
       <header className="topbar">
-        <div className="topbar-actions">
-          {isLoggedIn ? (
-            <button className="btn-outline" onClick={handleLogout}>Log out</button>
-          ) : loading ? null : (
-            <>
-              <button className="btn-outline" onClick={() => setShowAuth(true)}>Log in</button>
-              <button className="btn-primary" onClick={() => setShowAuth(true)}>Sign up</button>
-            </>
-          )}
-        </div>
+        <div className="topbar-actions" />
 
         <div className="aurora-logo">
           <div className="logo-mark" />
-          <span className="logo-text">Aurora</span>
+          <TextReveal
+            as="button"
+            text="Aurora"
+            fontSize="1.15rem"
+            color="var(--ink)"
+            hoverColor="var(--blue)"
+            className="logo-reveal"
+            style={{ background: 'transparent', border: 'none' }}
+            onClick={() => navigate('home')}
+          />
         </div>
       </header>
 
