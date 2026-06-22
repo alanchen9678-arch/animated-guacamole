@@ -836,7 +836,7 @@ function ChatView({ therapist: t, onBack }) {
         {isTyping && (
           <div className="tm-msg-row">
             <Avatar initials={t.initials} color={t.color} size={30} />
-            <div className="tm-bubble tm-bubble--them" style={{ padding: '14px 18px' }}>
+            <div className="tm-bubble tm-bubble--them tm-typing-bubble">
               <span className="dot" /><span className="dot" /><span className="dot" />
             </div>
           </div>
@@ -1369,6 +1369,12 @@ const TM_STYLES = `
   .tm-bubble--user .tm-bubble-text { color: #fff; }
   .tm-bubble-time { font-size: 0.66rem; color: rgba(46,42,38,0.35); align-self: flex-end; }
   .tm-bubble--user .tm-bubble-time { color: rgba(255,255,255,0.6); }
+  .tm-typing-bubble {
+    padding: 14px 18px;
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
+  }
   .tm-appt-msg { display: flex; flex-direction: column; align-items: center; gap: 4px; }
   .tm-appt-banner {
     display: flex; gap: 12px; align-items: flex-start;

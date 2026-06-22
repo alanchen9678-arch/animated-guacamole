@@ -615,7 +615,7 @@ function DMView({ peer, anonName, messages, setMessages, onBack, onLeave }) {
         {isTyping && (
           <div className="ps-msg-row">
             <AnonAvatar name={peer.name} color={peer.color} size={28} />
-            <div className="ps-bubble ps-bubble--other" style={{ padding: '14px 16px' }}>
+            <div className="ps-bubble ps-bubble--other ps-typing-bubble">
               <span className="dot"/><span className="dot"/><span className="dot"/>
             </div>
           </div>
@@ -928,6 +928,12 @@ const PS_STYLES = `
   .ps-bubble-time  { font-size: 0.66rem; color: rgba(46,42,38,0.35); align-self: flex-end; }
   .ps-bubble--self .ps-bubble-time { color: rgba(255,255,255,0.6); }
   .ps-self-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.6rem; font-weight: 800; flex-shrink: 0; }
+  .ps-typing-bubble {
+    padding: 14px 18px;
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
+  }
 
   /* moderation */
   .ps-mod-alert {
