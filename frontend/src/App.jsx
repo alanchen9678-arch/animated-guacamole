@@ -366,12 +366,15 @@ function AppShell() {
 
         .content {
           padding: 28px;
+          width: 100%;
         }
 
         /* ── page / card primitives ─────────────────────────── */
         .page {
           display: grid;
           gap: 18px;
+          width: min(100%, 980px);
+          margin: 0 auto;
           animation: fade-up 220ms ease;
         }
 

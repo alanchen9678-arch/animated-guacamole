@@ -461,7 +461,7 @@ export default function CheckIns() {
   const prevScores = history.length > 0 ? history[history.length - 1].scores : null
 
   return (
-    <section className="page">
+    <section className="page ci-page">
       <style>{CI_STYLES}</style>
 
       <header className="page-header">
@@ -511,6 +511,11 @@ export default function CheckIns() {
 // ─── styles ───────────────────────────────────────────────────────────────────
 
 const CI_STYLES = `
+  .ci-page {
+    min-height: calc(100vh - 220px);
+    align-content: start;
+  }
+
   .ci-section-label {
     font-size: 0.72rem; font-weight: 700;
     letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
@@ -617,7 +622,7 @@ const CI_STYLES = `
     border-radius: 22px; padding: 28px;
     box-shadow: 0 8px 24px rgba(46,42,38,0.08);
     display: flex; flex-direction: column; gap: 16px;
-    max-width: 580px;
+    width: 100%;
     animation: fade-up 200ms ease;
   }
   .ci-intro-badge {
@@ -658,7 +663,7 @@ const CI_STYLES = `
 
   /* ── survey ── */
   .ci-survey {
-    max-width: 600px;
+    width: 100%;
     display: flex; flex-direction: column; gap: 20px;
     animation: fade-up 180ms ease;
   }

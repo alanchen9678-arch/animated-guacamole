@@ -483,7 +483,7 @@ export default function Journal() {
   }
 
   return (
-    <section className="page">
+    <section className="page jn-page">
       <style>{JN_STYLES}</style>
 
       <header className="page-header jn-page-header">
@@ -652,6 +652,11 @@ export default function Journal() {
 // ─── styles ───────────────────────────────────────────────────────────────────
 
 const JN_STYLES = `
+  .jn-page {
+    min-height: calc(100vh - 220px);
+    align-content: start;
+  }
+
   .jn-page-header {
     display: flex; align-items: flex-start; justify-content: space-between;
     gap: 14px;

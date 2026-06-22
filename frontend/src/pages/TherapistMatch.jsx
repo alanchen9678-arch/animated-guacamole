@@ -287,7 +287,7 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind }) {
   const [refreshed, setRefreshed] = useState(false)
 
   return (
-    <section className="page">
+    <section className="page tm-page">
       <header className="page-header">
         <h2>Your Needs Profile</h2>
         <p>Generated from your check-ins, chatbot sessions, and journal — updated automatically.</p>
@@ -350,7 +350,7 @@ function PreferencesView({ onBack, onMatch }) {
   }
 
   return (
-    <section className="page">
+    <section className="page tm-page">
       <BackBtn onClick={onBack} label="Needs Profile" />
       <header className="page-header" style={{ marginTop: 12 }}>
         <h2>Your preferences</h2>
@@ -413,7 +413,7 @@ function PreferencesView({ onBack, onMatch }) {
 function ResultsView({ matches, prefs, onSelect, onBack }) {
   if (matches.length === 0) {
     return (
-      <section className="page">
+      <section className="page tm-page">
         <BackBtn onClick={onBack} label="Preferences" />
         <header className="page-header" style={{ marginTop: 12 }}>
           <h2>No matches found</h2>
@@ -427,7 +427,7 @@ function ResultsView({ matches, prefs, onSelect, onBack }) {
   const maxScore = Math.max(...matches.map(m => m.score))
 
   return (
-    <section className="page">
+    <section className="page tm-page">
       <BackBtn onClick={onBack} label="Preferences" />
       <header className="page-header" style={{ marginTop: 12 }}>
         <h2>Your top {matches.length} match{matches.length !== 1 ? 'es' : ''}</h2>
@@ -495,7 +495,7 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
   }
 
   return (
-    <section className="page">
+    <section className="page tm-page">
       <BackBtn onClick={onBack} label="Results" />
 
       <div className="tm-detail-grid">
@@ -958,6 +958,11 @@ export default function TherapistMatch() {
 
 const TM_STYLES = `
   /* layout */
+  .tm-page {
+    min-height: calc(100vh - 220px);
+    align-content: start;
+  }
+
   .tm-profile-grid {
     display: grid;
     grid-template-columns: 1.2fr 1fr;
