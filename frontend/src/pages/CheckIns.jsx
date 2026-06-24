@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useUser } from '../context/UserContext'
+import { fetchCheckIns, submitCheckIn } from '../services/api'
 
 // ─── question bank (60 questions, 10 per category) ────────────────────────────
 
@@ -107,6 +109,7 @@ const MOCK_HISTORY = [
   },
 ]
 
+
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 function shuffle(arr) {
@@ -116,6 +119,64 @@ function shuffle(arr) {
     [a[i], a[j]] = [a[j], a[i]]
   }
   return a
+}
+
+function formatDateKey(date) {
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function parseDateKey(value) {
+  const [year, month, day] = value.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+function diffDays(fromDate, toDate) {
+  const msPerDay = 24 * 60 * 60 * 1000
+  const from = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate())
+  const to = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate())
+  return Math.floor((to - from) / msPerDay)
+}
+
+function getLatestEntry(history) {
+  if (!history.length) return null
+  return [...history].sort((a, b) => parseDateKey(a.date) - parseDateKey(b.date))[history.length - 1]
+}
+
+function getLatestWeeklyEntry(history) {
+  const weeklyEntries = history
+    .filter((entry) => entry.type === 'weekly')
+    .sort((a, b) => parseDateKey(a.date) - parseDateKey(b.date))
+  return weeklyEntries[weeklyEntries.length - 1] ?? null
+}
+
+function getWeeklyStreak(history, today = new Date()) {
+  const weeklyEntries = history
+    .filter((entry) => entry.type === 'weekly')
+    .sort((a, b) => parseDateKey(b.date) - parseDateKey(a.date))
+
+  if (!weeklyEntries.length) return 0
+
+  const latestWeeklyDate = parseDateKey(weeklyEntries[0].date)
+  if (diffDays(latestWeeklyDate, today) > 7) return 0
+
+  let streak = 1
+  for (let index = 1; index < weeklyEntries.length; index++) {
+    const newer = parseDateKey(weeklyEntries[index - 1].date)
+    const older = parseDateKey(weeklyEntries[index].date)
+    if (diffDays(older, newer) <= 8) streak += 1
+    else break
+  }
+
+  return streak
+}
+
+function isWeeklyCheckInDue(history, today = new Date()) {
+  const latestWeeklyEntry = getLatestWeeklyEntry(history)
+  if (!latestWeeklyEntry) return true
+  return diffDays(parseDateKey(latestWeeklyEntry.date), today) >= 7
 }
 
 function buildSurvey(type, lastQIds = []) {
@@ -176,19 +237,16 @@ function generateInsight(scores, prevScores) {
 }
 
 function fmtDate(str) {
-  const d = new Date(str)
+  const d = parseDateKey(str)
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 // ─── hub view ─────────────────────────────────────────────────────────────────
 
-function HubView({ history, streak, onStart, onStartInitial }) {
-  const latest   = history[history.length - 1]
-  const prevEntry = history[history.length - 2]
+function HubView({ history, streak, dueToday, lastCheckInDate, onStart, onStartInitial }) {
   const [showHistory, setShowHistory] = useState(false)
 
   // Last check-in was June 8; today is June 15 → due
-  const dueToday = true
 
   return (
     <div className="ci-hub">
@@ -197,7 +255,7 @@ function HubView({ history, streak, onStart, onStartInitial }) {
         <div className="ci-streak-card">
           <div className="ci-streak-num">{streak}</div>
           <div className="ci-streak-label">week streak</div>
-          <div className="ci-streak-sub">Last check-in {fmtDate(latest.date)}</div>
+          <div className="ci-streak-sub">{lastCheckInDate ? `Last check-in ${fmtDate(lastCheckInDate)}` : 'No check-ins yet'}</div>
         </div>
 
         <div className={`ci-due-card${dueToday ? ' ci-due-card--due' : ''}`}>
@@ -418,13 +476,58 @@ function ResultsView({ scores, prevScores, surveyType, onDone }) {
 // ─── root component ───────────────────────────────────────────────────────────
 
 export default function CheckIns() {
+  const { token, loading: userLoading } = useUser()
   const [view,    setView]    = useState('hub')      // hub | intro | survey | results
   const [surveyType, setSurveyType] = useState('weekly')
   const [questions,  setQuestions]  = useState([])
   const [answers,    setAnswers]    = useState({})
   const [latestScores, setLatestScores] = useState(null)
   const [history,  setHistory]  = useState(MOCK_HISTORY)
-  const [streak,   setStreak]   = useState(4)
+  const [serverSummary, setServerSummary] = useState({
+    streak: getWeeklyStreak(MOCK_HISTORY),
+    dueToday: isWeeklyCheckInDue(MOCK_HISTORY),
+    lastCheckInDate: getLatestEntry(MOCK_HISTORY)?.date ?? null,
+  })
+  const [loadingState, setLoadingState] = useState(false)
+  const [saveError, setSaveError] = useState('')
+
+  useEffect(() => {
+    if (userLoading) return
+    if (!token) {
+      setHistory(MOCK_HISTORY)
+      setServerSummary({
+        streak: getWeeklyStreak(MOCK_HISTORY),
+        dueToday: isWeeklyCheckInDue(MOCK_HISTORY),
+        lastCheckInDate: getLatestEntry(MOCK_HISTORY)?.date ?? null,
+      })
+      return
+    }
+
+    let cancelled = false
+    setLoadingState(true)
+    setSaveError('')
+
+    fetchCheckIns()
+      .then((data) => {
+        if (cancelled) return
+        setHistory(data.history?.length ? data.history : [])
+        setServerSummary({
+          streak: data.streak ?? 0,
+          dueToday: Boolean(data.dueThisWeek),
+          lastCheckInDate: data.lastCheckInDate ?? null,
+        })
+      })
+      .catch((error) => {
+        if (!cancelled) setSaveError(error.message)
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingState(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [token, userLoading])
 
   function startSurvey(type) {
     const lastEntry = history[history.length - 1]
@@ -438,18 +541,46 @@ export default function CheckIns() {
 
   function beginAnswering() { setView('survey') }
 
-  function onSurveyDone() {
+  async function onSurveyDone() {
     const scores = computeScores(answers, questions)
-    const newEntry = {
-      id: `w${history.length + 1}`,
-      date: '2026-06-15',
-      type: surveyType,
-      qIds: questions.map(q => q.id),
-      scores,
-    }
-    setHistory(prev => [...prev, newEntry])
     setLatestScores(scores)
-    setStreak(s => s + 1)
+
+    if (token) {
+      try {
+        const data = await submitCheckIn({
+          type: surveyType,
+          qIds: questions.map(q => q.id),
+          scores,
+        })
+        setHistory(data.history?.length ? data.history : [])
+        setServerSummary({
+          streak: data.streak ?? 0,
+          dueToday: Boolean(data.dueThisWeek),
+          lastCheckInDate: data.lastCheckInDate ?? null,
+        })
+        setSaveError('')
+      } catch (error) {
+        setSaveError(error.message)
+        return
+      }
+    } else {
+      const newEntry = {
+        id: `w${history.length + 1}`,
+        date: formatDateKey(new Date()),
+        type: surveyType,
+        qIds: questions.map(q => q.id),
+        scores,
+      }
+      const nextHistory = [...history, newEntry]
+      setHistory(nextHistory)
+      setServerSummary({
+        streak: getWeeklyStreak(nextHistory),
+        dueToday: isWeeklyCheckInDue(nextHistory),
+        lastCheckInDate: getLatestEntry(nextHistory)?.date ?? null,
+      })
+      setSaveError('')
+    }
+
     setView('results')
   }
 
@@ -458,7 +589,10 @@ export default function CheckIns() {
     setLatestScores(null)
   }
 
-  const prevScores = history.length > 0 ? history[history.length - 1].scores : null
+  const prevScores = history.length > 1 ? history[history.length - 2].scores : history[history.length - 1]?.scores ?? null
+  const streak = useMemo(() => serverSummary.streak, [serverSummary])
+  const dueToday = useMemo(() => serverSummary.dueToday, [serverSummary])
+  const latestEntryDate = useMemo(() => serverSummary.lastCheckInDate, [serverSummary])
 
   return (
     <section className="page ci-page">
@@ -469,10 +603,15 @@ export default function CheckIns() {
         <p>Short, regular surveys that track your well-being across six dimensions so Aurora can support you proactively.</p>
       </header>
 
+      {saveError && <p className="ci-error">{saveError}</p>}
+      {loadingState && view === 'hub' && <p className="ci-loading">Loading your check-ins...</p>}
+
       {view === 'hub' && (
         <HubView
           history={history}
           streak={streak}
+          dueToday={dueToday}
+          lastCheckInDate={latestEntryDate}
           onStart={startSurvey}
           onStartInitial={() => startSurvey('initial')}
         />
@@ -520,6 +659,21 @@ const CI_STYLES = `
     font-size: 0.72rem; font-weight: 700;
     letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
     margin-bottom: 8px;
+  }
+  .ci-error {
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(239,68,68,0.2);
+    background: rgba(239,68,68,0.08);
+    color: #b91c1c;
+    font-size: 0.84rem;
+    font-weight: 600;
+  }
+  .ci-loading {
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: 0.84rem;
   }
 
   /* ── hub ── */

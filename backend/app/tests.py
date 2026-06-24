@@ -1,12 +1,16 @@
+from datetime import date
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from .models import (
+    CheckIn,
     Conversation,
     JournalDoodle,
     JournalPrivacySettings,
     Message,
     ThoughtJournalEntry,
+    get_user_checkin_summary,
 )
 
 
@@ -97,3 +101,62 @@ class JournalModelTests(TestCase):
 
         self.assertFalse(privacy.allow_ai_access)
         self.assertFalse(privacy.allow_therapist_access)
+
+
+class CheckInModelTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username='checkin-user',
+            password='testpass123',
+        )
+
+    def test_weekly_checkin_sets_monday_week_start(self):
+        checkin = CheckIn.objects.create(
+            user=self.user,
+            type=CheckIn.CheckInType.WEEKLY,
+            check_in_date=date(2026, 6, 24),  # Wednesday
+            question_ids=[1, 2],
+            scores={'stress': 55},
+        )
+
+        self.assertEqual(checkin.week_start_date, date(2026, 6, 22))
+
+    def test_streak_counts_consecutive_monday_sunday_weeks(self):
+        CheckIn.objects.create(
+            user=self.user,
+            type=CheckIn.CheckInType.WEEKLY,
+            check_in_date=date(2026, 6, 8),
+        )
+        CheckIn.objects.create(
+            user=self.user,
+            type=CheckIn.CheckInType.WEEKLY,
+            check_in_date=date(2026, 6, 15),
+        )
+        CheckIn.objects.create(
+            user=self.user,
+            type=CheckIn.CheckInType.WEEKLY,
+            check_in_date=date(2026, 6, 22),
+        )
+
+        summary = get_user_checkin_summary(self.user, today=date(2026, 6, 24))
+
+        self.assertEqual(summary['streak'], 3)
+        self.assertFalse(summary['due_this_week'])
+        self.assertEqual(summary['last_check_in_date'], date(2026, 6, 22))
+
+    def test_missing_entire_week_resets_streak(self):
+        CheckIn.objects.create(
+            user=self.user,
+            type=CheckIn.CheckInType.WEEKLY,
+            check_in_date=date(2026, 6, 8),
+        )
+        CheckIn.objects.create(
+            user=self.user,
+            type=CheckIn.CheckInType.WEEKLY,
+            check_in_date=date(2026, 6, 15),
+        )
+
+        summary = get_user_checkin_summary(self.user, today=date(2026, 6, 30))
+
+        self.assertEqual(summary['streak'], 0)
+        self.assertTrue(summary['due_this_week'])

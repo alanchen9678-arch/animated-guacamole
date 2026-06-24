@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils import timezone
 
 
 class UserProfile(models.Model):
@@ -131,3 +132,81 @@ class JournalDoodle(models.Model):
 
     def __str__(self):
         return f'Doodle {self.pk} for {self.user.username}'
+
+
+def start_of_week(date_value):
+    return date_value - timezone.timedelta(days=date_value.weekday())
+
+
+class CheckIn(models.Model):
+    class CheckInType(models.TextChoices):
+        INITIAL = 'initial', 'Initial'
+        WEEKLY = 'weekly', 'Weekly'
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='checkins',
+    )
+    type = models.CharField(max_length=20, choices=CheckInType.choices)
+    question_ids = models.JSONField(default=list, blank=True)
+    scores = models.JSONField(default=dict, blank=True)
+    check_in_date = models.DateField(default=timezone.localdate)
+    week_start_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['check_in_date', 'created_at', 'id']
+        indexes = [
+            models.Index(fields=['user', 'type', 'check_in_date']),
+            models.Index(fields=['user', 'week_start_date']),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.type == self.CheckInType.WEEKLY:
+            self.week_start_date = start_of_week(self.check_in_date)
+        else:
+            self.week_start_date = None
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.user.username} - {self.type} - {self.check_in_date}'
+
+
+def get_user_checkin_summary(user, today=None):
+    today = today or timezone.localdate()
+    weekly_entries = list(
+        user.checkins.filter(type=CheckIn.CheckInType.WEEKLY).order_by('-week_start_date', '-created_at', '-id')
+    )
+    latest_entry = user.checkins.order_by('-check_in_date', '-created_at', '-id').first()
+    latest_weekly_entry = weekly_entries[0] if weekly_entries else None
+
+    streak = 0
+    if latest_weekly_entry:
+        current_week_start = start_of_week(today)
+        latest_week_start = latest_weekly_entry.week_start_date
+        weeks_since_latest = (current_week_start - latest_week_start).days // 7
+
+        if weeks_since_latest <= 1:
+            streak = 1
+            last_week_start = latest_week_start
+            seen_weeks = {latest_week_start}
+            for entry in weekly_entries[1:]:
+                week_start = entry.week_start_date
+                if week_start in seen_weeks:
+                    continue
+                if (last_week_start - week_start).days == 7:
+                    streak += 1
+                    seen_weeks.add(week_start)
+                    last_week_start = week_start
+                else:
+                    break
+
+    due_this_week = latest_weekly_entry is None or latest_weekly_entry.week_start_date != start_of_week(today)
+
+    return {
+        'streak': streak,
+        'last_check_in_date': latest_entry.check_in_date if latest_entry else None,
+        'due_this_week': due_this_week,
+    }

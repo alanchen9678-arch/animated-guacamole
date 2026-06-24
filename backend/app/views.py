@@ -6,19 +6,22 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import UserProfile
+from .models import UserProfile, get_user_checkin_summary
 
 
 def _user_payload(user):
     profile, _ = UserProfile.objects.get_or_create(user=user)
+    checkin_summary = get_user_checkin_summary(user)
     return {
         'id': user.id,
         'username': user.username,
         'email': user.email,
         'firstName': user.first_name,
         'plan': profile.plan,
-        'streak': profile.streak,
+        'streak': checkin_summary['streak'],
         'mood': profile.mood,
+        'lastCheckInDate': checkin_summary['last_check_in_date'],
+        'checkInDueThisWeek': checkin_summary['due_this_week'],
     }
 
 
@@ -106,8 +109,5 @@ class MeView(APIView):
         if 'mood' in request.data:
             profile.mood = request.data['mood']
             profile.save(update_fields=['mood'])
-        if 'streak' in request.data:
-            profile.streak = int(request.data['streak'])
-            profile.save(update_fields=['streak'])
 
         return Response(_user_payload(request.user))

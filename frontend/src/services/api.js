@@ -33,3 +33,38 @@ export async function sendChatMessage(message) {
 
   return data.reply
 }
+
+export async function fetchCheckIns() {
+  const response = await fetch(`${API_BASE_URL}/api/checkins/`, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  })
+
+  const data = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(data.error || data.detail || 'Unable to load check-ins.')
+  }
+
+  return data
+}
+
+export async function submitCheckIn(payload) {
+  const response = await fetch(`${API_BASE_URL}/api/checkins/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(payload),
+  })
+
+  const data = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(data.error || data.detail || 'Unable to save check-in.')
+  }
+
+  return data
+}

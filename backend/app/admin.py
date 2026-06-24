@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import (
+    CheckIn,
     Conversation,
     JournalDoodle,
     JournalPrivacySettings,
@@ -10,6 +11,7 @@ from .models import (
 )
 
 admin.site.register(UserProfile)
+admin.site.register(CheckIn)
 admin.site.register(Conversation)
 admin.site.register(Message)
 admin.site.register(JournalPrivacySettings)

@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { TextReveal } from '../components/ui/cascade-text.jsx'
+import { useNavigation } from '../context/NavigationContext.jsx'
 import { useUser } from '../context/UserContext.jsx'
 
 export default function Login({ initialMode = 'login', onClose }) {
+  const { navigate } = useNavigation()
   const { login, register } = useUser()
   const [mode, setMode] = useState(initialMode)
   const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '', firstName: '' })
@@ -37,6 +39,7 @@ export default function Login({ initialMode = 'login', onClose }) {
         await register(form.username, form.email, form.password, form.firstName)
       }
 
+      navigate('home')
       onClose()
     } catch (err) {
       setError(err.message)
