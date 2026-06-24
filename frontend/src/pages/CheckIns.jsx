@@ -4,73 +4,94 @@ import { fetchCheckIns, submitCheckIn } from '../services/api'
 
 // ─── question bank (60 questions, 10 per category) ────────────────────────────
 
-const QUESTION_BANK = [
-  // Anxiety
-  { id:  1, cat: 'anxiety',    text: 'I tend to rehearse conversations or situations in my head before they happen.' },
-  { id:  2, cat: 'anxiety',    text: 'Unexpected changes to plans can leave me unsettled for a while.' },
-  { id:  3, cat: 'anxiety',    text: 'I often notice potential problems before others do.' },
-  { id:  4, cat: 'anxiety',    text: 'Even small mistakes can stay on my mind longer than I\'d like.' },
-  { id:  5, cat: 'anxiety',    text: 'I like having backup plans "just in case."' },
-  { id:  6, cat: 'anxiety',    text: 'It is difficult for me to fully relax, even during free time.' },
-  { id:  7, cat: 'anxiety',    text: 'I frequently think about what could go wrong in the future.' },
-  { id:  8, cat: 'anxiety',    text: 'I become mentally preoccupied when waiting for important news.' },
-  { id:  9, cat: 'anxiety',    text: 'I prefer certainty over spontaneity whenever possible.' },
-  { id: 10, cat: 'anxiety',    text: 'My mind often feels active when I wish it would slow down.' },
-  // Loneliness
-  { id: 11, cat: 'loneliness', text: 'I often feel that people around me don\'t fully understand me.' },
-  { id: 12, cat: 'loneliness', text: 'I have many interactions that feel superficial rather than meaningful.' },
-  { id: 13, cat: 'loneliness', text: 'I wish I had more people I could genuinely rely on.' },
-  { id: 14, cat: 'loneliness', text: 'Even in groups, I sometimes feel like an outsider.' },
-  { id: 15, cat: 'loneliness', text: 'I hesitate to share my deeper thoughts with others.' },
-  { id: 16, cat: 'loneliness', text: 'I often handle emotional struggles on my own.' },
-  { id: 17, cat: 'loneliness', text: 'I rarely feel truly seen or appreciated for who I am.' },
-  { id: 18, cat: 'loneliness', text: 'I wish more people checked in on me without being asked.' },
-  { id: 19, cat: 'loneliness', text: 'I sometimes avoid reaching out because I assume others are busy.' },
-  { id: 20, cat: 'loneliness', text: 'I miss having stronger connections in my life.' },
-  // Grief
-  { id: 21, cat: 'grief',      text: 'Certain memories still affect me more than I expect.' },
-  { id: 22, cat: 'grief',      text: 'I occasionally catch myself wishing things could return to how they once were.' },
-  { id: 23, cat: 'grief',      text: 'I carry experiences that changed me in lasting ways.' },
-  { id: 24, cat: 'grief',      text: 'Anniversaries, places, or reminders can bring up strong emotions.' },
-  { id: 25, cat: 'grief',      text: 'There are losses in my life that still influence my daily perspective.' },
-  { id: 26, cat: 'grief',      text: 'I sometimes struggle to accept changes I didn\'t choose.' },
-  { id: 27, cat: 'grief',      text: 'I find myself revisiting "what if" scenarios about the past.' },
-  { id: 28, cat: 'grief',      text: 'I keep parts of certain memories close because they remain meaningful.' },
-  { id: 29, cat: 'grief',      text: 'I have moments where emotions connected to the past resurface unexpectedly.' },
-  { id: 30, cat: 'grief',      text: 'Some chapters of my life still feel unfinished emotionally.' },
-  // Burnout
-  { id: 31, cat: 'burnout',    text: 'Tasks that used to feel manageable now require more effort.' },
-  { id: 32, cat: 'burnout',    text: 'I often feel mentally drained before the day is over.' },
-  { id: 33, cat: 'burnout',    text: 'I struggle to maintain enthusiasm for responsibilities I once cared about.' },
-  { id: 34, cat: 'burnout',    text: 'I frequently push through exhaustion because things still need to get done.' },
-  { id: 35, cat: 'burnout',    text: 'I find myself operating on autopilot.' },
-  { id: 36, cat: 'burnout',    text: 'Rest doesn\'t always leave me feeling recharged.' },
-  { id: 37, cat: 'burnout',    text: 'Small demands sometimes feel disproportionately overwhelming.' },
-  { id: 38, cat: 'burnout',    text: 'I have less patience than I used to.' },
-  { id: 39, cat: 'burnout',    text: 'It is difficult to find motivation, even for important tasks.' },
-  { id: 40, cat: 'burnout',    text: 'I feel like I have been giving more of myself than I can sustain.' },
-  // Stress
-  { id: 41, cat: 'stress',     text: 'I usually have several responsibilities competing for my attention.' },
-  { id: 42, cat: 'stress',     text: 'I often feel pressed for time.' },
-  { id: 43, cat: 'stress',     text: 'It can be difficult to mentally disconnect from obligations.' },
-  { id: 44, cat: 'stress',     text: 'I feel like there is always something important waiting to be done.' },
-  { id: 45, cat: 'stress',     text: 'I frequently juggle multiple priorities at once.' },
-  { id: 46, cat: 'stress',     text: 'I have trouble fully enjoying downtime because I think about unfinished tasks.' },
-  { id: 47, cat: 'stress',     text: 'My schedule often feels packed or demanding.' },
-  { id: 48, cat: 'stress',     text: 'I feel pressure to meet expectations placed on me.' },
-  { id: 49, cat: 'stress',     text: 'I sometimes wish I could pause life long enough to catch up.' },
-  { id: 50, cat: 'stress',     text: 'I tend to carry a lot of responsibility at the same time.' },
-  // Low Confidence
-  { id: 51, cat: 'confidence', text: 'I compare my abilities to others more than I would like.' },
-  { id: 52, cat: 'confidence', text: 'I hesitate to speak up unless I am sure I am right.' },
-  { id: 53, cat: 'confidence', text: 'I sometimes underestimate what I can accomplish.' },
-  { id: 54, cat: 'confidence', text: 'Praise from others can be difficult for me to fully believe.' },
-  { id: 55, cat: 'confidence', text: 'I worry that people may notice my shortcomings more than my strengths.' },
-  { id: 56, cat: 'confidence', text: 'I second-guess decisions after making them.' },
-  { id: 57, cat: 'confidence', text: 'I need reassurance before feeling confident in unfamiliar situations.' },
-  { id: 58, cat: 'confidence', text: 'I tend to focus on what I could have done better rather than what went well.' },
-  { id: 59, cat: 'confidence', text: 'I avoid certain opportunities because I doubt my capabilities.' },
-  { id: 60, cat: 'confidence', text: 'I often hold myself to standards I struggle to meet.' },
+const INITIAL_QUESTIONS = [
+  { id: 1, cat: 'anxiety', text: 'How often do you feel excessive worry about things that may happen in the future?' },
+  { id: 2, cat: 'anxiety', text: 'How often do you feel unable to relax because your mind keeps racing?' },
+  { id: 3, cat: 'anxiety', text: 'How often do you avoid situations because you feel nervous, afraid, or overwhelmed?' },
+  { id: 4, cat: 'anxiety', text: 'How often do physical signs of anxiety (such as feeling tense, restless, or uneasy) affect your daily life?' },
+  { id: 5, cat: 'loneliness', text: 'How often do you feel disconnected from the people around you, even when you are with others?' },
+  { id: 6, cat: 'loneliness', text: 'How often do you feel like you do not have someone you can truly talk to?' },
+  { id: 7, cat: 'loneliness', text: 'How often do you feel left out or like you do not belong?' },
+  { id: 8, cat: 'loneliness', text: 'How often do you wish you had deeper or more meaningful connections with others?' },
+  { id: 9, cat: 'grief', text: 'How often do you find yourself struggling to accept a major change, loss, or ending in your life?' },
+  { id: 10, cat: 'grief', text: 'How often do memories of something you lost cause strong emotions?' },
+  { id: 11, cat: 'grief', text: 'How often do feelings related to a past loss affect your ability to focus or enjoy things?' },
+  { id: 12, cat: 'grief', text: 'How often do you feel like you are still trying to understand or process a difficult experience?' },
+  { id: 13, cat: 'burnout', text: 'How often do you feel emotionally exhausted from your responsibilities or daily demands?' },
+  { id: 14, cat: 'burnout', text: 'How often do you feel like your effort does not match the results you are getting?' },
+  { id: 15, cat: 'burnout', text: 'How often do you feel detached, unmotivated, or uninterested in things you normally care about?' },
+  { id: 16, cat: 'burnout', text: 'How often do you feel like you have too much to handle and not enough energy to keep up?' },
+  { id: 17, cat: 'stress', text: 'How often do you feel overwhelmed by the number of tasks, problems, or expectations in your life?' },
+  { id: 18, cat: 'stress', text: 'How often do you have difficulty managing pressure from school, work, relationships, or responsibilities?' },
+  { id: 19, cat: 'stress', text: 'How often do stressful situations affect your mood or ability to think clearly?' },
+  { id: 20, cat: 'stress', text: 'How often do you feel like you are constantly trying to catch up?' },
+  { id: 21, cat: 'confidence', text: 'How often do you doubt your abilities or question whether you can succeed?' },
+  { id: 22, cat: 'confidence', text: 'How often do you compare yourself negatively to others?' },
+  { id: 23, cat: 'confidence', text: 'How often do you avoid trying new things because you fear failure or judgment?' },
+  { id: 24, cat: 'confidence', text: 'How often do you struggle to recognize your own strengths or accomplishments?' },
+]
+
+const WEEKLY_QUESTION_BANK = [
+  { id: 101, cat: 'anxiety', text: 'I tend to rehearse conversations or situations in my head before they happen.' },
+  { id: 102, cat: 'anxiety', text: 'Unexpected changes to plans can leave me unsettled for a while.' },
+  { id: 103, cat: 'anxiety', text: 'I often notice potential problems before others do.' },
+  { id: 104, cat: 'anxiety', text: 'Even small mistakes can stay on my mind longer than I\'d like.' },
+  { id: 105, cat: 'anxiety', text: 'I like having backup plans "just in case."' },
+  { id: 106, cat: 'anxiety', text: 'It is difficult for me to fully relax, even during free time.' },
+  { id: 107, cat: 'anxiety', text: 'I frequently think about what could go wrong in the future.' },
+  { id: 108, cat: 'anxiety', text: 'I become mentally preoccupied when waiting for important news.' },
+  { id: 109, cat: 'anxiety', text: 'I prefer certainty over spontaneity whenever possible.' },
+  { id: 110, cat: 'anxiety', text: 'My mind often feels active when I wish it would slow down.' },
+  { id: 111, cat: 'loneliness', text: 'I often feel that people around me don\'t fully understand me.' },
+  { id: 112, cat: 'loneliness', text: 'I have many interactions that feel superficial rather than meaningful.' },
+  { id: 113, cat: 'loneliness', text: 'I wish I had more people I could genuinely rely on.' },
+  { id: 114, cat: 'loneliness', text: 'Even in groups, I sometimes feel like an outsider.' },
+  { id: 115, cat: 'loneliness', text: 'I hesitate to share my deeper thoughts with others.' },
+  { id: 116, cat: 'loneliness', text: 'I often handle emotional struggles on my own.' },
+  { id: 117, cat: 'loneliness', text: 'I rarely feel truly seen or appreciated for who I am.' },
+  { id: 118, cat: 'loneliness', text: 'I wish more people checked in on me without being asked.' },
+  { id: 119, cat: 'loneliness', text: 'I sometimes avoid reaching out because I assume others are busy.' },
+  { id: 120, cat: 'loneliness', text: 'I miss having stronger connections in my life.' },
+  { id: 121, cat: 'grief', text: 'Certain memories still affect me more than I expect.' },
+  { id: 122, cat: 'grief', text: 'I occasionally catch myself wishing things could return to how they once were.' },
+  { id: 123, cat: 'grief', text: 'I carry experiences that changed me in lasting ways.' },
+  { id: 124, cat: 'grief', text: 'Anniversaries, places, or reminders can bring up strong emotions.' },
+  { id: 125, cat: 'grief', text: 'There are losses in my life that still influence my daily perspective.' },
+  { id: 126, cat: 'grief', text: 'I sometimes struggle to accept changes I didn\'t choose.' },
+  { id: 127, cat: 'grief', text: 'I find myself revisiting "what if" scenarios about the past.' },
+  { id: 128, cat: 'grief', text: 'I keep parts of certain memories close because they remain meaningful.' },
+  { id: 129, cat: 'grief', text: 'I have moments where emotions connected to the past resurface unexpectedly.' },
+  { id: 130, cat: 'grief', text: 'Some chapters of my life still feel unfinished emotionally.' },
+  { id: 131, cat: 'burnout', text: 'Tasks that used to feel manageable now require more effort.' },
+  { id: 132, cat: 'burnout', text: 'I often feel mentally drained before the day is over.' },
+  { id: 133, cat: 'burnout', text: 'I struggle to maintain enthusiasm for responsibilities I once cared about.' },
+  { id: 134, cat: 'burnout', text: 'I frequently push through exhaustion because things still need to get done.' },
+  { id: 135, cat: 'burnout', text: 'I find myself operating on autopilot.' },
+  { id: 136, cat: 'burnout', text: 'Rest doesn\'t always leave me feeling recharged.' },
+  { id: 137, cat: 'burnout', text: 'Small demands sometimes feel disproportionately overwhelming.' },
+  { id: 138, cat: 'burnout', text: 'I have less patience than I used to.' },
+  { id: 139, cat: 'burnout', text: 'It is difficult to find motivation, even for important tasks.' },
+  { id: 140, cat: 'burnout', text: 'I feel like I have been giving more of myself than I can sustain.' },
+  { id: 141, cat: 'stress', text: 'I usually have several responsibilities competing for my attention.' },
+  { id: 142, cat: 'stress', text: 'I often feel pressed for time.' },
+  { id: 143, cat: 'stress', text: 'It can be difficult to mentally disconnect from obligations.' },
+  { id: 144, cat: 'stress', text: 'I feel like there is always something important waiting to be done.' },
+  { id: 145, cat: 'stress', text: 'I frequently juggle multiple priorities at once.' },
+  { id: 146, cat: 'stress', text: 'I have trouble fully enjoying downtime because I think about unfinished tasks.' },
+  { id: 147, cat: 'stress', text: 'My schedule often feels packed or demanding.' },
+  { id: 148, cat: 'stress', text: 'I feel pressure to meet expectations placed on me.' },
+  { id: 149, cat: 'stress', text: 'I sometimes wish I could pause life long enough to catch up.' },
+  { id: 150, cat: 'stress', text: 'I tend to carry a lot of responsibility at the same time.' },
+  { id: 151, cat: 'confidence', text: 'I compare my abilities to others more than I would like.' },
+  { id: 152, cat: 'confidence', text: 'I hesitate to speak up unless I am sure I am right.' },
+  { id: 153, cat: 'confidence', text: 'I sometimes underestimate what I can accomplish.' },
+  { id: 154, cat: 'confidence', text: 'Praise from others can be difficult for me to fully believe.' },
+  { id: 155, cat: 'confidence', text: 'I worry that people may notice my shortcomings more than my strengths.' },
+  { id: 156, cat: 'confidence', text: 'I second-guess decisions after making them.' },
+  { id: 157, cat: 'confidence', text: 'I need reassurance before feeling confident in unfamiliar situations.' },
+  { id: 158, cat: 'confidence', text: 'I tend to focus on what I could have done better rather than what went well.' },
+  { id: 159, cat: 'confidence', text: 'I avoid certain opportunities because I doubt my capabilities.' },
+  { id: 160, cat: 'confidence', text: 'I often hold myself to standards I struggle to meet.' },
 ]
 
 // ─── category config ──────────────────────────────────────────────────────────
@@ -180,10 +201,12 @@ function isWeeklyCheckInDue(history, today = new Date()) {
 }
 
 function buildSurvey(type, lastQIds = []) {
-  const perCat = type === 'initial' ? 4 : 2
+  if (type === 'initial') return INITIAL_QUESTIONS
+
+  const perCat = 2
   const questions = []
   for (const cat of CATEGORIES) {
-    const pool    = QUESTION_BANK.filter(q => q.cat === cat.id)
+    const pool    = WEEKLY_QUESTION_BANK.filter(q => q.cat === cat.id)
     const unused  = pool.filter(q => !lastQIds.includes(q.id))
     const source  = unused.length >= perCat ? unused : pool
     questions.push(...shuffle(source).slice(0, perCat))
@@ -243,8 +266,7 @@ function fmtDate(str) {
 
 // ─── hub view ─────────────────────────────────────────────────────────────────
 
-function HubView({ history, streak, dueToday, lastCheckInDate, onStart }) {
-  const [showHistory, setShowHistory] = useState(false)
+function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, onStart }) {
 
   // Last check-in was June 8; today is June 15 → due
 
@@ -258,8 +280,14 @@ function HubView({ history, streak, dueToday, lastCheckInDate, onStart }) {
           <div className="ci-streak-sub">{lastCheckInDate ? `Last check-in ${fmtDate(lastCheckInDate)}` : 'No check-ins yet'}</div>
         </div>
 
-        <div className={`ci-due-card${dueToday ? ' ci-due-card--due' : ''}`}>
-          {dueToday ? (
+        <div className={`ci-due-card${(!hasInitialAssessment || dueToday) ? ' ci-due-card--due' : ''}`}>
+          {!hasInitialAssessment ? (
+            <>
+              <div className="ci-due-badge">Get started</div>
+              <p className="ci-due-text">Before weekly check-ins begin, complete your 24-question initial assessment to set your baseline.</p>
+              <button className="ci-start-btn" onClick={() => onStart('initial')}>Start initial assessment</button>
+            </>
+          ) : dueToday ? (
             <>
               <div className="ci-due-badge">Due today</div>
               <p className="ci-due-text">Your weekly check-in is ready. It takes about 3 minutes and helps Aurora detect changes in your well-being early.</p>
@@ -274,38 +302,9 @@ function HubView({ history, streak, dueToday, lastCheckInDate, onStart }) {
         </div>
       </div>
 
-      {/* history list */}
-      <button className="ci-history-toggle" onClick={() => setShowHistory(v => !v)}>
+      {/* history removed
         {showHistory ? 'Hide history' : 'View check-in history'} {showHistory ? '↑' : '↓'}
-      </button>
-
-      {showHistory && (
-        <div className="ci-history">
-          {[...history].reverse().map((entry, i) => {
-            const prev = history[history.length - 2 - i]
-            return (
-              <div key={entry.id} className="ci-history-row">
-                <span className="ci-history-date">{fmtDate(entry.date)}</span>
-                <span className="ci-history-type">{entry.type === 'initial' ? 'Initial assessment' : 'Weekly'}</span>
-                <div className="ci-history-dots">
-                  {CATEGORIES.map(cat => {
-                    const s = entry.scores[cat.id]
-                    return (
-                      <div
-                        key={cat.id}
-                        className="ci-history-dot"
-                        style={{ background: scoreBand(s).color }}
-                        title={`${cat.label}: ${s} (${scoreBand(s).label})`}
-                      />
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
+      */}
       <p className="ci-disclaimer">
         These check-ins are tools for self-reflection and trend awareness — not diagnostic tools. They do not determine whether you have a mental health condition.
       </p>
@@ -339,8 +338,8 @@ function IntroView({ type, onStart, onBack }) {
           <div className="ci-stat-label">minutes</div>
         </div>
         <div className="ci-stat">
-          <div className="ci-stat-num">6</div>
-          <div className="ci-stat-label">dimensions</div>
+          <div className="ci-stat-num">1</div>
+          <div className="ci-stat-label">baseline</div>
         </div>
       </div>
 
@@ -365,7 +364,6 @@ function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
   const q        = questions[idx]
   const total    = questions.length
   const selected = answers[q.id]
-  const cat      = CATEGORIES.find(c => c.id === q.cat)
   const pct      = ((idx) / total) * 100
 
   function pick(val) { setAnswers(prev => ({ ...prev, [q.id]: val })) }
@@ -433,35 +431,24 @@ function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
 
 // ─── results view ─────────────────────────────────────────────────────────────
 
-function ResultsView({ scores, prevScores, surveyType, onDone }) {
-  const insight = generateInsight(scores, prevScores)
-  const allGood = Object.values(scores).every(s => s <= 40)
+function ResultsView({ surveyType, onDone }) {
+  const title = surveyType === 'initial' ? 'Assessment complete' : 'Check-in complete'
+  const summary = surveyType === 'initial'
+    ? 'Your responses have been saved as your starting baseline. Future weekly check-ins will help Aurora track changes over time.'
+    : 'Your responses have been saved. Come back next week to keep your streak going and continue tracking how you are doing.'
 
   return (
     <div className="ci-results">
       <div className="ci-results-header">
-        <h3 className="ci-results-title">Your results</h3>
-        <p className="ci-results-sub">
-          {surveyType === 'initial'
-            ? 'This is your personal baseline. Future weekly check-ins will track how these scores shift over time.'
-            : 'Scores shown alongside your previous check-in for comparison.'}
-        </p>
+        <h3 className="ci-results-title">{title}</h3>
+        <p className="ci-results-sub">{summary}</p>
       </div>
 
-      <div className="ci-score-bars">
-        {CATEGORIES.map(cat => (
-          <div key={cat.id} className="ci-score-row">
-            <span className="ci-score-cat">{cat.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* insight */}
       <div className="ci-insight">
-        <div className="ci-insight-icon" style={{ background: allGood ? '#3a6898' : '#d97706' }}>A</div>
+        <div className="ci-insight-icon" style={{ background: '#3a6898' }}>A</div>
         <div className="ci-insight-body">
-          <strong className="ci-insight-label" style={{ color: allGood ? '#3a6898' : '#d97706' }}>Aurora</strong>
-          <p className="ci-insight-text">{insight}</p>
+          <strong className="ci-insight-label" style={{ color: '#3a6898' }}>Aurora</strong>
+          <p className="ci-insight-text">Thank you for checking in. You can return to the dashboard whenever you are ready.</p>
         </div>
       </div>
 
@@ -484,6 +471,7 @@ export default function CheckIns() {
     streak: getWeeklyStreak(MOCK_HISTORY),
     dueToday: isWeeklyCheckInDue(MOCK_HISTORY),
     lastCheckInDate: getLatestEntry(MOCK_HISTORY)?.date ?? null,
+    hasInitialAssessment: MOCK_HISTORY.some((entry) => entry.type === 'initial'),
   })
   const [loadingState, setLoadingState] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -496,6 +484,7 @@ export default function CheckIns() {
         streak: getWeeklyStreak(MOCK_HISTORY),
         dueToday: isWeeklyCheckInDue(MOCK_HISTORY),
         lastCheckInDate: getLatestEntry(MOCK_HISTORY)?.date ?? null,
+        hasInitialAssessment: MOCK_HISTORY.some((entry) => entry.type === 'initial'),
       })
       return
     }
@@ -512,6 +501,7 @@ export default function CheckIns() {
           streak: data.streak ?? 0,
           dueToday: Boolean(data.dueThisWeek),
           lastCheckInDate: data.lastCheckInDate ?? null,
+          hasInitialAssessment: Boolean(data.hasInitialAssessment),
         })
       })
       .catch((error) => {
@@ -554,6 +544,7 @@ export default function CheckIns() {
           streak: data.streak ?? 0,
           dueToday: Boolean(data.dueThisWeek),
           lastCheckInDate: data.lastCheckInDate ?? null,
+          hasInitialAssessment: Boolean(data.hasInitialAssessment),
         })
         setSaveError('')
       } catch (error) {
@@ -574,6 +565,7 @@ export default function CheckIns() {
         streak: getWeeklyStreak(nextHistory),
         dueToday: isWeeklyCheckInDue(nextHistory),
         lastCheckInDate: getLatestEntry(nextHistory)?.date ?? null,
+        hasInitialAssessment: nextHistory.some((entry) => entry.type === 'initial'),
       })
       setSaveError('')
     }
@@ -586,7 +578,7 @@ export default function CheckIns() {
     setLatestScores(null)
   }
 
-  const prevScores = history.length > 1 ? history[history.length - 2].scores : history[history.length - 1]?.scores ?? null
+  const hasInitialAssessment = useMemo(() => serverSummary.hasInitialAssessment, [serverSummary])
   const streak = useMemo(() => serverSummary.streak, [serverSummary])
   const dueToday = useMemo(() => serverSummary.dueToday, [serverSummary])
   const latestEntryDate = useMemo(() => serverSummary.lastCheckInDate, [serverSummary])
@@ -605,10 +597,10 @@ export default function CheckIns() {
 
       {view === 'hub' && (
         <HubView
-          history={history}
           streak={streak}
           dueToday={dueToday}
           lastCheckInDate={latestEntryDate}
+          hasInitialAssessment={hasInitialAssessment}
           onStart={startSurvey}
         />
       )}
@@ -633,8 +625,6 @@ export default function CheckIns() {
 
       {view === 'results' && (
         <ResultsView
-          scores={latestScores}
-          prevScores={prevScores}
           surveyType={surveyType}
           onDone={onResultsDone}
         />

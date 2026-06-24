@@ -20,6 +20,7 @@ class CheckInCollectionView(APIView):
                 'streak': summary['streak'],
                 'lastCheckInDate': summary['last_check_in_date'],
                 'dueThisWeek': summary['due_this_week'],
+                'hasInitialAssessment': summary['has_initial_assessment'],
             }
         )
 
@@ -62,5 +63,6 @@ class CheckInCollectionView(APIView):
                 'streak': summary['streak'],
                 'lastCheckInDate': summary['last_check_in_date'],
                 'dueThisWeek': summary['due_this_week'],
+                'hasInitialAssessment': summary['has_initial_assessment'],
             }
         )

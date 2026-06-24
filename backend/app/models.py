@@ -190,6 +190,7 @@ class CheckIn(models.Model):
 
 def get_user_checkin_summary(user, today=None):
     today = today or timezone.localdate()
+    has_initial_assessment = user.checkins.filter(type=CheckIn.CheckInType.INITIAL).exists()
     weekly_entries = list(
         user.checkins.filter(type=CheckIn.CheckInType.WEEKLY).order_by('-week_start_date', '-created_at', '-id')
     )
@@ -223,6 +224,7 @@ def get_user_checkin_summary(user, today=None):
         'streak': streak,
         'last_check_in_date': latest_entry.check_in_date if latest_entry else None,
         'due_this_week': due_this_week,
+        'has_initial_assessment': has_initial_assessment,
     }
 
 
