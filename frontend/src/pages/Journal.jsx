@@ -15,25 +15,9 @@ const MOODS = [
 ]
 const MOOD_MAP = Object.fromEntries(MOODS.map(m => [m.id, m]))
 
-// Pre-filled mood data for demo (past days of June 2026)
-const MOCK_MOODS = {
-  '2026-6-1':'calm','2026-6-2':'happy','2026-6-3':'neutral','2026-6-4':'sad',
-  '2026-6-5':'anxious','2026-6-6':'calm','2026-6-7':'happy','2026-6-8':'happy',
-  '2026-6-9':'tired','2026-6-10':'neutral','2026-6-11':'calm','2026-6-12':'happy',
-  '2026-6-13':'anxious','2026-6-14':'calm',
-}
+const MOCK_MOODS = {}
 
-const MOCK_ENTRIES = {
-  '2026-6-8': {
-    text: 'Felt lighter today. I got outside for a walk and noticed how much easier it was to breathe afterward.',
-  },
-  '2026-6-13': {
-    text: 'Today felt tense and scattered. I kept replaying the same worries, but writing them down made them feel a little less loud.',
-  },
-  '2026-6-14': {
-    text: 'A quieter day. I made tea, cleaned my desk, and felt a little more settled by the evening.',
-  },
-}
+const MOCK_ENTRIES = {}
 
 // ─── AI analysis ───────────────────────────────────────────────────────────────
 
