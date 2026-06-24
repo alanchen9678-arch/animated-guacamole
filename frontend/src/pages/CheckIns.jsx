@@ -243,7 +243,7 @@ function fmtDate(str) {
 
 // ─── hub view ─────────────────────────────────────────────────────────────────
 
-function HubView({ history, streak, dueToday, lastCheckInDate, onStart, onStartInitial }) {
+function HubView({ history, streak, dueToday, lastCheckInDate, onStart }) {
   const [showHistory, setShowHistory] = useState(false)
 
   // Last check-in was June 8; today is June 15 → due
@@ -271,9 +271,6 @@ function HubView({ history, streak, dueToday, lastCheckInDate, onStart, onStartI
               <p className="ci-due-text">Your next check-in is due in a few days. Come back then to keep your streak going.</p>
             </>
           )}
-          <button className="ci-initial-link" onClick={() => onStartInitial()}>
-            Retake initial assessment (24 questions)
-          </button>
         </div>
       </div>
 
@@ -613,7 +610,6 @@ export default function CheckIns() {
           dueToday={dueToday}
           lastCheckInDate={latestEntryDate}
           onStart={startSurvey}
-          onStartInitial={() => startSurvey('initial')}
         />
       )}
 
