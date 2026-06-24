@@ -178,37 +178,6 @@ export default function Home() {
           font-size: 0.92rem;
         }
 
-        .energy-card {
-          background: var(--panel-strong);
-          border: 1px solid var(--line);
-          border-radius: 20px;
-          padding: 22px;
-          box-shadow: 0 6px 18px rgba(23, 48, 66, 0.06);
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-          justify-content: center;
-        }
-
-        .energy-card h3 {
-          margin: 0;
-          font-size: 1rem;
-        }
-
-        .energy-number {
-          font-size: 2.8rem;
-          font-weight: 800;
-          letter-spacing: -0.04em;
-          color: var(--accent);
-          line-height: 1;
-        }
-
-        .energy-label {
-          font-size: 0.85rem;
-          color: var(--muted);
-          margin-top: 2px;
-        }
-
         @media (max-width: 960px) {
           .feature-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -252,26 +221,13 @@ export default function Home() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: '14px' }}>
-        <div className="prompts-card">
-          <h3>Journal prompts for today</h3>
-          <ul className="prompt-list">
-            {dashboardSnapshot.journalPrompts.map((prompt) => (
-              <li key={prompt}>{prompt}</li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="energy-card">
-          <h3>Energy score</h3>
-          <div>
-            <div className="energy-number">{dashboardSnapshot.energyScore}%</div>
-            <div className="energy-label">steady capacity today</div>
-          </div>
-          <div className="meter" aria-label={`Energy score: ${dashboardSnapshot.energyScore}%`}>
-            <span style={{ width: `${dashboardSnapshot.energyScore}%` }} />
-          </div>
-        </div>
+      <div className="prompts-card">
+        <h3>Journal prompts for today</h3>
+        <ul className="prompt-list">
+          {dashboardSnapshot.journalPrompts.map((prompt) => (
+            <li key={prompt}>{prompt}</li>
+          ))}
+        </ul>
       </div>
 
       <div>

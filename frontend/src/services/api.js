@@ -1,6 +1,5 @@
 export const dashboardSnapshot = {
   nextCheckIn: 'Today at 8:00 PM',
-  energyScore: 74,
   journalPrompts: [
     'What helped you feel grounded today?',
     'Where did you notice pressure building?',
