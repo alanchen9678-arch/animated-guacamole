@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { ColorSwatchPicker } from '../components/ui/heroui-color-swatch-picker.jsx'
 import ColorPickerMenu from '../components/ui/color-picker-menu.jsx'
+import { useUser } from '../context/UserContext.jsx'
+import { fetchJournalEntries, saveJournalEntry } from '../services/api.js'
 
 // ─── mood config ───────────────────────────────────────────────────────────────
 
@@ -24,6 +26,18 @@ const MOCK_ENTRIES = {}
 const JOURNAL_ENTRIES_STORAGE_KEY = 'aurora.journal.entries'
 const JOURNAL_MOODS_STORAGE_KEY = 'aurora.journal.moods'
 
+function normalizeDateKey(key) {
+  const [year, month, day] = String(key).split('-').map(Number)
+  if (!year || !month || !day) return key
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+function normalizeDateMapKeys(values) {
+  return Object.fromEntries(
+    Object.entries(values).map(([key, value]) => [normalizeDateKey(key), value]),
+  )
+}
+
 function loadJournalEntries() {
   try {
     const stored = window.localStorage.getItem(JOURNAL_ENTRIES_STORAGE_KEY)
@@ -31,7 +45,7 @@ function loadJournalEntries() {
 
     const parsed = JSON.parse(stored)
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return { ...MOCK_ENTRIES, ...parsed }
+      return { ...MOCK_ENTRIES, ...normalizeDateMapKeys(parsed) }
     }
   } catch {
     return MOCK_ENTRIES
@@ -48,6 +62,25 @@ function saveJournalEntries(entries) {
   }
 }
 
+function mergeJournalEntries(localEntries, backendEntries) {
+  const merged = { ...localEntries }
+  for (const entry of backendEntries) {
+    merged[entry.date] = {
+      ...merged[entry.date],
+      text: entry.text,
+    }
+  }
+  return merged
+}
+
+function mergeJournalMoods(localMoods, backendEntries) {
+  const merged = { ...localMoods }
+  for (const entry of backendEntries) {
+    if (entry.mood) merged[entry.date] = entry.mood
+  }
+  return merged
+}
+
 function loadJournalMoods() {
   try {
     const stored = window.localStorage.getItem(JOURNAL_MOODS_STORAGE_KEY)
@@ -55,7 +88,7 @@ function loadJournalMoods() {
 
     const parsed = JSON.parse(stored)
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return { ...MOCK_MOODS, ...parsed }
+      return { ...MOCK_MOODS, ...normalizeDateMapKeys(parsed) }
     }
   } catch {
     return MOCK_MOODS
@@ -132,11 +165,11 @@ const DAY_NAMES = ['Su','Mo','Tu','We','Th','Fr','Sa']
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
 function makeDateKey(date) {
-  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
 function makeDayKey(year, month, day) {
-  return `${year}-${month + 1}-${day}`
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
 function formatDateKey(dateKey) {
@@ -532,6 +565,7 @@ function DoodleCanvas({ bgColor, value, onChange, disabled = false }) {
 // ─── root journal ─────────────────────────────────────────────────────────────
 
 export default function Journal() {
+  const { token, loading: userLoading } = useUser()
   const todayKey = makeDateKey(new Date())
   const [initialJournalState] = useState(() => {
     const entryHistory = loadJournalEntries()
@@ -549,6 +583,7 @@ export default function Journal() {
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [selectedHistoryDate, setSelectedHistoryDate] = useState(todayKey)
   const [expandedEntryDate, setExpandedEntryDate] = useState(null)
+  const [saveError, setSaveError] = useState('')
 
   const todayMood = moodData[todayKey]
   const marginColor = todayMood ? MOOD_MAP[todayMood]?.color : '#ffffff'
@@ -574,13 +609,63 @@ export default function Journal() {
   }, [entryHistory])
 
   useEffect(() => {
+    if (userLoading || !token) return
+
+    let cancelled = false
+    setSaveError('')
+
+    fetchJournalEntries()
+      .then((data) => {
+        if (cancelled) return
+        const backendEntries = data.entries ?? []
+        const mergedHistory = mergeJournalEntries(loadJournalEntries(), backendEntries)
+        const mergedMoods = mergeJournalMoods(loadJournalMoods(), backendEntries)
+        setEntryHistory(mergedHistory)
+        setMoodData(mergedMoods)
+        const savedToday = mergedHistory[todayKey]
+        setEntryText(savedToday?.text ?? '')
+        setSubmitted(Boolean(savedToday?.text || savedToday?.doodleData))
+      })
+      .catch((error) => {
+        if (!cancelled) setSaveError(error.message)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [token, todayKey, userLoading])
+
+  useEffect(() => {
     saveJournalMoods(moodData)
   }, [moodData])
 
-  function submit() {
+  async function submit() {
     if (!hasEntryContent) return
     const tone = entryText.trim() ? analyzeEntry(entryText) : 'neutral'
-    setEntryHistory(prev => ({ ...prev, [todayKey]: { text: entryText, doodleData, tone } }))
+    const nextEntry = { text: entryText, doodleData, tone }
+    const nextHistory = { ...entryHistory, [todayKey]: nextEntry }
+
+    if (token) {
+      try {
+        const data = await saveJournalEntry({
+          date: todayKey,
+          content: entryText,
+          mood: todayMood ?? '',
+        })
+        const backendEntries = data.entries ?? []
+        const mergedHistory = mergeJournalEntries(nextHistory, backendEntries)
+        const mergedMoods = mergeJournalMoods({ ...moodData, [todayKey]: todayMood }, backendEntries)
+        setEntryHistory(mergedHistory)
+        setMoodData(mergedMoods)
+        setSaveError('')
+      } catch (error) {
+        setSaveError(error.message)
+        return
+      }
+    } else {
+      setEntryHistory(nextHistory)
+    }
+
     setSubmitted(true)
   }
 
@@ -589,7 +674,24 @@ export default function Journal() {
   }
 
   function setTodayMood(moodId) {
-    setMoodData(prev => ({ ...prev, [todayKey]: moodId }))
+    const nextMoods = { ...moodData, [todayKey]: moodId }
+    setMoodData(nextMoods)
+
+    if (!token) return
+
+    saveJournalEntry({
+      date: todayKey,
+      mood: moodId,
+    })
+      .then((data) => {
+        const backendEntries = data.entries ?? []
+        setEntryHistory((currentHistory) => mergeJournalEntries(currentHistory, backendEntries))
+        setMoodData((currentMoods) => mergeJournalMoods(currentMoods, backendEntries))
+        setSaveError('')
+      })
+      .catch((error) => {
+        setSaveError(error.message)
+      })
   }
 
   return (
@@ -605,6 +707,8 @@ export default function Journal() {
           View calendar
         </button>
       </header>
+
+      {saveError && <p className="jn-error">{saveError}</p>}
 
       {/* main journal editor */}
       <section className="jn-entry-focus">
@@ -789,6 +893,16 @@ const JN_STYLES = `
     margin-top: 4px;
     font-size: 0.9rem;
     line-height: 1.4;
+  }
+  .jn-error {
+    margin: 0;
+    padding: 10px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(239,68,68,0.2);
+    background: rgba(239,68,68,0.08);
+    color: #b91c1c;
+    font-size: 0.84rem;
+    font-weight: 600;
   }
   .jn-calendar-btn {
     flex: none; padding: 8px 16px; border-radius: 999px;

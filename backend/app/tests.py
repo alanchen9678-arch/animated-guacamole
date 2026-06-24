@@ -102,6 +102,15 @@ class JournalModelTests(TestCase):
         self.assertFalse(privacy.allow_ai_access)
         self.assertFalse(privacy.allow_therapist_access)
 
+    def test_journal_entry_can_store_mood_for_the_day(self):
+        entry = ThoughtJournalEntry.objects.create(
+            user=self.user,
+            content='Today felt steadier.',
+            mood='calm',
+        )
+
+        self.assertEqual(entry.mood, 'calm')
+
 
 class CheckInModelTests(TestCase):
     def setUp(self):

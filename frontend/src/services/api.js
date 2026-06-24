@@ -67,3 +67,38 @@ export async function submitCheckIn(payload) {
 
   return data
 }
+
+export async function fetchJournalEntries() {
+  const response = await fetch(`${API_BASE_URL}/api/journal/`, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  })
+
+  const data = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(data.error || data.detail || 'Unable to load journal entries.')
+  }
+
+  return data
+}
+
+export async function saveJournalEntry(payload) {
+  const response = await fetch(`${API_BASE_URL}/api/journal/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(payload),
+  })
+
+  const data = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(data.error || data.detail || 'Unable to save journal entry.')
+  }
+
+  return data
+}

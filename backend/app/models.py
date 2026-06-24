@@ -1,11 +1,14 @@
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='profile',
+    )
     plan = models.CharField(max_length=50, default='Free')
     streak = models.IntegerField(default=0)
     mood = models.CharField(max_length=50, blank=True, default='')
@@ -92,18 +95,24 @@ class ThoughtJournalEntry(models.Model):
     )
     title = models.CharField(max_length=255, blank=True, default='')
     content = models.TextField()
+    mood = models.CharField(max_length=50, blank=True, default='')
+    entry_date = models.DateField(default=timezone.localdate)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
         indexes = [
+            models.Index(fields=['user', 'entry_date']),
             models.Index(fields=['user', 'created_at']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'entry_date'], name='unique_journal_entry_per_user_date'),
         ]
 
     def __str__(self):
         label = self.title or 'Untitled entry'
-        return f'{self.user.username} - {label}'
+        return f'{self.user.username} - {self.entry_date} - {label}'
 
 
 class JournalDoodle(models.Model):
