@@ -1,61 +1,15 @@
-﻿import { useState, useRef, useEffect } from 'react'
-
-// Anonymous identity
-
-const WORD_A = ['Calm','Quiet','Gentle','Steady','Brave','Kind','Warm','Still','Soft','Clear','Bold','Light']
-const WORD_N = ['Maple','River','Stone','Dawn','Forest','Lake','Ember','Cloud','Tide','Ridge','Pine','Brook']
-const ONBOARDING_STORAGE_KEY = 'aurora.peerSupport.onboarding'
-const PEER_STATE_STORAGE_KEY = 'aurora.peerSupport.state'
-
-function makeAnonName() {
-  const a = WORD_A[Math.floor(Math.random() * WORD_A.length)]
-  const n = WORD_N[Math.floor(Math.random() * WORD_N.length)]
-  return `${a}${n}${10 + Math.floor(Math.random() * 89)}`
-}
-
-function loadOnboardingState() {
-  try {
-    const stored = window.localStorage.getItem(ONBOARDING_STORAGE_KEY)
-    if (!stored) return null
-
-    const parsed = JSON.parse(stored)
-    if (parsed?.acceptedGuidelines && typeof parsed.anonName === 'string') {
-      return parsed
-    }
-  } catch {
-    return null
-  }
-
-  return null
-}
-
-function saveOnboardingState(anonName) {
-  try {
-    window.localStorage.setItem(
-      ONBOARDING_STORAGE_KEY,
-      JSON.stringify({ acceptedGuidelines: true, anonName }),
-    )
-  } catch {
-    // Storage can be unavailable in some private browsing modes.
-  }
-}
-
-function loadPeerSupportState() {
-  try {
-    const stored = window.localStorage.getItem(PEER_STATE_STORAGE_KEY)
-    return stored ? JSON.parse(stored) : null
-  } catch {
-    return null
-  }
-}
-
-function savePeerSupportState(state) {
-  try {
-    window.localStorage.setItem(PEER_STATE_STORAGE_KEY, JSON.stringify(state))
-  } catch {
-    // Storage can be unavailable in some private browsing modes.
-  }
-}
+import { useState, useRef, useEffect, useCallback } from 'react'
+import {
+  fetchPeerProfile,
+  completePeerOnboarding,
+  fetchPeerRooms,
+  fetchRoomMessages,
+  sendRoomMessage,
+  fetchPeers,
+  connectPeer,
+  fetchDMs,
+  sendDM,
+} from '../services/api.js'
 
 // Moderation engine
 
@@ -104,67 +58,6 @@ function moderate(text) {
   return null
 }
 
-// Mock data
-
-const ROOM_SEED = [
-  { id: 1,  user: 'GentleStone28', color: '#3a6898', text: "Does anyone else get anxiety spikes first thing in the morning before anything has even happened?", day: 3 },
-  { id: 2,  user: 'SteadyTide44',  color: '#b45309', text: "Yes, every single morning. I wake up with this dread and I can't explain where it's coming from.", day: 3 },
-  { id: 3,  user: 'BoldForest12',  color: '#15803d', text: "Morning anxiety is real. I've started 5 minutes of slow breathing before I check my phone. It helps a little.", day: 3 },
-  { id: 4,  user: 'QuietDawn67',   color: '#1d4ed8', text: "I keep telling myself the feeling will pass and it usually does. It just takes a while.", day: 2 },
-  { id: 5,  user: 'SoftCloud91',   color: '#be185d', text: "The hardest part is not knowing what triggered it. Makes it hard to address.", day: 2 },
-  { id: 6,  user: 'GentleStone28', color: '#3a6898', text: "Exactly. There's no clear trigger. It's just... there.", day: 2 },
-  { id: 7,  user: 'CalmRidge35',   color: '#0891b2', text: "My therapist called it 'free-floating anxiety.' Knowing there's a name for it actually helped me.", day: 1 },
-  { id: 8,  user: 'SteadyTide44',  color: '#b45309', text: "That's a great term. Has therapy been helping overall?", day: 1 },
-  { id: 9,  user: 'CalmRidge35',   color: '#0891b2', text: "Slowly, yes. It's not a quick fix but I feel like I'm actually building tools.", day: 1 },
-  { id: 10, user: 'WarmEmber20',   color: '#9333ea', text: "I tried meditation apps but couldn't stay consistent. What's actually worked for you all?", day: 0 },
-  { id: 11, user: 'BoldForest12',  color: '#15803d', text: "Journaling, honestly. Getting it out of my head and onto something outside me.", day: 0 },
-  { id: 12, user: 'QuietDawn67',   color: '#1d4ed8', text: "Walking. Even 10 minutes. I don't know why it helps but it does.", day: 0 },
-]
-
-const DAY_LABEL = { 3: '3 days ago', 2: '2 days ago', 1: 'Yesterday', 0: 'Today' }
-
-const VISIBLE_MATCH_COUNT = 5
-
-const PEER_LIST = [
-  { id: 1, name: 'QuietRiver33',  color: '#3a6898', status: 'none' },
-  { id: 2, name: 'SteadyCloud19', color: '#0891b2', status: 'none' },
-  { id: 3, name: 'BraveEmber55',  color: '#b45309', status: 'none' },
-  { id: 4, name: 'SoftDawn41',    color: '#15803d', status: 'none' },
-  { id: 5, name: 'GentleTide27',  color: '#be185d', status: 'none' },
-  { id: 6, name: 'ClearBrook64',  color: '#2563eb', status: 'none' },
-  { id: 7, name: 'WarmPine82',    color: '#c2410c', status: 'none' },
-  { id: 8, name: 'StillLake38',   color: '#4d6b58', status: 'none' },
-  { id: 9, name: 'LightStone73',  color: '#a21caf', status: 'none' },
-  { id: 10, name: 'KindMaple46',  color: '#047857', status: 'none' },
-]
-
-function mergeSavedPeers(savedPeers) {
-  if (!Array.isArray(savedPeers)) return PEER_LIST.map(p => ({ ...p }))
-
-  return PEER_LIST.map(peer => {
-    const saved = savedPeers.find(p => p.id === peer.id)
-    return saved ? { ...peer, status: saved.status ?? peer.status } : { ...peer }
-  })
-}
-
-function makeInitialDmMessages(peer, anonName) {
-  return [{
-    id: 0,
-    role: 'them',
-    text: `Hey ${anonName}! Glad we matched. How are you doing lately?`,
-    time: ts(),
-  }]
-}
-
-const PEER_REPLIES = [
-  "Hey, thanks for reaching out. It's good to talk to someone who actually gets it.",
-  "I've been dealing with the same thing. How long have you been struggling with this?",
-  "That really resonates with me. What's been helping you get through it lately?",
-  "Some days are better than others for me too. What's been your biggest challenge?",
-  "It's reassuring to know I'm not the only one feeling this way.",
-  "Yeah, it comes in waves. Have you found anything that helps when it gets bad?",
-]
-
 const GUIDELINES = [
   'Be kind and respectful. Everyone here is going through something difficult.',
   'Stay anonymous. Do not share your real name, phone number, email, or social media handles.',
@@ -173,8 +66,6 @@ const GUIDELINES = [
   'If someone expresses a crisis, encourage them to seek professional help.',
   'Conversations are AI-moderated 24/7. Serious or repeated violations may result in removal.',
 ]
-
-// Shared utils
 
 function ts() {
   return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -186,7 +77,7 @@ function AnonAvatar({ name, color, size = 36 }) {
       width: size, height: size, borderRadius: '50%', background: color,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       color: '#fff', fontWeight: 800, fontSize: size * 0.3, flexShrink: 0,
-    }}>{name.slice(0, 2)}</div>
+    }}>{(name || '?').slice(0, 2)}</div>
   )
 }
 
@@ -224,7 +115,7 @@ function LeaveConfirmBubble({ label, onCancel, onConfirm }) {
 
 // Onboarding
 
-function OnboardingView({ anonName, onDone }) {
+function OnboardingView({ onDone, loading }) {
   const [agreed, setAgreed] = useState(false)
   const [step, setStep]     = useState(1)
 
@@ -232,17 +123,19 @@ function OnboardingView({ anonName, onDone }) {
     return (
       <section className="page">
         <div className="ps-center-wrap">
-          <p className="ps-eyebrow">All set</p>
-          <h2 className="ps-heading">Meet your anonymous identity</h2>
+          <p className="ps-eyebrow">Almost there</p>
+          <h2 className="ps-heading">Assigning your anonymous identity</h2>
           <p className="ps-sub">
-            This name represents you in the Aurora community. No one will ever know your real identity.
+            You will receive a unique anonymous name. No one will ever know your real identity.
           </p>
-          <div className="ps-name-reveal">
-            <AnonAvatar name={anonName} color="#4d6b58" size={72} />
-            <div className="ps-name-big">{anonName}</div>
-            <p className="ps-name-note">Randomly assigned - cannot be changed</p>
-          </div>
-          <button className="ps-primary-btn" onClick={onDone}>Enter the community</button>
+          <button
+            className="ps-primary-btn"
+            onClick={onDone}
+            disabled={loading}
+            style={{ opacity: loading ? 0.6 : 1 }}
+          >
+            {loading ? 'Setting up...' : 'Enter the community'}
+          </button>
         </div>
       </section>
     )
@@ -284,55 +177,99 @@ function OnboardingView({ anonName, onDone }) {
 
 // Hub
 
-function HubView({ anonName, peers, setPeers, onRoom, onDM }) {
-  const connected = peers.filter(p => p.status === 'connected').length
-  const pending = peers.filter(p => p.status === 'pending').length
+function HubView({ profile, rooms, peers, setPeers, onRoom, onDM, loadingPeers }) {
+  const activeChats  = peers.filter(p => p.status === 'connected')
+  const recommended  = peers.filter(p => p.status !== 'connected' && p.status !== 'declined').slice(0, 8)
+  const room         = rooms[0]
+
+  async function handleConnect(userId) {
+    setPeers(prev => prev.map(p => p.userId === userId ? { ...p, status: 'pending' } : p))
+    try {
+      const res = await connectPeer(userId)
+      setPeers(prev => prev.map(p => p.userId === userId ? { ...p, status: res.status } : p))
+    } catch {
+      setPeers(prev => prev.map(p => p.userId === userId ? { ...p, status: 'none' } : p))
+    }
+  }
 
   return (
     <section className="page">
       <div className="ps-hub-identity">
-        <AnonAvatar name={anonName} color="#4d6b58" size={42} />
+        <AnonAvatar name={profile.anonymousName} color={profile.avatarColor} size={42} />
         <div>
-          <p className="ps-hub-name">{anonName}</p>
+          <p className="ps-hub-name">{profile.anonymousName}</p>
           <p className="ps-hub-name-sub">Your anonymous identity</p>
         </div>
       </div>
 
-      <div className="ps-hub-cards">
-        <button className="ps-hub-card" onClick={onRoom}>
-          <div className="ps-hub-card-icon ps-hub-card-icon--purple">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </div>
-          <div className="ps-hub-card-text">
-            <strong>Anxiety Support Room</strong>
-            <p>Your assigned group - 14 members - Active now</p>
-          </div>
-          <span className="ps-hub-arrow">-&gt;</span>
-        </button>
+      {room && (
+        <div className="ps-hub-cards">
+          <button className="ps-hub-card" onClick={() => onRoom(room)}>
+            <div className="ps-hub-card-icon ps-hub-card-icon--purple">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div className="ps-hub-card-text">
+              <strong>{room.name}</strong>
+              <p>{room.memberCount} {room.memberCount === 1 ? 'member' : 'members'} - Live chat - AI-moderated</p>
+            </div>
+            <span className="ps-hub-arrow">→</span>
+          </button>
+        </div>
+      )}
 
-        {false && <button className="ps-hub-card" onClick={() => {}}>
-          <div className="ps-hub-card-icon ps-hub-card-icon--teal">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+      {/* Active chats */}
+      {activeChats.length > 0 && (
+        <div>
+          <div className="ps-section-heading">
+            <span>Active chats</span>
+            <strong>{activeChats.length}</strong>
           </div>
-          <div className="ps-hub-card-text">
-            <strong>Peer Matches</strong>
-            <p>
-              5 matched
-              {connected > 0 ? ` - ${connected} connected` : ''}
-              {pending > 0   ? ` - ${pending} pending` : ''}
-            </p>
+          <div className="ps-peers-list">
+            {activeChats.map(p => (
+              <div key={p.userId} className="ps-peer-card ps-peer-card--active">
+                <AnonAvatar name={p.name} color={p.color} size={48} />
+                <div className="ps-peer-info">
+                  <strong>{p.name}</strong>
+                  <p className="ps-peer-concerns">Active anonymous chat</p>
+                </div>
+                <button className="ps-req-btn ps-req-btn--on" onClick={() => onDM(p)}>Message</button>
+              </div>
+            ))}
           </div>
-          <span className="ps-hub-arrow">-&gt;</span>
-        </button>}
+        </div>
+      )}
+
+      {/* Peer matches */}
+      <div>
+        <div className="ps-section-heading">
+          <span>Peer matches</span>
+          <strong>{recommended.length}</strong>
+        </div>
+        <div className="ps-peers-list">
+          {loadingPeers && <div className="ps-active-empty">Loading peers...</div>}
+          {!loadingPeers && recommended.length === 0 && (
+            <div className="ps-active-empty">No other members yet. Invite others to join Aurora.</div>
+          )}
+          {recommended.map(p => (
+            <div key={p.userId} className="ps-peer-card">
+              <AnonAvatar name={p.name} color={p.color} size={48} />
+              <div className="ps-peer-info">
+                <strong>{p.name}</strong>
+              </div>
+              <div>
+                {p.status === 'none'    && <button className="ps-req-btn" onClick={() => handleConnect(p.userId)}>Connect</button>}
+                {p.status === 'pending' && !p.isRequester && <button className="ps-req-btn" onClick={() => handleConnect(p.userId)}>Accept</button>}
+                {p.status === 'pending' && p.isRequester  && <span className="ps-req-pending">Pending...</span>}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-
-      <PeerMatchesSection peers={peers} setPeers={setPeers} onDM={onDM} />
 
       <div className="ps-hub-pills">
         <span className="ps-pill">All chats anonymous</span>
         <span className="ps-pill">AI-moderated 24/7</span>
-        <span className="ps-pill">7-day message history</span>
-        <span className="ps-pill">Room capped at 15 members</span>
+        <span className="ps-pill">Messages saved securely</span>
       </div>
     </section>
   )
@@ -340,48 +277,74 @@ function HubView({ anonName, peers, setPeers, onRoom, onDM }) {
 
 // Room chat
 
-function RoomView({ anonName, messages, setMessages, onBack, onLeave }) {
-  const [input, setInput]       = useState('')
-  const [modAlert, setModAlert] = useState(null)
+function RoomView({ profile, room, onBack }) {
+  const [messages, setMessages]     = useState([])
+  const [input, setInput]           = useState('')
+  const [modAlert, setModAlert]     = useState(null)
   const [confirmLeave, setConfirmLeave] = useState(false)
-  const messagesRef             = useRef(null)
-  const inputRef                = useRef(null)
-  const shouldScrollRef         = useRef(false)
+  const [sending, setSending]       = useState(false)
+  const [error, setError]           = useState(null)
+  const messagesRef                 = useRef(null)
+  const inputRef                    = useRef(null)
+  const lastIdRef                   = useRef(null)
+  const initialLoad                 = useRef(true)
 
-  useEffect(() => {
-    const messagesEl = messagesRef.current
-    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'auto' })
-    inputRef.current?.focus()
+  const scrollToBottom = useCallback((behavior = 'smooth') => {
+    messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior })
   }, [])
 
+  const loadMessages = useCallback(async (initial = false) => {
+    try {
+      const data = await fetchRoomMessages(room.id, initial ? null : lastIdRef.current)
+      if (!data.length) return
+      setMessages(prev => {
+        const existing = new Set(prev.map(m => m.id))
+        const fresh = data.filter(m => !existing.has(m.id))
+        if (!fresh.length) return prev
+        return [...prev, ...fresh]
+      })
+      lastIdRef.current = data[data.length - 1].id
+    } catch {
+      // silently ignore poll errors
+    }
+  }, [room.id])
+
   useEffect(() => {
-    if (!shouldScrollRef.current) {
-      return
-    }
-    shouldScrollRef.current = false
-    const messagesEl = messagesRef.current
-    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' })
-    inputRef.current?.focus()
-  }, [messages])
-
-  function send() {
-    const text = input.trim()
-    if (!text) return
-    const flag = moderate(text)
-    if (flag?.blocked) {
-      setModAlert(flag)
-      setInput('')
+    loadMessages(true).then(() => {
+      scrollToBottom('auto')
       inputRef.current?.focus()
-      return
-    }
-    if (flag) setModAlert(flag)
-    shouldScrollRef.current = true
-    setMessages(prev => [...prev, { id: Date.now(), user: anonName, color: '#4d6b58', text, day: 0, self: true }])
-    setInput('')
-    inputRef.current?.focus()
-  }
+      initialLoad.current = false
+    })
+    const interval = setInterval(() => loadMessages(false), 5000)
+    return () => clearInterval(interval)
+  }, [loadMessages, scrollToBottom])
 
-  const uniqueDays = [...new Set(messages.map(m => m.day))].sort((a, b) => b - a)
+  useEffect(() => {
+    if (!initialLoad.current) scrollToBottom()
+  }, [messages, scrollToBottom])
+
+  async function send() {
+    const text = input.trim()
+    if (!text || sending) return
+    const flag = moderate(text)
+    if (flag?.blocked) { setModAlert(flag); setInput(''); return }
+    if (flag) setModAlert(flag)
+    setSending(true)
+    setInput('')
+    try {
+      const msg = await sendRoomMessage(room.id, text)
+      setMessages(prev => {
+        if (prev.some(m => m.id === msg.id)) return prev
+        return [...prev, msg]
+      })
+      lastIdRef.current = msg.id
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSending(false)
+      inputRef.current?.focus()
+    }
+  }
 
   return (
     <div className="ps-chat-root">
@@ -391,8 +354,8 @@ function RoomView({ anonName, messages, setMessages, onBack, onLeave }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
         <div>
-          <strong className="ps-chat-name">Anxiety Support Room</strong>
-          <span className="ps-chat-sub">14 members - 7-day history - AI-moderated</span>
+          <strong className="ps-chat-name">{room.name}</strong>
+          <span className="ps-chat-sub">Live chat - AI-moderated - updates every 5s</span>
         </div>
         <div className="ps-leave-wrap">
           <button className="ps-leave-btn" onClick={() => setConfirmLeave(true)}>Leave room</button>
@@ -400,29 +363,28 @@ function RoomView({ anonName, messages, setMessages, onBack, onLeave }) {
             <LeaveConfirmBubble
               label="Leave this room?"
               onCancel={() => setConfirmLeave(false)}
-              onConfirm={onLeave}
+              onConfirm={onBack}
             />
           )}
         </div>
       </div>
 
       {modAlert && <ModAlert rule={modAlert} onDismiss={() => setModAlert(null)} />}
+      {error && <div className="ps-error-bar">{error} <button onClick={() => setError(null)}>✕</button></div>}
 
       <div className="ps-messages" ref={messagesRef}>
-        {uniqueDays.map(day => (
-          <div key={day}>
-            <div className="ps-day-sep">{DAY_LABEL[day]}</div>
-            {messages.filter(m => m.day === day).map(m => (
-              <div key={m.id} className={`ps-msg-row${m.self ? ' ps-msg-row--self' : ''}`}>
-                {!m.self && <AnonAvatar name={m.user} color={m.color} size={28} />}
-                <div className={`ps-bubble${m.self ? ' ps-bubble--self' : ' ps-bubble--other'}`}>
-                  {!m.self && <span className="ps-bubble-name" style={{ color: m.color }}>{m.user}</span>}
-                  <p className="ps-bubble-text">{m.text}</p>
-                  {m.self && <span className="ps-bubble-time">Now</span>}
-                </div>
-                {m.self && <div className="ps-self-dot" style={{ background: '#4d6b58' }}>{anonName.slice(0, 2)}</div>}
-              </div>
-            ))}
+        {messages.length === 0 && (
+          <div className="ps-empty-chat">No messages yet. Be the first to say something.</div>
+        )}
+        {messages.map(m => (
+          <div key={m.id} className={`ps-msg-row${m.self ? ' ps-msg-row--self' : ''}`}>
+            {!m.self && <AnonAvatar name={m.user} color={m.color} size={28} />}
+            <div className={`ps-bubble${m.self ? ' ps-bubble--self' : ' ps-bubble--other'}`}>
+              {!m.self && <span className="ps-bubble-name" style={{ color: m.color }}>{m.user}</span>}
+              <p className="ps-bubble-text">{m.text}</p>
+              <span className="ps-bubble-time">{new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            {m.self && <div className="ps-self-dot" style={{ background: profile.avatarColor }}>{profile.anonymousName.slice(0, 2)}</div>}
           </div>
         ))}
       </div>
@@ -436,8 +398,9 @@ function RoomView({ anonName, messages, setMessages, onBack, onLeave }) {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
+          disabled={sending}
         />
-        <button className="send-btn" onClick={send} disabled={!input.trim()} aria-label="Send">
+        <button className="send-btn" onClick={send} disabled={!input.trim() || sending} aria-label="Send">
           <SendIcon />
         </button>
       </div>
@@ -445,130 +408,75 @@ function RoomView({ anonName, messages, setMessages, onBack, onLeave }) {
   )
 }
 
-// Peer list
-
-function PeerMatchesSection({ peers, setPeers, onDM, onBack }) {
-  const activeChats = peers.filter(p => p.status === 'connected')
-  const recommendedPeers = peers
-    .filter(p => p.status !== 'connected' && p.status !== 'left')
-    .slice(0, VISIBLE_MATCH_COUNT)
-
-  function sendRequest(id) {
-    setPeers(prev => prev.map(p => p.id === id ? { ...p, status: 'pending' } : p))
-    setTimeout(() => {
-      setPeers(prev => prev.map(p => p.id === id ? { ...p, status: 'connected' } : p))
-    }, 1800)
-  }
-
-  return (
-    <section className="page">
-      <button className="ps-back-btn" style={{ marginBottom: 12 }} onClick={onBack}>Community Hub</button>
-      <header className="page-header">
-        <h2>Your peer matches</h2>
-        <p>Recommended anonymous peers. Both users must accept before a chat opens.</p>
-      </header>
-
-      <div>
-        <div className="ps-section-heading">
-          <span>Active chats</span>
-          <strong>{activeChats.length}</strong>
-        </div>
-        <div className="ps-peers-list">
-          {activeChats.length === 0 && (
-            <div className="ps-active-empty">Accepted peer requests will appear here.</div>
-          )}
-          {activeChats.map(p => (
-            <div key={p.id} className="ps-peer-card ps-peer-card--active">
-              <AnonAvatar name={p.name} color={p.color} size={48} />
-              <div className="ps-peer-info">
-                <strong>{p.name}</strong>
-                <p className="ps-peer-concerns">Active anonymous chat</p>
-              </div>
-              <button className="ps-req-btn ps-req-btn--on" onClick={() => onDM(p)}>Message</button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="ps-section-heading">
-        <span>Recommended matches</span>
-        <strong>{recommendedPeers.length}</strong>
-      </div>
-
-      <div className="ps-peers-list">
-        {recommendedPeers.map(p => (
-          <div key={p.id} className="ps-peer-card">
-            <AnonAvatar name={p.name} color={p.color} size={48} />
-            <div className="ps-peer-info">
-              <strong>{p.name}</strong>
-            </div>
-            <div>
-              {p.status === 'none'      && <button className="ps-req-btn" onClick={() => sendRequest(p.id)}>Send request</button>}
-              {p.status === 'pending'   && <span className="ps-req-pending">Pending...</span>}
-              {p.status === 'connected' && <button className="ps-req-btn ps-req-btn--on" onClick={() => onDM(p)}>Message</button>}
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
 // DM chat
 
-function DMView({ peer, anonName, messages, setMessages, onBack, onLeave }) {
+function DMView({ peer, profile, onBack, onLeave }) {
+  const [messages, setMessages] = useState([])
   const [input, setInput]       = useState('')
-  const [isTyping, setIsTyping] = useState(false)
   const [modAlert, setModAlert] = useState(null)
-  const [replyIdx, setReplyIdx] = useState(0)
+  const [sending, setSending]   = useState(false)
   const [confirmLeave, setConfirmLeave] = useState(false)
+  const [error, setError]       = useState(null)
   const messagesRef             = useRef(null)
   const inputRef                = useRef(null)
-  const shouldScrollRef         = useRef(false)
+  const lastIdRef               = useRef(null)
+  const initialLoad             = useRef(true)
 
-  useEffect(() => {
-    const messagesEl = messagesRef.current
-    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'auto' })
-    inputRef.current?.focus()
+  const scrollToBottom = useCallback((behavior = 'smooth') => {
+    messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior })
   }, [])
 
-  useEffect(() => {
-    if (!shouldScrollRef.current) {
-      return
+  const loadMessages = useCallback(async (initial = false) => {
+    try {
+      const data = await fetchDMs(peer.userId, initial ? null : lastIdRef.current)
+      if (!data.length) return
+      setMessages(prev => {
+        const existing = new Set(prev.map(m => m.id))
+        const fresh = data.filter(m => !existing.has(m.id))
+        if (!fresh.length) return prev
+        return [...prev, ...fresh]
+      })
+      lastIdRef.current = data[data.length - 1].id
+    } catch {
+      // silently ignore
     }
-    shouldScrollRef.current = false
-    const messagesEl = messagesRef.current
-    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' })
-    if (!isTyping) inputRef.current?.focus()
-  }, [messages, isTyping])
+  }, [peer.userId])
 
-  function send() {
-    const text = input.trim()
-    if (!text || isTyping) return
-    const flag = moderate(text)
-    if (flag?.blocked) {
-      setModAlert(flag)
-      setInput('')
+  useEffect(() => {
+    loadMessages(true).then(() => {
+      scrollToBottom('auto')
       inputRef.current?.focus()
-      return
-    }
+      initialLoad.current = false
+    })
+    const interval = setInterval(() => loadMessages(false), 5000)
+    return () => clearInterval(interval)
+  }, [loadMessages, scrollToBottom])
+
+  useEffect(() => {
+    if (!initialLoad.current) scrollToBottom()
+  }, [messages, scrollToBottom])
+
+  async function send() {
+    const text = input.trim()
+    if (!text || sending) return
+    const flag = moderate(text)
+    if (flag?.blocked) { setModAlert(flag); setInput(''); return }
     if (flag) setModAlert(flag)
-    shouldScrollRef.current = true
-    setMessages(prev => [...prev, { id: Date.now(), role: 'me', text, time: ts() }])
+    setSending(true)
     setInput('')
-    inputRef.current?.focus()
-    shouldScrollRef.current = true
-    setIsTyping(true)
-    setTimeout(() => {
-      shouldScrollRef.current = true
-      setIsTyping(false)
-      setReplyIdx(i => i + 1)
-      setMessages(prev => [...prev, {
-        id: Date.now() + 1, role: 'them',
-        text: PEER_REPLIES[replyIdx % PEER_REPLIES.length],
-        time: ts(),
-      }])
-    }, 1000 + Math.random() * 900)
+    try {
+      const msg = await sendDM(peer.userId, text)
+      setMessages(prev => {
+        if (prev.some(m => m.id === msg.id)) return prev
+        return [...prev, msg]
+      })
+      lastIdRef.current = msg.id
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSending(false)
+      inputRef.current?.focus()
+    }
   }
 
   return (
@@ -578,7 +486,7 @@ function DMView({ peer, anonName, messages, setMessages, onBack, onLeave }) {
         <AnonAvatar name={peer.name} color={peer.color} size={34} />
         <div>
           <strong className="ps-chat-name">{peer.name}</strong>
-          <span className="ps-chat-sub">Anonymous</span>
+          <span className="ps-chat-sub">Anonymous - updates every 5s</span>
         </div>
         <div className="ps-leave-wrap">
           <button className="ps-leave-btn" onClick={() => setConfirmLeave(true)}>Leave chat</button>
@@ -586,19 +494,23 @@ function DMView({ peer, anonName, messages, setMessages, onBack, onLeave }) {
             <LeaveConfirmBubble
               label="Leave this chat?"
               onCancel={() => setConfirmLeave(false)}
-              onConfirm={() => onLeave(peer.id)}
+              onConfirm={onLeave}
             />
           )}
         </div>
       </div>
 
       <div className="ps-anon-notice">
-        Anonymous chat - Do not share personal info, contact details, or social media handles
+        Anonymous chat — Do not share personal info, contact details, or social media handles
       </div>
 
       {modAlert && <ModAlert rule={modAlert} onDismiss={() => setModAlert(null)} />}
+      {error && <div className="ps-error-bar">{error} <button onClick={() => setError(null)}>✕</button></div>}
 
       <div className="ps-messages" ref={messagesRef}>
+        {messages.length === 0 && (
+          <div className="ps-empty-chat">Start the conversation.</div>
+        )}
         {messages.map(m => {
           const isMe = m.role === 'me'
           return (
@@ -606,20 +518,12 @@ function DMView({ peer, anonName, messages, setMessages, onBack, onLeave }) {
               {!isMe && <AnonAvatar name={peer.name} color={peer.color} size={28} />}
               <div className={`ps-bubble${isMe ? ' ps-bubble--self' : ' ps-bubble--other'}`}>
                 <p className="ps-bubble-text">{m.text}</p>
-                <span className="ps-bubble-time">{m.time}</span>
+                <span className="ps-bubble-time">{new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               </div>
-              {isMe && <div className="ps-self-dot" style={{ background: '#4d6b58' }}>{anonName.slice(0, 2)}</div>}
+              {isMe && <div className="ps-self-dot" style={{ background: profile.avatarColor }}>{profile.anonymousName.slice(0, 2)}</div>}
             </div>
           )
         })}
-        {isTyping && (
-          <div className="ps-msg-row">
-            <AnonAvatar name={peer.name} color={peer.color} size={28} />
-            <div className="ps-bubble ps-bubble--other ps-typing-bubble">
-              <span className="dot"/><span className="dot"/><span className="dot"/>
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="ps-input-bar">
@@ -631,9 +535,9 @@ function DMView({ peer, anonName, messages, setMessages, onBack, onLeave }) {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-          disabled={isTyping}
+          disabled={sending}
         />
-        <button className="send-btn" onClick={send} disabled={!input.trim() || isTyping} aria-label="Send">
+        <button className="send-btn" onClick={send} disabled={!input.trim() || sending} aria-label="Send">
           <SendIcon />
         </button>
       </div>
@@ -644,63 +548,86 @@ function DMView({ peer, anonName, messages, setMessages, onBack, onLeave }) {
 // Root
 
 export default function PeerSupport() {
-  const [savedOnboarding]           = useState(loadOnboardingState)
-  const [savedPeerState]            = useState(loadPeerSupportState)
-  const [anonName]                  = useState(() => savedOnboarding?.anonName ?? makeAnonName())
-  const [view, setView]             = useState(() => savedOnboarding?.acceptedGuidelines ? 'hub' : 'onboarding')
-  const [peers, setPeers]           = useState(() => mergeSavedPeers(savedPeerState?.peers))
-  const [roomMessages, setRoomMessages] = useState(() => (
-    Array.isArray(savedPeerState?.roomMessages)
-      ? savedPeerState.roomMessages
-      : ROOM_SEED.map(m => ({ ...m }))
-  ))
-  const [dmHistories, setDmHistories] = useState(() => (
-    savedPeerState?.dmHistories && typeof savedPeerState.dmHistories === 'object'
-      ? savedPeerState.dmHistories
-      : {}
-  ))
+  const [profile, setProfile]     = useState(null)
+  const [rooms, setRooms]         = useState([])
+  const [peers, setPeers]         = useState([])
+  const [loadingPeers, setLoadingPeers] = useState(false)
+  const [view, setView]           = useState('loading')
+  const [activeRoom, setActiveRoom] = useState(null)
   const [activePeer, setActivePeer] = useState(null)
+  const [onboardingLoading, setOnboardingLoading] = useState(false)
 
   useEffect(() => {
-    savePeerSupportState({ peers, roomMessages, dmHistories })
-  }, [peers, roomMessages, dmHistories])
+    fetchPeerProfile()
+      .then(data => {
+        setProfile(data)
+        setView(data.isOnboarded ? 'hub' : 'onboarding')
+      })
+      .catch(() => setView('onboarding'))
+  }, [])
 
-  function setDmMessages(peerId, updater) {
-    setDmHistories(prev => {
-      const current = prev[peerId] ?? makeInitialDmMessages(activePeer ?? { id: peerId, name: 'Peer' }, anonName)
-      const next = typeof updater === 'function' ? updater(current) : updater
-      return { ...prev, [peerId]: next }
-    })
+  useEffect(() => {
+    if (view !== 'hub') return
+    fetchPeerRooms().then(setRooms).catch(() => {})
+    setLoadingPeers(true)
+    fetchPeers().then(setPeers).catch(() => {}).finally(() => setLoadingPeers(false))
+  }, [view])
+
+  async function finishOnboarding() {
+    setOnboardingLoading(true)
+    try {
+      const data = await completePeerOnboarding()
+      setProfile(data)
+      setView('hub')
+    } catch {
+      // stay on onboarding
+    } finally {
+      setOnboardingLoading(false)
+    }
   }
 
-  function openDM(peer) {
-    setDmHistories(prev => (
-      prev[peer.id] ? prev : { ...prev, [peer.id]: makeInitialDmMessages(peer, anonName) }
-    ))
-    setActivePeer(peer)
-    setView('dm')
-  }
-  function finishOnboarding() { saveOnboardingState(anonName); setView('hub') }
-  function leaveDM(peerId) {
-    setPeers(prev => prev.map(p => p.id === peerId ? { ...p, status: 'left' } : p))
-    setActivePeer(null)
-    setView('hub')
+  function openRoom(room) { setActiveRoom(room); setView('room') }
+  function openDM(peer)   { setActivePeer(peer); setView('dm') }
+
+  if (view === 'loading') {
+    return (
+      <>
+        <style>{PS_STYLES}</style>
+        <section className="page"><p style={{ color: 'var(--muted)' }}>Loading...</p></section>
+      </>
+    )
   }
 
   return (
     <>
       <style>{PS_STYLES}</style>
-      {view === 'onboarding' && <OnboardingView anonName={anonName} onDone={finishOnboarding} />}
-      {view === 'hub'        && <HubView anonName={anonName} peers={peers} setPeers={setPeers} onRoom={() => setView('room')} onDM={openDM} />}
-      {view === 'room'       && <RoomView anonName={anonName} messages={roomMessages} setMessages={setRoomMessages} onBack={() => setView('hub')} onLeave={() => setView('hub')} />}
-      {view === 'dm'         && activePeer && (
+      {view === 'onboarding' && (
+        <OnboardingView onDone={finishOnboarding} loading={onboardingLoading} />
+      )}
+      {view === 'hub' && profile && (
+        <HubView
+          profile={profile}
+          rooms={rooms}
+          peers={peers}
+          setPeers={setPeers}
+          onRoom={openRoom}
+          onDM={openDM}
+          loadingPeers={loadingPeers}
+        />
+      )}
+      {view === 'room' && profile && activeRoom && (
+        <RoomView
+          profile={profile}
+          room={activeRoom}
+          onBack={() => setView('hub')}
+        />
+      )}
+      {view === 'dm' && profile && activePeer && (
         <DMView
           peer={activePeer}
-          anonName={anonName}
-          messages={dmHistories[activePeer.id] ?? makeInitialDmMessages(activePeer, anonName)}
-          setMessages={(updater) => setDmMessages(activePeer.id, updater)}
+          profile={profile}
           onBack={() => setView('hub')}
-          onLeave={leaveDM}
+          onLeave={() => { setActivePeer(null); setView('hub') }}
         />
       )}
     </>
@@ -743,15 +670,6 @@ const PS_STYLES = `
   .ps-agree-label { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; margin-bottom: 20px; cursor: pointer; }
   .ps-agree-label input { width: 16px; height: 16px; accent-color: var(--accent); }
 
-  .ps-name-reveal {
-    display: flex; flex-direction: column; align-items: center; gap: 12px;
-    background: var(--panel-strong); border: 1px solid var(--line); border-radius: 22px;
-    padding: 32px; margin-bottom: 28px; text-align: center;
-    box-shadow: 0 8px 24px rgba(46,42,38,0.08);
-  }
-  .ps-name-big { font-size: 2rem; font-weight: 900; letter-spacing: -0.03em; }
-  .ps-name-note { font-size: 0.78rem; color: var(--muted); margin: 0; }
-
   /* hub */
   .ps-hub-identity {
     display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
@@ -762,18 +680,6 @@ const PS_STYLES = `
   .ps-hub-name-sub { margin: 2px 0 0; font-size: 0.76rem; color: var(--muted); }
 
   .ps-hub-cards { display: grid; gap: 12px; margin-bottom: 14px; }
-  .ps-hub-cards + .page {
-    gap: 14px;
-  }
-  .ps-hub-cards + .page > .ps-back-btn {
-    display: none;
-  }
-  .ps-hub-cards + .page .page-header h2 {
-    font-size: 1.2rem;
-  }
-  .ps-hub-cards + .page .page-header p {
-    font-size: 0.86rem;
-  }
   .ps-hub-card {
     display: flex; align-items: center; gap: 14px;
     background: var(--panel-strong); border: 1px solid var(--line);
@@ -785,19 +691,17 @@ const PS_STYLES = `
   .ps-hub-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(46,42,38,0.10); }
   .ps-hub-card-icon { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .ps-hub-card-icon--purple { background: rgba(58,104,152,0.10); color: #3a6898; }
-  .ps-hub-card-icon--teal   { background: rgba(77,107,88,0.10); color: var(--accent); }
   .ps-hub-card-text { flex: 1; }
   .ps-hub-card-text strong { display: block; font-size: 0.95rem; margin-bottom: 3px; }
   .ps-hub-card-text p { margin: 0; font-size: 0.8rem; color: var(--muted); }
   .ps-hub-arrow { font-size: 1.1rem; color: var(--muted); }
-
-  .ps-hub-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ps-hub-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
   .ps-pill { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 0.76rem; color: var(--muted); background: rgba(255,255,255,0.7); }
 
   /* peers */
   .ps-section-heading {
     display: flex; align-items: center; justify-content: space-between;
-    margin: 8px 0 10px; color: var(--muted);
+    margin: 16px 0 10px; color: var(--muted);
     font-size: 0.76rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
   }
   .ps-section-heading strong {
@@ -823,6 +727,10 @@ const PS_STYLES = `
     padding: 16px 18px; color: var(--muted); font-size: 0.88rem;
     background: rgba(255,255,255,0.58);
   }
+  .ps-empty-chat {
+    text-align: center; color: var(--muted); font-size: 0.88rem;
+    padding: 40px 0;
+  }
   .ps-peer-info { flex: 1; }
   .ps-peer-info strong { display: block; font-size: 0.95rem; margin-bottom: 3px; }
   .ps-peer-concerns { margin: 0; font-size: 0.78rem; color: var(--muted); }
@@ -843,16 +751,13 @@ const PS_STYLES = `
     height: calc(100dvh - 168px);
     max-height: calc(100dvh - 168px);
     min-height: 0;
-    background: transparent;
-    border: 0;
-    border-radius: 0;
     overflow: hidden;
     box-sizing: border-box;
   }
   .ps-chat-header {
     display: flex; align-items: center; gap: 10px;
     padding: 0 0 14px; border-bottom: 1px solid var(--line);
-    background: transparent; flex-shrink: 0;
+    flex-shrink: 0;
   }
   .ps-chat-name { display: block; font-size: 0.92rem; }
   .ps-chat-sub { font-size: 0.72rem; color: var(--muted); }
@@ -862,61 +767,32 @@ const PS_STYLES = `
     color: #dc2626; font-size: 0.8rem; font-weight: 700; transition: background 140ms;
   }
   .ps-leave-btn:hover { background: rgba(220,38,38,0.06); }
-  .ps-leave-wrap {
-    position: relative;
-    margin-left: auto;
-  }
-  .ps-leave-wrap .ps-leave-btn {
-    margin-left: 0;
-  }
+  .ps-leave-wrap { position: relative; margin-left: auto; }
+  .ps-leave-wrap .ps-leave-btn { margin-left: 0; }
   .ps-leave-confirm {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    z-index: 20;
-    width: 220px;
-    padding: 12px;
-    border: 1px solid rgba(220,38,38,0.20);
-    border-radius: 14px;
-    background: #fff;
-    box-shadow: 0 12px 28px rgba(46,42,38,0.14);
+    position: absolute; top: calc(100% + 8px); right: 0; z-index: 20;
+    width: 220px; padding: 12px;
+    border: 1px solid rgba(220,38,38,0.20); border-radius: 14px;
+    background: #fff; box-shadow: 0 12px 28px rgba(46,42,38,0.14);
   }
-  .ps-leave-confirm p {
-    margin: 0 0 10px;
-    color: var(--ink);
-    font-size: 0.84rem;
-    font-weight: 700;
-  }
-  .ps-leave-confirm-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-  }
-  .ps-confirm-cancel,
-  .ps-confirm-danger {
-    border-radius: 999px;
-    padding: 6px 12px;
-    font-size: 0.78rem;
-    font-weight: 700;
-  }
-  .ps-confirm-cancel {
-    border: 1px solid var(--line);
-    background: transparent;
-    color: var(--muted);
-  }
-  .ps-confirm-danger {
-    border: 1px solid #dc2626;
-    background: #dc2626;
-    color: #fff;
-  }
+  .ps-leave-confirm p { margin: 0 0 10px; color: var(--ink); font-size: 0.84rem; font-weight: 700; }
+  .ps-leave-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .ps-confirm-cancel, .ps-confirm-danger { border-radius: 999px; padding: 6px 12px; font-size: 0.78rem; font-weight: 700; }
+  .ps-confirm-cancel { border: 1px solid var(--line); background: transparent; color: var(--muted); }
+  .ps-confirm-danger { border: 1px solid #dc2626; background: #dc2626; color: #fff; }
   .ps-room-badge { width: 34px; height: 34px; border-radius: 10px; background: rgba(58,104,152,0.1); color: #3a6898; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .ps-anon-notice { padding: 9px 0; font-size: 0.74rem; color: var(--muted); background: transparent; border-bottom: 1px solid var(--line); text-align: center; flex-shrink: 0; }
+  .ps-anon-notice { padding: 9px 0; font-size: 0.74rem; color: var(--muted); border-bottom: 1px solid var(--line); text-align: center; flex-shrink: 0; }
+  .ps-error-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 14px; background: rgba(220,38,38,0.06); border-bottom: 1px solid rgba(220,38,38,0.22);
+    font-size: 0.82rem; color: #dc2626; flex-shrink: 0;
+  }
+  .ps-error-bar button { background: none; border: none; color: #dc2626; cursor: pointer; font-size: 1rem; }
 
   /* messages */
   .ps-messages { flex: 1; overflow-y: auto; padding: 16px 0 8px; display: flex; flex-direction: column; gap: 10px; }
   .ps-messages::-webkit-scrollbar { width: 5px; }
   .ps-messages::-webkit-scrollbar-thumb { background: rgba(46,42,38,0.12); border-radius: 999px; }
-  .ps-day-sep { text-align: center; font-size: 0.72rem; font-weight: 600; color: var(--muted); padding: 6px 0; letter-spacing: 0.04em; }
   .ps-msg-row { display: flex; align-items: flex-end; gap: 8px; animation: fade-up 180ms ease; }
   .ps-msg-row--self { flex-direction: row-reverse; }
   .ps-bubble { max-width: 72%; padding: 9px 13px 7px; border-radius: 18px; display: flex; flex-direction: column; gap: 3px; }
@@ -928,12 +804,6 @@ const PS_STYLES = `
   .ps-bubble-time  { font-size: 0.66rem; color: rgba(46,42,38,0.35); align-self: flex-end; }
   .ps-bubble--self .ps-bubble-time { color: rgba(255,255,255,0.6); }
   .ps-self-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.6rem; font-weight: 800; flex-shrink: 0; }
-  .ps-typing-bubble {
-    padding: 14px 18px;
-    flex-direction: row;
-    align-items: center;
-    gap: 5px;
-  }
 
   /* moderation */
   .ps-mod-alert {
@@ -950,7 +820,6 @@ const PS_STYLES = `
   .ps-input-bar {
     display: flex; align-items: flex-end; gap: 10px;
     padding: 12px 0 0; border-top: 1px solid rgba(46,42,38,0.12);
-    background: linear-gradient(180deg, rgba(250,244,232,0), rgba(250,244,232,0.52));
     flex-shrink: 0;
   }
   .chat-textarea {
@@ -959,14 +828,13 @@ const PS_STYLES = `
     min-height: 44px; max-height: 120px; overflow-y: auto;
     font-size: 0.92rem; line-height: 1.45;
     background: rgba(255,255,255,0.84); color: var(--ink);
-    outline: none; cursor: text;
+    outline: none;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.92), 0 4px 14px rgba(46,42,38,0.05);
     transition: border-color 140ms, box-shadow 140ms, background 140ms;
   }
   .chat-textarea::placeholder { color: rgba(46,42,38,0.38); }
   .chat-textarea:focus {
-    border-color: rgba(77,107,88,0.58);
-    background: #fff;
+    border-color: rgba(77,107,88,0.58); background: #fff;
     box-shadow: 0 0 0 3px rgba(77,107,88,0.12), 0 8px 20px rgba(46,42,38,0.07);
   }
   .chat-textarea:disabled { opacity: 0.6; }
@@ -974,8 +842,7 @@ const PS_STYLES = `
     flex: none; width: 44px; height: 44px; border-radius: 15px;
     border: 1px solid rgba(58,82,68,0.24);
     background: linear-gradient(135deg,var(--accent),var(--blue));
-    color: #fff;
-    display: flex; align-items: center; justify-content: center;
+    color: #fff; display: flex; align-items: center; justify-content: center;
     box-shadow: 0 10px 22px rgba(77,107,88,0.22);
     transition: opacity 140ms, transform 140ms, box-shadow 140ms;
   }
@@ -985,22 +852,9 @@ const PS_STYLES = `
     box-shadow: none; cursor: not-allowed; border-color: transparent;
   }
 
-  /* typing dots */
-  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); margin: 0 2px; animation: dot-bounce 1.2s infinite ease-in-out; }
-  .dot:nth-child(2) { animation-delay: 0.18s; }
-  .dot:nth-child(3) { animation-delay: 0.36s; }
-  @keyframes dot-bounce {
-    0%,60%,100% { transform: translateY(0); opacity: 0.5; }
-    30%          { transform: translateY(-6px); opacity: 1; }
-  }
-
   @media (max-width: 640px) {
     .ps-peer-card { flex-wrap: wrap; }
-    .ps-chat-root {
-      height: calc(100dvh - 120px);
-      max-height: calc(100dvh - 120px);
-    }
+    .ps-chat-root { height: calc(100dvh - 120px); max-height: calc(100dvh - 120px); }
     .ps-bubble { max-width: 85%; }
   }
 `
-

@@ -20,6 +20,11 @@ def _user_payload(user):
         'plan': profile.plan,
         'streak': checkin_summary['streak'],
         'mood': profile.mood,
+        'displayName': profile.display_name,
+        'bio': profile.bio,
+        'avatarColor': profile.avatar_color,
+        'anonymousName': profile.anonymous_name or '',
+        'isPeerOnboarded': profile.is_peer_onboarded,
         'lastCheckInDate': checkin_summary['last_check_in_date'],
         'checkInDueThisWeek': checkin_summary['due_this_week'],
     }
@@ -99,15 +104,33 @@ class MeView(APIView):
     def patch(self, request):
         profile, _ = UserProfile.objects.get_or_create(user=request.user)
         user = request.user
+        user_fields = []
+        profile_fields = []
 
         if 'firstName' in request.data:
             user.first_name = request.data['firstName'].strip()
-            user.save(update_fields=['first_name'])
+            user_fields.append('first_name')
         if 'email' in request.data:
             user.email = request.data['email'].strip()
-            user.save(update_fields=['email'])
+            user_fields.append('email')
+        if user_fields:
+            user.save(update_fields=user_fields)
+
         if 'mood' in request.data:
             profile.mood = request.data['mood']
-            profile.save(update_fields=['mood'])
+            profile_fields.append('mood')
+        if 'displayName' in request.data:
+            profile.display_name = request.data['displayName'].strip()[:50]
+            profile_fields.append('display_name')
+        if 'bio' in request.data:
+            profile.bio = request.data['bio'].strip()[:500]
+            profile_fields.append('bio')
+        if 'avatarColor' in request.data:
+            color = request.data['avatarColor'].strip()
+            if color.startswith('#') and len(color) == 7:
+                profile.avatar_color = color
+                profile_fields.append('avatar_color')
+        if profile_fields:
+            profile.save(update_fields=profile_fields)
 
         return Response(_user_payload(request.user))

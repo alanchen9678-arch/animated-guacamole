@@ -12,6 +12,11 @@ class UserProfile(models.Model):
     plan = models.CharField(max_length=50, default='Free')
     streak = models.IntegerField(default=0)
     mood = models.CharField(max_length=50, blank=True, default='')
+    display_name = models.CharField(max_length=50, blank=True, default='')
+    bio = models.TextField(blank=True, default='')
+    avatar_color = models.CharField(max_length=7, default='#4d6b58')
+    anonymous_name = models.CharField(max_length=50, blank=True, unique=True, null=True, default=None)
+    is_peer_onboarded = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -219,3 +224,63 @@ def get_user_checkin_summary(user, today=None):
         'last_check_in_date': latest_entry.check_in_date if latest_entry else None,
         'due_this_week': due_this_week,
     }
+
+
+class PeerRoom(models.Model):
+    name = models.CharField(max_length=100)
+    topic = models.CharField(max_length=50)
+    description = models.TextField(blank=True, default='')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
+class PeerRoomMessage(models.Model):
+    room = models.ForeignKey(PeerRoom, on_delete=models.CASCADE, related_name='room_messages')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    anonymous_name = models.CharField(max_length=50)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        indexes = [models.Index(fields=['room', 'created_at'])]
+
+    def __str__(self):
+        return f"{self.anonymous_name} in {self.room_id}"
+
+
+class PeerDM(models.Model):
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_peer_dms')
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_peer_dms')
+    sender_anon_name = models.CharField(max_length=50)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        indexes = [models.Index(fields=['sender', 'recipient', 'created_at'])]
+
+    def __str__(self):
+        return f"DM {self.sender_id} -> {self.recipient_id}"
+
+
+class PeerConnection(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        CONNECTED = 'connected', 'Connected'
+        DECLINED = 'declined', 'Declined'
+
+    requester = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_peer_connections')
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_peer_connections')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [['requester', 'recipient']]
+
+    def __str__(self):
+        return f"{self.requester_id} -> {self.recipient_id} ({self.status})"

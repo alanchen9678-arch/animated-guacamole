@@ -1,12 +1,3 @@
-export const dashboardSnapshot = {
-  nextCheckIn: 'Today at 8:00 PM',
-  journalPrompts: [
-    'What helped you feel grounded today?',
-    'Where did you notice pressure building?',
-    'What would make tomorrow gentler?',
-  ],
-}
-
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
 
 function getAuthHeaders() {
@@ -14,91 +5,98 @@ function getAuthHeaders() {
   return token ? { Authorization: `Token ${token}` } : {}
 }
 
-export async function sendChatMessage(message) {
-  const response = await fetch(`${API_BASE_URL}/api/chat/`, {
-    method: 'POST',
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    ...opts,
     headers: {
       'Content-Type': 'application/json',
       ...getAuthHeaders(),
+      ...opts.headers,
     },
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || data.detail || 'Request failed.')
+  return data
+}
+
+// Chat
+
+export async function sendChatMessage(message) {
+  const data = await apiFetch('/api/chat/', {
+    method: 'POST',
     body: JSON.stringify({ message }),
   })
-
-  const data = await response.json().catch(() => ({}))
-
-  if (!response.ok) {
-    throw new Error(data.error || data.detail || 'Chat request failed.')
-  }
-
   return data.reply
 }
 
+// Check-ins
+
 export async function fetchCheckIns() {
-  const response = await fetch(`${API_BASE_URL}/api/checkins/`, {
-    headers: {
-      ...getAuthHeaders(),
-    },
-  })
-
-  const data = await response.json().catch(() => ({}))
-
-  if (!response.ok) {
-    throw new Error(data.error || data.detail || 'Unable to load check-ins.')
-  }
-
-  return data
+  return apiFetch('/api/checkins/')
 }
 
 export async function submitCheckIn(payload) {
-  const response = await fetch(`${API_BASE_URL}/api/checkins/`, {
+  return apiFetch('/api/checkins/', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders(),
-    },
     body: JSON.stringify(payload),
   })
-
-  const data = await response.json().catch(() => ({}))
-
-  if (!response.ok) {
-    throw new Error(data.error || data.detail || 'Unable to save check-in.')
-  }
-
-  return data
 }
 
+// Journal
+
 export async function fetchJournalEntries() {
-  const response = await fetch(`${API_BASE_URL}/api/journal/`, {
-    headers: {
-      ...getAuthHeaders(),
-    },
-  })
-
-  const data = await response.json().catch(() => ({}))
-
-  if (!response.ok) {
-    throw new Error(data.error || data.detail || 'Unable to load journal entries.')
-  }
-
-  return data
+  return apiFetch('/api/journal/')
 }
 
 export async function saveJournalEntry(payload) {
-  const response = await fetch(`${API_BASE_URL}/api/journal/`, {
+  return apiFetch('/api/journal/', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders(),
-    },
     body: JSON.stringify(payload),
   })
+}
 
-  const data = await response.json().catch(() => ({}))
+// Peer
 
-  if (!response.ok) {
-    throw new Error(data.error || data.detail || 'Unable to save journal entry.')
-  }
+export async function fetchPeerProfile() {
+  return apiFetch('/api/peer/profile/')
+}
 
-  return data
+export async function completePeerOnboarding() {
+  return apiFetch('/api/peer/profile/', { method: 'POST', body: JSON.stringify({}) })
+}
+
+export async function fetchPeerRooms() {
+  return apiFetch('/api/peer/rooms/')
+}
+
+export async function fetchRoomMessages(roomId, sinceId) {
+  const qs = sinceId ? `?since=${sinceId}` : ''
+  return apiFetch(`/api/peer/rooms/${roomId}/messages/${qs}`)
+}
+
+export async function sendRoomMessage(roomId, content) {
+  return apiFetch(`/api/peer/rooms/${roomId}/messages/`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  })
+}
+
+export async function fetchPeers() {
+  return apiFetch('/api/peer/peers/')
+}
+
+export async function connectPeer(userId) {
+  return apiFetch(`/api/peer/connect/${userId}/`, { method: 'POST', body: JSON.stringify({}) })
+}
+
+export async function fetchDMs(userId, sinceId) {
+  const qs = sinceId ? `?since=${sinceId}` : ''
+  return apiFetch(`/api/peer/dm/${userId}/${qs}`)
+}
+
+export async function sendDM(userId, content) {
+  return apiFetch(`/api/peer/dm/${userId}/`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  })
 }
