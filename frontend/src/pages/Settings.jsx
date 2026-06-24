@@ -65,13 +65,39 @@ export default function Settings() {
         .color-swatch:hover { transform: scale(1.12); }
         .color-swatch.selected { border-color: var(--ink); }
 
-        .account-row {
-          display: flex; justify-content: space-between; align-items: center;
-          padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 0.92rem;
+        .account-card {
+          display: grid;
+          gap: 10px;
+          align-content: start;
         }
-        .account-row:last-child { border-bottom: none; }
-        .account-row .key { color: var(--muted); font-weight: 600; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; }
-        .account-row .val { color: var(--ink); font-weight: 500; }
+        .account-row {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
+          padding: 14px 16px;
+          border: 1px solid var(--line);
+          border-radius: 16px;
+          background: rgba(255,255,255,0.52);
+          font-size: 0.92rem;
+        }
+        .account-row--stack {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .account-row .key {
+          color: var(--muted);
+          font-weight: 600;
+          font-size: 0.76rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .account-row .val {
+          color: var(--ink);
+          font-weight: 600;
+          text-align: left;
+        }
         .plan-badge {
           display: inline-block; padding: 3px 12px; border-radius: 999px;
           background: var(--accent-soft); color: var(--accent);
@@ -116,24 +142,11 @@ export default function Settings() {
           color: #fff; font-size: 1.4rem; font-weight: 800; margin-bottom: 10px;
           transition: background 200ms;
         }
-        .settings-list { display: grid; gap: 0; }
-        .settings-row {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 14px 0; border-bottom: 1px solid var(--line);
-        }
-        .settings-row:last-child { border-bottom: none; }
-        .settings-row > div { flex: 1; }
-        .settings-row strong { display: block; font-size: 0.92rem; margin-bottom: 2px; }
-        .settings-row p { margin: 0; font-size: 0.8rem; color: var(--muted); }
-        .toggle {
-          width: 42px; height: 24px; border-radius: 999px;
-          background: var(--line); flex-shrink: 0; opacity: 0.5;
-        }
       `}</style>
 
       <header className="page-header">
         <h2>Settings</h2>
-        <p>Manage your account, profile, and preferences.</p>
+        <p>Manage your account, profile, and mood.</p>
       </header>
 
       <div className="grid">
@@ -198,7 +211,7 @@ export default function Settings() {
         </article>
 
         {/* Account info */}
-        <article className="card span-4">
+        <article className="card span-4 account-card">
           <h3>Account</h3>
           <div className="account-row">
             <span className="key">Username</span>
@@ -213,7 +226,7 @@ export default function Settings() {
             <span className="val">{user?.streak ?? 0} weeks</span>
           </div>
           {user?.anonymousName && (
-            <div className="account-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+            <div className="account-row account-row--stack">
               <span className="key">Peer identity</span>
               <span className="anon-badge">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
@@ -224,7 +237,7 @@ export default function Settings() {
         </article>
 
         {/* Mood picker */}
-        <article className="card span-6">
+        <article className="card span-12">
           <h3>How are you feeling?</h3>
           <p style={{ marginTop: 0, marginBottom: 12 }}>
             Set your current mood — it shows on your home dashboard.
@@ -243,27 +256,6 @@ export default function Settings() {
             ))}
           </div>
           {saved && <div className="save-status" style={{ marginTop: 10 }}>Saved ✓</div>}
-        </article>
-
-        {/* Preferences */}
-        <article className="card span-6">
-          <h3>Preferences</h3>
-          <div className="settings-list">
-            <div className="settings-row">
-              <div>
-                <strong>Evening check-in reminders</strong>
-                <p>Receive a soft prompt at the end of the day.</p>
-              </div>
-              <div className="toggle" aria-hidden="true" />
-            </div>
-            <div className="settings-row">
-              <div>
-                <strong>Low-stimulation mode</strong>
-                <p>Reduce visual intensity during stressful periods.</p>
-              </div>
-              <div className="toggle" aria-hidden="true" />
-            </div>
-          </div>
         </article>
 
         {/* Sign out */}
