@@ -294,24 +294,21 @@ function AppShell() {
           flex-direction: column;
           gap: 10px;
           box-shadow: 0 6px 18px rgba(46,42,38,0.06);
-          transition: transform 140ms, box-shadow 140ms;
-        }
-        .feature-card-landing:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 16px 36px rgba(46,42,38,0.10);
         }
 
         .feature-tag {
           display: inline-block;
-          font-size: 0.7rem;
-          font-weight: 700;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
+          font-size: 0.98rem;
+          font-weight: 600;
+          letter-spacing: -0.02em;
+          line-height: 1.2;
+          text-transform: none;
           color: var(--blue-dark);
           background: var(--blue-soft);
-          padding: 3px 10px;
+          padding: 9px 14px;
           border-radius: 999px;
           width: fit-content;
+          border: 1px solid rgba(58,104,152,0.16);
         }
 
         .feature-card-landing h4 {
@@ -696,8 +693,7 @@ function AppShell() {
           <div className="feature-grid-landing">
             {features.map((f) => (
               <div key={f.id} className="feature-card-landing">
-                <span className="feature-tag">{f.tag}</span>
-                <h4>{f.title}</h4>
+                <span className="feature-tag">{f.title}</span>
                 <p>{f.desc}</p>
               </div>
             ))}

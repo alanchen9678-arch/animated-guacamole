@@ -86,9 +86,10 @@ export default function Home() {
         .feature-card:focus-visible { outline: 3px solid rgba(58, 104, 152, 0.28); outline-offset: 3px; }
         .feature-tag {
           display: inline-block;
-          font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+          font-size: 0.98rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; text-transform: none;
           color: var(--accent); background: var(--accent-soft);
-          padding: 3px 10px; border-radius: 999px; width: fit-content;
+          padding: 9px 14px; border-radius: 999px; width: fit-content;
+          border: 1px solid rgba(77,107,88,0.16);
         }
         .feature-card h4 { margin: 0; font-size: 1rem; }
         .feature-card p { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.5; flex: 1; }
@@ -180,8 +181,7 @@ export default function Home() {
               type="button"
               aria-label={`Open ${feature.title}`}
             >
-              <span className="feature-tag">{feature.tag}</span>
-              <h4>{feature.title}</h4>
+              <span className="feature-tag">{feature.title}</span>
               <p>{feature.desc}</p>
             </button>
           ))}
