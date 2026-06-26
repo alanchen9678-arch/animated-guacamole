@@ -188,6 +188,29 @@ class CheckIn(models.Model):
         return f'{self.user.username} - {self.type} - {self.check_in_date}'
 
 
+class TherapistMatch(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='therapist_matches',
+    )
+    therapist_id = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['created_at', 'id']
+        indexes = [
+            models.Index(fields=['user', 'created_at']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'therapist_id'], name='unique_therapist_match_per_user'),
+        ]
+
+    def __str__(self):
+        return f'{self.user.username} - therapist {self.therapist_id}'
+
+
 def get_user_checkin_summary(user, today=None):
     today = today or timezone.localdate()
     has_initial_assessment = user.checkins.filter(type=CheckIn.CheckInType.INITIAL).exists()

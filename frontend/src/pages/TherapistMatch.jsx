@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { AuroraDropdown } from '../components/ui/heroui-dropdown.jsx'
+import { useUser } from '../context/UserContext.jsx'
+import { fetchTherapistMatches, saveTherapistMatch } from '../services/api.js'
 
 // ─── mock data ─────────────────────────────────────────────────────────────────
 
@@ -143,26 +145,38 @@ const INSURERS  = ['Aetna','BlueCross BlueShield','United Healthcare','Cigna','H
 const STATE_OPTIONS = US_STATES.map((stateCode) => ({ value: stateCode, label: stateCode }))
 const INSURER_OPTIONS = INSURERS.map((insurer) => ({ value: insurer, label: insurer }))
 
-function loadActiveTherapistChats() {
+function hydrateTherapistsByIds(ids) {
+  return ids
+    .map((id) => THERAPISTS.find((therapist) => therapist.id === id))
+    .filter(Boolean)
+}
+
+function loadLegacyActiveTherapistChats() {
   try {
     const stored = window.localStorage.getItem(ACTIVE_THERAPIST_CHATS_KEY)
     const ids = stored ? JSON.parse(stored) : []
     if (!Array.isArray(ids)) return []
 
-    return ids
-      .map(id => THERAPISTS.find(t => t.id === id))
-      .filter(Boolean)
+    return hydrateTherapistsByIds(ids)
   } catch {
     return []
   }
 }
 
-function saveActiveTherapistChats(chats) {
+function saveLegacyActiveTherapistChats(chats) {
   try {
     window.localStorage.setItem(
       ACTIVE_THERAPIST_CHATS_KEY,
       JSON.stringify(chats.map(t => t.id)),
     )
+  } catch {
+    // Storage can be unavailable in some private browsing modes.
+  }
+}
+
+function clearLegacyActiveTherapistChats() {
+  try {
+    window.localStorage.removeItem(ACTIVE_THERAPIST_CHATS_KEY)
   } catch {
     // Storage can be unavailable in some private browsing modes.
   }
@@ -934,15 +948,49 @@ function ChatView({ therapist: t, onBack }) {
 // ─── root ─────────────────────────────────────────────────────────────────────
 
 export default function TherapistMatch() {
+  const { user } = useUser()
   const [view,     setView]     = useState('profile')   // profile | prefs | results | detail | chat
   const [prefs,    setPrefs]    = useState(null)
   const [matches,  setMatches]  = useState([])
   const [selected, setSelected] = useState(null)
-  const [activeChats, setActiveChats] = useState(loadActiveTherapistChats)
+  const [activeChats, setActiveChats] = useState([])
 
   useEffect(() => {
-    saveActiveTherapistChats(activeChats)
-  }, [activeChats])
+    let cancelled = false
+
+    async function loadActiveChats() {
+      const legacyChats = loadLegacyActiveTherapistChats()
+
+      if (!user) {
+        if (!cancelled) setActiveChats(legacyChats)
+        return
+      }
+
+      try {
+        let data = await fetchTherapistMatches()
+        let therapistIds = Array.isArray(data.therapistIds) ? data.therapistIds : []
+        const legacyIds = legacyChats.map((therapist) => therapist.id)
+        const missingLegacyIds = legacyIds.filter((id) => !therapistIds.includes(id))
+
+        if (missingLegacyIds.length > 0) {
+          await Promise.all(missingLegacyIds.map((therapistId) => saveTherapistMatch(therapistId)))
+          data = await fetchTherapistMatches()
+          therapistIds = Array.isArray(data.therapistIds) ? data.therapistIds : []
+        }
+
+        clearLegacyActiveTherapistChats()
+        if (!cancelled) setActiveChats(hydrateTherapistsByIds(therapistIds))
+      } catch {
+        if (!cancelled) setActiveChats(legacyChats)
+      }
+    }
+
+    loadActiveChats()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user])
 
   function handleMatch(p) {
     setPrefs(p)
@@ -950,10 +998,24 @@ export default function TherapistMatch() {
     setView('results')
   }
 
-  function openChat(therapist) {
-    setActiveChats(prev => (
-      prev.some(t => t.id === therapist.id) ? prev : [...prev, therapist]
-    ))
+  async function openChat(therapist) {
+    setActiveChats((prev) => {
+      const nextChats = prev.some((item) => item.id === therapist.id) ? prev : [...prev, therapist]
+      if (!user) saveLegacyActiveTherapistChats(nextChats)
+      return nextChats
+    })
+
+    if (user) {
+      try {
+        await saveTherapistMatch(therapist.id)
+      } catch {
+        setActiveChats((prev) => {
+          saveLegacyActiveTherapistChats(prev)
+          return prev
+        })
+      }
+    }
+
     setSelected(therapist)
     setView('chat')
   }

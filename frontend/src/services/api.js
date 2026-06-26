@@ -55,6 +55,19 @@ export async function saveJournalEntry(payload) {
   })
 }
 
+// Therapist
+
+export async function fetchTherapistMatches() {
+  return apiFetch('/api/therapist/matches/')
+}
+
+export async function saveTherapistMatch(therapistId) {
+  return apiFetch('/api/therapist/matches/', {
+    method: 'POST',
+    body: JSON.stringify({ therapistId }),
+  })
+}
+
 // Peer
 
 export async function fetchPeerProfile() {

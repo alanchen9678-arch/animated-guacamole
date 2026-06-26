@@ -12,6 +12,7 @@ from api.routes.peer import (
     PeerRoomListView,
     PeerRoomMessageView,
 )
+from api.routes.therapist import TherapistMatchCollectionView
 from app.views import LoginView, LogoutView, MeView, RegisterView
 
 urlpatterns = [
@@ -29,4 +30,5 @@ urlpatterns = [
     path('api/peer/peers/', PeerListView.as_view(), name='peer-list'),
     path('api/peer/connect/<int:user_id>/', PeerConnectView.as_view(), name='peer-connect'),
     path('api/peer/dm/<int:user_id>/', PeerDMView.as_view(), name='peer-dm'),
+    path('api/therapist/matches/', TherapistMatchCollectionView.as_view(), name='therapist-matches'),
 ]

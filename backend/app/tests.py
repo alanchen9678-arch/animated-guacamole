@@ -9,6 +9,7 @@ from .models import (
     JournalDoodle,
     JournalPrivacySettings,
     Message,
+    TherapistMatch,
     ThoughtJournalEntry,
     get_user_checkin_summary,
 )
@@ -169,3 +170,21 @@ class CheckInModelTests(TestCase):
 
         self.assertEqual(summary['streak'], 0)
         self.assertTrue(summary['due_this_week'])
+
+
+class TherapistMatchModelTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username='therapist-match-user',
+            password='testpass123',
+        )
+
+    def test_saved_therapist_match_is_owned_by_user(self):
+        match = TherapistMatch.objects.create(
+            user=self.user,
+            therapist_id=3,
+        )
+
+        self.assertEqual(match.user, self.user)
+        self.assertEqual(match.therapist_id, 3)
+        self.assertEqual(self.user.therapist_matches.count(), 1)
