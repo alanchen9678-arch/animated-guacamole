@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useUser } from '../context/UserContext.jsx'
 import { useNavigation } from '../context/NavigationContext.jsx'
 
@@ -5,6 +6,26 @@ const JOURNAL_PROMPTS = [
   'What helped you feel grounded today?',
   'Where did you notice pressure building?',
   'What would make tomorrow gentler?',
+]
+
+const GREETINGS = [
+  'Hello',
+  'Hi',
+  'Hey',
+  'Hey there',
+  'Greetings',
+  'Good day',
+  'Welcome',
+  'Hi there',
+  'Howdy',
+  'Welcome back',
+  'Good to see you',
+  'Salutations',
+  'Cheers',
+  'Hiya',
+  'Hey hey',
+  'Bonjour',
+  'Hola',
 ]
 
 const features = [
@@ -51,6 +72,10 @@ export default function Home() {
   const { navigate } = useNavigation()
 
   const name = user?.displayName || user?.firstName || user?.username || 'there'
+  const greeting = useMemo(
+    () => GREETINGS[Math.floor(Math.random() * GREETINGS.length)],
+    [],
+  )
 
   const checkInLabel = user?.checkInDueThisWeek === false ? 'Up to date' : 'Due this week'
 
@@ -134,7 +159,7 @@ export default function Home() {
       `}</style>
 
       <header className="page-header">
-        <h2 className="home-greeting">Good day, {name}.</h2>
+        <h2 className="home-greeting">{greeting}, {name}.</h2>
         <p className="home-sub">
           Here&apos;s your Aurora snapshot.
         </p>
