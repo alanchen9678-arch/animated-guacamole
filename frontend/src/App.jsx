@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { TextReveal } from './components/ui/cascade-text.jsx'
+import WhisperText from './components/ui/whisper-text.jsx'
 import { UserProvider, useUser } from './context/UserContext.jsx'
 import { NavigationProvider, useNavigation } from './context/NavigationContext.jsx'
 import { pageConfig } from './routes/AppRoutes.jsx'
@@ -36,6 +37,7 @@ function AppShell() {
   const [showAuth, setShowAuth]     = useState(false)
   const [authMode, setAuthMode]     = useState('login')
   const [notifOpen, setNotifOpen]   = useState(false)
+  const contentRef = useRef(null)
 
   const isLoggedIn = !!user
 
@@ -48,6 +50,11 @@ function AppShell() {
     setAuthMode(mode)
     setShowAuth(true)
   }
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    contentRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [activePage, isLoggedIn])
 
   return (
     <div className="app-root">
@@ -211,6 +218,13 @@ function AppShell() {
           font-size: clamp(2.2rem, 4vw, 4rem);
           line-height: 1.05;
           letter-spacing: -0.04em;
+        }
+
+        .landing-whisper {
+          width: min(100%, 22ch);
+          justify-content: center;
+          text-align: center;
+          margin: 0 auto;
         }
 
         .landing-sub {
@@ -650,7 +664,7 @@ function AppShell() {
                 </nav>
               </aside>
 
-              <main className="content">
+              <main ref={contentRef} className="content">
                 <ActiveComponent />
               </main>
             </div>
@@ -661,11 +675,17 @@ function AppShell() {
         <div className="landing">
           <div className="landing-hero">
             <p className="eyebrow">Aurora · Mental wellness</p>
-            <h1>Your calm, always-on mental wellness companion.</h1>
-            <p className="landing-sub">
-              Aurora brings together AI-guided conversations, professional therapist matching,
-              peer community, and reflective tools — all in one safe, private space.
-            </p>
+            <h1>
+              <WhisperText
+                as="span"
+                text="Your calm, always-on mental wellness companion."
+                className="landing-whisper"
+                delay={100}
+                duration={0.5}
+                x={-20}
+                y={0}
+              />
+            </h1>
             <div className="landing-cta">
               <button className="btn-primary-lg" onClick={() => openAuth('register')}>Get started free</button>
               <button className="btn-outline-lg" onClick={() => openAuth('login')}>Log in</button>
@@ -686,7 +706,7 @@ function AppShell() {
       )}
 
       {/* ── bottom-left notifications ── */}
-      <div className="notif-anchor">
+      {isLoggedIn && <div className="notif-anchor">
         {notifOpen && (
           <div className="notif-panel">
             <p className="notif-heading">Notifications</p>
@@ -706,7 +726,7 @@ function AppShell() {
           <BellIcon />
           <span className="notif-badge">{mockNotifications.length}</span>
         </button>
-      </div>
+      </div>}
     </div>
   )
 }
