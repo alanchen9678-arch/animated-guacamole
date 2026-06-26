@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { AuroraDropdown } from '../components/ui/heroui-dropdown.jsx'
 import { ColorSwatchPicker } from '../components/ui/heroui-color-swatch-picker.jsx'
 import ColorPickerMenu from '../components/ui/color-picker-menu.jsx'
 import { useUser } from '../context/UserContext.jsx'
@@ -185,12 +186,8 @@ function isFutureDay(year, month, day, now) {
 
 function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEntry }) {
   const now     = new Date()
-  const monthPickerRef = useRef(null)
-  const yearPickerRef = useRef(null)
   const [year, setYear]   = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())
-  const [monthMenuOpen, setMonthMenuOpen] = useState(false)
-  const [yearMenuOpen, setYearMenuOpen] = useState(false)
   const dataYears = [
     ...Object.keys(moodData).map((key) => Number(key.split('-')[0])),
     ...Object.keys(entryHistory).map((key) => Number(key.split('-')[0])),
@@ -199,38 +196,18 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
   ].filter(Boolean)
   const baseYear = Math.max(now.getFullYear(), ...dataYears)
   const yearOptions = Array.from({ length: 5 }, (_, index) => baseYear - index)
+  const monthOptions = MONTH_NAMES.map((monthName, monthIndex) => ({
+    value: String(monthIndex),
+    label: monthName,
+  }))
+  const yearDropdownOptions = yearOptions.map((optionYear) => ({
+    value: String(optionYear),
+    label: String(optionYear),
+  }))
 
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const startDay    = new Date(year, month, 1).getDay()
   const isCurrent   = year === now.getFullYear() && month === now.getMonth()
-
-  useEffect(() => {
-    function closeMenus() {
-      setMonthMenuOpen(false)
-      setYearMenuOpen(false)
-    }
-
-    function handlePointerDown(event) {
-      if (
-        monthPickerRef.current?.contains(event.target) ||
-        yearPickerRef.current?.contains(event.target)
-      ) {
-        return
-      }
-      closeMenus()
-    }
-
-    function handleKeyDown(event) {
-      if (event.key === 'Escape') closeMenus()
-    }
-
-    document.addEventListener('mousedown', handlePointerDown, true)
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown, true)
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [])
 
   function prevMonth() {
     if (month === 0) { setMonth(11); setYear(y => y - 1) }
@@ -254,69 +231,31 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
       <div className="jn-cal-nav">
         <button className="jn-cal-nav-btn" onClick={prevMonth} aria-label="Previous month">&lt;</button>
         <div className="jn-cal-selects">
-          <div ref={monthPickerRef} className="jn-cal-picker">
-            <button
-              type="button"
-              className="jn-cal-picker-btn"
-              onClick={(e) => {
-                e.stopPropagation()
-                setMonthMenuOpen((open) => !open)
-                setYearMenuOpen(false)
-              }}
-              aria-label="Choose month"
-              aria-expanded={monthMenuOpen}
-            >
-              {MONTH_NAMES[month]}
-            </button>
-            {monthMenuOpen && (
-              <div className="jn-cal-menu jn-cal-menu--months" onClick={(e) => e.stopPropagation()}>
-                {MONTH_NAMES.map((monthName, monthIndex) => (
-                  <button
-                    key={monthName}
-                    type="button"
-                    className={`jn-cal-menu-item${monthIndex === month ? ' jn-cal-menu-item--active' : ''}`}
-                    onClick={() => {
-                      setMonth(monthIndex)
-                      setMonthMenuOpen(false)
-                    }}
-                  >
-                    {monthName}
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="jn-cal-picker">
+            <AuroraDropdown
+              ariaLabel="Choose month"
+              buttonClassName="aurora-dropdown-trigger--calendar jn-cal-picker-btn"
+              itemClassName="aurora-dropdown-item--calendar"
+              items={monthOptions}
+              menuClassName="aurora-dropdown-menu--calendar"
+              onSelectionChange={(value) => setMonth(Number(value))}
+              placement="bottom"
+              popoverClassName="aurora-dropdown-popover--calendar"
+              selectedKey={String(month)}
+            />
           </div>
-          <div ref={yearPickerRef} className="jn-cal-picker">
-            <button
-              type="button"
-              className="jn-cal-picker-btn jn-cal-picker-btn--year"
-              onClick={(e) => {
-                e.stopPropagation()
-                setYearMenuOpen((open) => !open)
-                setMonthMenuOpen(false)
-              }}
-              aria-label="Choose year"
-              aria-expanded={yearMenuOpen}
-            >
-              {year}
-            </button>
-            {yearMenuOpen && (
-              <div className="jn-cal-menu jn-cal-menu--years" onClick={(e) => e.stopPropagation()}>
-                {yearOptions.map((optionYear) => (
-                  <button
-                    key={optionYear}
-                    type="button"
-                    className={`jn-cal-menu-item${optionYear === year ? ' jn-cal-menu-item--active' : ''}`}
-                    onClick={() => {
-                      setYear(optionYear)
-                      setYearMenuOpen(false)
-                    }}
-                  >
-                    {optionYear}
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="jn-cal-picker">
+            <AuroraDropdown
+              ariaLabel="Choose year"
+              buttonClassName="aurora-dropdown-trigger--calendar jn-cal-picker-btn jn-cal-picker-btn--year"
+              itemClassName="aurora-dropdown-item--calendar"
+              items={yearDropdownOptions}
+              menuClassName="aurora-dropdown-menu--calendar"
+              onSelectionChange={(value) => setYear(Number(value))}
+              placement="bottom"
+              popoverClassName="aurora-dropdown-popover--calendar"
+              selectedKey={String(year)}
+            />
           </div>
         </div>
         <button className="jn-cal-nav-btn" onClick={nextMonth} aria-label="Next month">&gt;</button>
@@ -978,43 +917,6 @@ const JN_STYLES = `
   }
   .jn-cal-picker-btn:hover { color: var(--accent); }
   .jn-cal-picker-btn--year { min-width: 3.5ch; text-align: center; }
-  .jn-cal-menu {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 12;
-    width: 140px;
-    max-height: 180px;
-    overflow-y: auto;
-    padding: 8px;
-    border-radius: 16px;
-    border: 1px solid var(--line);
-    background: rgba(250,244,232,0.98);
-    box-shadow: 0 18px 36px rgba(46,42,38,0.16);
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  .jn-cal-menu::-webkit-scrollbar { display: none; }
-  .jn-cal-menu--months { width: 148px; }
-  .jn-cal-menu--years { width: 108px; }
-  .jn-cal-menu-item {
-    width: 100%;
-    padding: 8px 10px;
-    border: 0;
-    border-radius: 10px;
-    background: transparent;
-    color: var(--ink);
-    font-size: 0.84rem;
-    font-weight: 600;
-    text-align: left;
-    transition: background 140ms, color 140ms;
-  }
-  .jn-cal-menu-item:hover,
-  .jn-cal-menu-item--active {
-    background: var(--accent-soft);
-    color: var(--accent-dark);
-  }
 
   .jn-cal-daynames {
     display: grid; grid-template-columns: repeat(7,1fr);

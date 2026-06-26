@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { AuroraDropdown } from '../components/ui/heroui-dropdown.jsx'
 
 // ─── mock data ─────────────────────────────────────────────────────────────────
 
@@ -139,6 +140,8 @@ const US_STATES = [
 ]
 const LANGUAGES = ['English','Spanish','French','Mandarin','Hindi','Arabic','Portuguese']
 const INSURERS  = ['Aetna','BlueCross BlueShield','United Healthcare','Cigna','Humana','Self-pay / Out-of-pocket']
+const STATE_OPTIONS = US_STATES.map((stateCode) => ({ value: stateCode, label: stateCode }))
+const INSURER_OPTIONS = INSURERS.map((insurer) => ({ value: insurer, label: insurer }))
 
 function loadActiveTherapistChats() {
   try {
@@ -360,18 +363,27 @@ function PreferencesView({ onBack, onMatch }) {
       <div className="tm-prefs-grid">
         <div className="tm-pref-card">
           <label className="tm-pref-label">State <span className="tm-req">*</span></label>
-          <select className="tm-select" value={state} onChange={e => setState(e.target.value)}>
-            <option value="">Select state…</option>
-            {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <AuroraDropdown
+            ariaLabel="Select state"
+            buttonClassName="tm-select tm-select--dropdown"
+            items={STATE_OPTIONS}
+            menuClassName="aurora-dropdown-menu--scrollable"
+            onSelectionChange={setState}
+            placeholder="Select state..."
+            selectedKey={state}
+          />
         </div>
 
         <div className="tm-pref-card">
           <label className="tm-pref-label">Insurance <span className="tm-req">*</span></label>
-          <select className="tm-select" value={insurance} onChange={e => setInsurance(e.target.value)}>
-            <option value="">Select insurer…</option>
-            {INSURERS.map(i => <option key={i} value={i}>{i}</option>)}
-          </select>
+          <AuroraDropdown
+            ariaLabel="Select insurance provider"
+            buttonClassName="tm-select tm-select--dropdown"
+            items={INSURER_OPTIONS}
+            onSelectionChange={setInsurance}
+            placeholder="Select insurer..."
+            selectedKey={insurance}
+          />
         </div>
 
         <div className="tm-pref-card">
@@ -596,10 +608,14 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
               <>
                 <div className="tm-form-field">
                   <label className="tm-field-label">Insurance provider</label>
-                  <select className="tm-select" value={insurer} onChange={e => setInsurer(e.target.value)}>
-                    <option value="">Select…</option>
-                    {INSURERS.map(i => <option key={i} value={i}>{i}</option>)}
-                  </select>
+                  <AuroraDropdown
+                    ariaLabel="Select booking insurance provider"
+                    buttonClassName="tm-select tm-select--dropdown"
+                    items={INSURER_OPTIONS}
+                    onSelectionChange={setInsurer}
+                    placeholder="Select..."
+                    selectedKey={insurer}
+                  />
                 </div>
                 <div className="tm-form-field">
                   <label className="tm-field-label">Member ID</label>
@@ -1125,6 +1141,10 @@ const TM_STYLES = `
     transition: border-color 140ms; width: 100%;
   }
   .tm-select:focus, .tm-input:focus { border-color: var(--accent); background: #fff; }
+  .tm-select--dropdown {
+    min-height: 46px;
+    justify-content: space-between;
+  }
   .tm-radio-group { display: flex; flex-direction: column; gap: 8px; }
   .tm-radio {
     display: flex; align-items: center; gap: 8px; cursor: pointer;

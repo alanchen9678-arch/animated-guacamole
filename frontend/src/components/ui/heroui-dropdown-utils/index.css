@@ -1,0 +1,169 @@
+.aurora-dropdown-trigger {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: #f8fafc;
+  color: var(--ink);
+  padding: 10px 12px;
+  font: inherit;
+  box-shadow: none;
+  transition: border-color 140ms, background 140ms, transform 140ms, box-shadow 140ms;
+}
+
+.aurora-dropdown-trigger:hover {
+  border-color: rgba(77, 107, 88, 0.34);
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.aurora-dropdown-trigger:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(77, 107, 88, 0.12);
+}
+
+.aurora-dropdown-trigger-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.aurora-dropdown-trigger-label--placeholder {
+  color: var(--muted);
+}
+
+.aurora-dropdown-trigger-icon {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  transition: transform 140ms, color 140ms;
+}
+
+.aurora-dropdown-trigger:hover .aurora-dropdown-trigger-icon,
+.aurora-dropdown-trigger:focus-visible .aurora-dropdown-trigger-icon {
+  color: var(--accent);
+  transform: translateY(1px);
+}
+
+.aurora-dropdown-popover {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(250, 244, 232, 0.98);
+  box-shadow: 0 18px 36px rgba(46, 42, 38, 0.16);
+  backdrop-filter: blur(12px);
+  padding: 8px;
+}
+
+.aurora-dropdown-menu {
+  display: grid;
+  gap: 4px;
+  outline: none;
+}
+
+.aurora-dropdown-item {
+  border-radius: 12px;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+  transition: background 140ms, color 140ms, transform 140ms;
+}
+
+.aurora-dropdown-item[data-focused="true"],
+.aurora-dropdown-item[data-hovered="true"],
+.aurora-dropdown-item:hover {
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  transform: translateY(-1px);
+}
+
+.aurora-dropdown-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 10px;
+}
+
+.aurora-dropdown-item-copy {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aurora-dropdown-item-check {
+  flex-shrink: 0;
+  opacity: 0;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  transition: opacity 140ms;
+}
+
+.aurora-dropdown-item-check--selected {
+  opacity: 1;
+}
+
+.aurora-dropdown-trigger--calendar {
+  width: auto;
+  gap: 6px;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.aurora-dropdown-trigger--calendar:hover,
+.aurora-dropdown-trigger--calendar:focus-visible {
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  border-color: transparent;
+  color: var(--accent);
+}
+
+.aurora-dropdown-trigger--calendar .aurora-dropdown-trigger-icon {
+  font-size: 0.68rem;
+}
+
+.aurora-dropdown-popover--calendar {
+  min-width: 0;
+  padding: 6px;
+}
+
+.aurora-dropdown-menu--calendar {
+  max-height: 180px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.aurora-dropdown-menu--calendar::-webkit-scrollbar {
+  display: none;
+}
+
+.aurora-dropdown-menu--scrollable {
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.aurora-dropdown-menu--scrollable::-webkit-scrollbar {
+  display: none;
+}
+
+.aurora-dropdown-item--calendar {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
