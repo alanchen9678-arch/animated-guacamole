@@ -221,6 +221,113 @@ const DISORDERS = [
 const ALL_IDS   = DISORDERS.map(d => d.id)
 const ID_LABEL  = Object.fromEntries(DISORDERS.map(d => [d.id, d.title.replace(' (PTSD)', '').replace(' (ODD)', '')]))
 
+const QUIZ_BANK = {
+  anxiety: [
+    ['What is the main difference between normal anxiety and an anxiety disorder?', ['Anxiety disorders only happen during childhood', 'Anxiety disorders cause excessive fear or worry that interferes with daily life', 'Normal anxiety is always harmful', 'Anxiety disorders are caused only by stress'], 1],
+    ["Which system is responsible for the body's fight-or-flight response?", ['Digestive system', 'Immune system', 'Nervous system', 'Skeletal system'], 2],
+    ['Which is a common symptom of Generalized Anxiety Disorder (GAD)?', ['Constant worry about many areas of life', 'Complete lack of emotions', 'Memory loss', 'Increased appetite only'], 0],
+    ['A panic attack is best described as:', ['A planned emotional response', 'A sudden episode of intense fear and physical symptoms', 'A type of sleep disorder', 'A personality trait'], 1],
+    ['Social Anxiety Disorder involves:', ['Fear of social situations or being judged', 'Fear of sleeping', 'Loss of memory', 'Lack of emotions'], 0],
+    ['A phobia is:', ['A normal preference', 'An intense fear of a specific object or situation', 'A learning disability', 'A mood disorder'], 1],
+    ['Genetics can influence anxiety disorders by:', ['Making anxiety impossible to treat', "Increasing a person's vulnerability", 'Removing all stress', 'Preventing emotions'], 1],
+    ['Cognitive Behavioral Therapy (CBT) helps by:', ['Changing harmful thought patterns and behaviors', 'Removing all memories', 'Stopping emotions completely', 'Increasing stress'], 0],
+    ['Someone constantly worries about school, family, and the future for months. This may be:', ['PTSD', 'GAD', 'Schizophrenia', 'Bipolar disorder'], 1],
+    ['A healthy coping strategy for anxiety is:', ['Avoiding all responsibilities', 'Practicing relaxation techniques', 'Ignoring problems forever', 'Increasing isolation'], 1],
+  ],
+  depression: [
+    ['Depression is different from sadness because:', ['Depression usually lasts longer and affects daily functioning', 'Depression only happens after accidents', 'Depression disappears immediately', 'Depression is not a mental health condition'], 0],
+    ['A common symptom of depression is:', ['Increased confidence', 'Loss of interest in activities', 'Better concentration', 'Constant excitement'], 1],
+    ['Depression is often associated with changes in:', ['Bones', 'Neurotransmitters', 'Eye color', 'Height'], 1],
+    ['Major Depressive Disorder involves:', ['A temporary bad mood', 'Persistent depressive symptoms affecting life', 'Only physical illness', 'Increased energy only'], 1],
+    ['Depression can affect sleep by causing:', ['Sleep problems or changes in sleep patterns', 'Better memory', 'Faster learning', 'No emotional changes'], 0],
+    ['Which can contribute to depression?', ['Genetics and environmental stress', 'Only intelligence', 'Eye color', 'Height'], 0],
+    ['Depression may affect concentration because it can:', ['Change mood and thinking patterns', 'Improve focus', 'Increase memory automatically', 'Stop all thoughts'], 0],
+    ['Therapy can help depression by:', ['Teaching coping skills and managing thoughts', 'Removing all emotions', 'Changing personality completely', 'Preventing sleep'], 0],
+    ['Someone loses interest in hobbies and feels hopeless for weeks. This may indicate:', ['Depression', 'Phobia', 'ADHD', 'ODD'], 0],
+    ['A common treatment for depression is:', ['Therapy and/or medication', 'Avoiding everyone', 'Ignoring symptoms', 'Increasing stress'], 0],
+  ],
+  bipolar: [
+    ['Bipolar disorder involves:', ['Changes between mood episodes', 'Only physical symptoms', 'Loss of intelligence', 'A fear of objects'], 0],
+    ['Mania is usually associated with:', ['Increased energy and unusual activity levels', 'Extreme tiredness only', 'Memory loss', 'Fear of crowds'], 0],
+    ['A depressive episode involves:', ['Low mood and decreased interest', 'High energy only', 'Increased confidence only', 'Hallucinations only'], 0],
+    ['Bipolar I is mainly defined by:', ['Manic episodes', 'Anxiety attacks', 'Learning problems', 'Sleepwalking'], 0],
+    ['Bipolar disorder can affect:', ['Relationships and daily functioning', 'Eye color', 'Height', 'Blood type'], 0],
+    ['Genetics may:', ['Increase risk for bipolar disorder', 'Guarantee someone develops it', 'Remove emotions', 'Prevent treatment'], 0],
+    ['Tracking moods can help by:', ['Identifying patterns and changes', 'Creating symptoms', 'Stopping all emotions', 'Removing memories'], 0],
+    ['Someone has extreme energy, little sleep, and risky behavior. This may be:', ['Mania', 'Phobia', 'Depression only', 'PTSD'], 0],
+    ['Bipolar disorder is commonly treated with:', ['Therapy and mood-stabilizing medications', 'Ignoring symptoms', 'Isolation', 'Avoiding sleep'], 0],
+    ['Bipolar disorder primarily affects:', ['Mood regulation', 'Bone growth', 'Vision', 'Digestion'], 0],
+  ],
+  ptsd: [
+    ['PTSD can develop after:', ['A traumatic or extremely stressful event', 'Learning a new skill', 'Exercising regularly', 'Changing schools only'], 0],
+    ['A flashback is:', ['A future prediction', 'A memory or feeling that makes someone feel like they are reliving an event', 'A type of dream only', 'A physical injury'], 1],
+    ['Which is a common symptom of PTSD?', ['Intrusive memories of a traumatic event', 'Increased intelligence', 'Improved concentration', 'Complete lack of emotions'], 0],
+    ['Avoidance in PTSD means:', ['Avoiding reminders of the traumatic event', 'Avoiding all food', 'Avoiding sleep forever', 'Avoiding learning'], 0],
+    ['People with PTSD may experience hypervigilance, which means:', ['Feeling constantly alert or on guard', 'Losing all emotions', 'Becoming unable to speak', 'Having increased physical strength'], 0],
+    ["PTSD affects the brain's:", ['Stress response system', 'Bone structure', 'Digestive system only', 'Eye movement only'], 0],
+    ['Which therapy is commonly used for PTSD?', ['Trauma-focused therapy', 'Avoiding all memories', 'Ignoring symptoms', 'Physical exercise only'], 0],
+    ['A person experiences nightmares and fear months after a traumatic event. This may indicate:', ['PTSD', 'ADHD', 'ODD', 'Autism'], 0],
+    ['Why do different people respond differently to trauma?', ['People have different experiences, genetics, and coping abilities', 'Everyone responds exactly the same', 'Trauma affects only children', 'Trauma never affects emotions'], 0],
+    ['PTSD can affect:', ['Emotions, thoughts, and behaviors', 'Height only', 'Eye color only', 'Intelligence only'], 0],
+  ],
+  schizophrenia: [
+    ['Schizophrenia is mainly characterized by:', ['Changes in thinking, perception, and behavior', 'Only sadness', 'Only fear', 'Physical injuries'], 0],
+    ['Hallucinations are:', ['Sensing things that are not actually present', 'Forgetting homework', 'Feeling tired', 'Changing personality'], 0],
+    ['Delusions are:', ['Strong beliefs that are not based in reality', 'Normal opinions', 'Physical symptoms', 'Learning difficulties'], 0],
+    ['Positive symptoms of schizophrenia include:', ['Hallucinations and delusions', 'Improved memory', 'Better concentration', 'Increased athletic ability'], 0],
+    ['Negative symptoms of schizophrenia include:', ['Reduced emotional expression or motivation', 'Increased energy', 'High confidence', 'Stronger senses'], 0],
+    ['Schizophrenia can affect:', ['Thinking, communication, and behavior', 'Height and weight only', 'Vision only', 'Athletic performance only'], 0],
+    ['Dopamine is a:', ['Neurotransmitter involved in brain communication', 'Bone material', 'Vitamin', 'Muscle tissue'], 0],
+    ['Schizophrenia is NOT the same as:', ['Having multiple personalities', 'A mental health disorder', 'A condition affecting thinking', 'A condition that can require treatment'], 0],
+    ['A person hears voices others cannot hear and believes false ideas. This may suggest:', ['Schizophrenia', 'Anxiety disorder', 'ODD', 'Eating disorder'], 0],
+    ['Early treatment for schizophrenia is important because it can:', ['Help manage symptoms and improve functioning', 'Remove all emotions', 'Guarantee no challenges', "Change someone's identity"], 0],
+  ],
+  eating: [
+    ['Eating disorders are:', ['Mental health conditions involving unhealthy eating patterns and thoughts about food/body', 'Simple food preferences', 'Only physical illnesses', 'Temporary choices'], 0],
+    ['Anorexia nervosa often involves:', ['Restricting food intake and intense fear related to weight', 'Increased exercise only', 'Eating large amounts only', 'Avoiding school'], 0],
+    ['Bulimia nervosa involves:', ['Episodes of binge eating followed by behaviors to compensate', 'Never eating food', 'Only skipping breakfast', 'Fear of school'], 0],
+    ['Binge eating disorder involves:', ['Episodes of eating large amounts with a feeling of loss of control', 'Never eating', 'Eating only vegetables', 'Avoiding social situations'], 0],
+    ['Eating disorders can affect:', ['Physical and mental health', 'Height only', 'Hair color only', 'Intelligence only'], 0],
+    ['A factor that may contribute to eating disorders is:', ['Genetics, emotions, and social influences', 'Eye color', 'Favorite hobbies', 'Weather'], 0],
+    ['Eating disorders are considered mental health conditions because they involve:', ['Thoughts, emotions, and behaviors related to eating', 'Only food choices', 'Only physical appearance', 'Only exercise'], 0],
+    ['Therapy can help eating disorders by:', ['Addressing thoughts and behaviors related to eating', 'Ignoring emotions', 'Preventing communication', 'Increasing stress'], 0],
+    ['Someone repeatedly overeats while feeling unable to control it may have:', ['Binge eating disorder', 'PTSD', 'Schizophrenia', 'ODD'], 0],
+    ['A healthy relationship with food includes:', ['Balanced eating habits and positive attitudes toward nutrition', 'Avoiding all foods', 'Extreme rules', 'Ignoring hunger signals'], 0],
+  ],
+  odd: [
+    ['ODD is a disorder involving:', ['A pattern of angry, defiant, or disobedient behavior', 'Hallucinations', 'Mood swings only', 'Memory loss'], 0],
+    ['A common behavior in ODD is:', ['Frequent arguing with authority figures', 'Forgetting names', 'Hearing voices', 'Avoiding all activity'], 0],
+    ['ODD is different from normal behavior because it is:', ['Frequent and impacts daily life', 'A single disagreement', 'Always temporary', 'Only physical'], 0],
+    ['ODD can affect:', ['School, friendships, and family relationships', 'Eye color', 'Height', 'Intelligence'], 0],
+    ['Behavioral therapy for ODD focuses on:', ['Improving behaviors and coping skills', 'Removing emotions', 'Avoiding people', 'Ignoring problems'], 0],
+    ['Defiance means:', ['Resisting rules or authority', 'Having a disease', 'Losing memory', 'Having hallucinations'], 0],
+    ['Understanding triggers helps because it can:', ['Identify situations that lead to challenging behaviors', 'Increase conflict', 'Remove emotions', 'Prevent learning'], 0],
+    ['A child frequently argues, refuses rules, and blames others may show signs of:', ['ODD', 'PTSD', 'Bipolar disorder', 'Depression'], 0],
+    ['Parents and teachers can support ODD by:', ['Using consistent expectations and positive strategies', 'Ignoring all behavior', 'Punishing every mistake', 'Avoiding communication'], 0],
+    ['ODD is commonly diagnosed during:', ['Childhood or adolescence', 'Old age only', 'Infancy only', 'Adulthood only'], 0],
+  ],
+  neuro: [
+    ['Neurodevelopmental disorders usually begin:', ['During development in childhood', 'Only after age 50', 'After injuries only', 'During adulthood only'], 0],
+    ['ADHD mainly affects:', ['Attention, impulse control, and activity level', 'Vision', 'Height', 'Bone growth'], 0],
+    ['A common symptom of ADHD is:', ['Difficulty focusing and controlling impulses', 'Hearing voices', 'Extreme fear', 'Loss of identity'], 0],
+    ['Autism Spectrum Disorder affects:', ['Communication, behavior, and social interaction', 'Only physical strength', 'Only memory', 'Only emotions'], 0],
+    ['Genetics can play a role in neurodevelopmental disorders by:', ['Influencing risk and development', 'Guaranteeing a disorder', 'Preventing learning', 'Removing abilities'], 0],
+    ['Accommodations help students by:', ['Providing support for learning needs', 'Lowering intelligence', 'Removing challenges completely', 'Preventing education'], 0],
+    ['A student struggles with focus, organization, and impulsivity. This may suggest:', ['ADHD', 'PTSD', 'Eating disorder', 'Schizophrenia'], 0],
+    ['Early support is important because it can:', ['Improve skills and development', 'Remove personality', 'Prevent friendships', 'Stop learning'], 0],
+    ['Neurodevelopmental disorders affect:', ['Brain development and functioning', 'Only physical appearance', 'Only mood', 'Only sleep'], 0],
+    ['Support for neurodevelopmental disorders may include:', ['Therapy, education strategies, and accommodations', 'Ignoring symptoms', 'Avoiding school', 'Removing responsibilities'], 0],
+  ],
+}
+
+Object.values(QUIZ_BANK).forEach(group => {
+  group.forEach(([, options]) => {
+    options.forEach(option => {
+      ID_LABEL[option] = option
+    })
+  })
+})
+
 const QUESTIONS_BANK = [
   { clue: "Feeling nervous or restless with a sense of impending danger or doom, even when no clear threat exists.", correct: 'anxiety',       note: "Anxiety disorders involve excessive fear that persists beyond realistic threats." },
   { clue: "Persistent sadness and loss of interest in once-enjoyed activities lasting weeks or longer.", correct: 'depression',    note: "Major depressive disorder causes prolonged low mood affecting thoughts, feelings, and functioning." },
@@ -246,10 +353,18 @@ function shuffle(arr) {
 }
 
 function buildQuizRound() {
-  return shuffle(QUESTIONS_BANK).map(q => {
-    const distractors = shuffle(ALL_IDS.filter(id => id !== q.correct)).slice(0, 3)
-    return { ...q, options: shuffle([...distractors, q.correct]) }
-  })
+  return shuffle(
+    DISORDERS.map(d => {
+      const [clue, options, answerIndex] = shuffle(QUIZ_BANK[d.id])[0]
+      return {
+        disorderId: d.id,
+        clue,
+        options: shuffle(options),
+        correct: options[answerIndex],
+        note: `This question reviews ${ID_LABEL[d.id]}. Check the Library tab for more details.`,
+      }
+    })
+  )
 }
 
 // ─── library accordion item ────────────────────────────────────────────────────
@@ -331,7 +446,7 @@ function LibraryTab() {
 
 // ─── quiz tab ─────────────────────────────────────────────────────────────────
 
-function QuizTab({ streak, onCompleteRound }) {
+function QuizTab() {
   const [questions, setQuestions] = useState(() => buildQuizRound())
   const [idx, setIdx]             = useState(0)
   const [selected, setSelected]   = useState(null)
@@ -347,13 +462,19 @@ function QuizTab({ streak, onCompleteRound }) {
     const correct = optId === q.correct
     if (correct) setScore(s => s + 1)
     setSelected(optId)
-    setAnswers(prev => [...prev, { clue: q.clue, correct: q.correct, selected: optId, note: q.note }])
+    setAnswers(prev => [...prev, {
+      clue: q.clue,
+      correct: q.correct,
+      selected: optId,
+      correctText: q.correct,
+      selectedText: optId,
+      note: q.note,
+    }])
   }
 
   function next() {
     if (idx + 1 >= total) {
       setDone(true)
-      onCompleteRound()
     } else {
       setIdx(i => i + 1)
       setSelected(null)
@@ -394,9 +515,9 @@ function QuizTab({ streak, onCompleteRound }) {
               <div key={i} className="il-missed-card">
                 <p className="il-missed-clue">{a.clue}</p>
                 <div className="il-missed-answer-row">
-                  <span className="il-missed-wrong">{ID_LABEL[a.selected]}</span>
+                  <span className="il-missed-wrong">{a.selectedText}</span>
                   <span className="il-missed-arrow">→</span>
-                  <span className="il-missed-right">{ID_LABEL[a.correct]}</span>
+                  <span className="il-missed-right">{a.correctText}</span>
                 </div>
                 <p className="il-missed-note">{a.note}</p>
               </div>
@@ -419,25 +540,25 @@ function QuizTab({ streak, onCompleteRound }) {
       </div>
 
       <div className="il-clue-card">
-        <p className="il-clue-eyebrow">Which condition does this describe?</p>
+        <p className="il-clue-eyebrow">Choose the best answer.</p>
         <p className="il-clue-text">{q.clue}</p>
       </div>
 
       <div className="il-options">
-        {q.options.map(optId => {
-          const isSelected  = selected === optId
-          const isCorrect   = optId === q.correct
+        {q.options.map(optionText => {
+          const isSelected  = selected === optionText
+          const isCorrect   = optionText === q.correct
           const showCorrect = selected && isCorrect
           const showWrong   = selected && isSelected && !isCorrect
 
           return (
             <button
-              key={optId}
+              key={optionText}
               className={`il-option${showCorrect ? ' il-option--correct' : ''}${showWrong ? ' il-option--wrong' : ''}${selected && !isSelected && !isCorrect ? ' il-option--dim' : ''}`}
-              onClick={() => choose(optId)}
+              onClick={() => choose(optionText)}
               disabled={!!selected}
             >
-              <span className="il-option-text">{ID_LABEL[optId]}</span>
+              <span className="il-option-text">{optionText}</span>
               {showCorrect && <span className="il-option-icon">✓</span>}
               {showWrong   && <span className="il-option-icon">✗</span>}
             </button>
@@ -461,12 +582,8 @@ function QuizTab({ streak, onCompleteRound }) {
 // ─── root ─────────────────────────────────────────────────────────────────────
 
 export default function InfoLibrary() {
-  const [tab, setTab]       = useState('library')
-  const [streak, setStreak] = useState(3)
-
-  function onCompleteRound() {
-    setStreak(s => s + 1)
-  }
+  const [tab, setTab] = useState('library')
+  const streak = 0
 
   return (
     <section className="page">
@@ -504,7 +621,7 @@ export default function InfoLibrary() {
       </div>
 
       {tab === 'library' && <LibraryTab />}
-      {tab === 'quiz'    && <QuizTab streak={streak} onCompleteRound={onCompleteRound} />}
+      {tab === 'quiz' && <QuizTab />}
     </section>
   )
 }
@@ -518,12 +635,7 @@ const IL_STYLES = `
   .il-page-sub    { margin: 0; color: var(--muted); font-size: 0.95rem; }
 
   /* streak badge */
-  .il-streak-badge {
-    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
-    background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(255,255,255,0.9));
-    border: 1.5px solid rgba(245,158,11,0.35); border-radius: 16px;
-    padding: 12px 18px;
-  }
+  .il-streak-badge { display: none; }
   .il-streak-flame { font-size: 1.4rem; color: #f59e0b; }
   .il-streak-num   { display: block; font-size: 1.6rem; font-weight: 900; color: #92400e; letter-spacing: -0.03em; line-height: 1; }
   .il-streak-label { display: block; font-size: 0.72rem; color: #b45309; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
