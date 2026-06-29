@@ -15,6 +15,14 @@ import {
 
 const MOD_RULES = [
   {
+    type: 'severe_abuse', blocked: true,
+    terms: ['fuck you','kill yourself','kys','kms','kill myself','murder'],
+    patterns: [],
+    label: 'Message blocked: unsafe language',
+    message: "This message was flagged for unsafe or abusive language and wasn't sent. Please keep interactions respectful and safe for everyone here.",
+    color: '#dc2626', bg: 'rgba(220,38,38,0.06)', border: 'rgba(220,38,38,0.22)',
+  },
+  {
     type: 'crisis', blocked: false,
     terms: ['suicide','suicidal','kill myself','end my life','end it all','want to die','dont want to live','do not want to live'],
     patterns: [],
@@ -24,7 +32,7 @@ const MOD_RULES = [
   },
   {
     type: 'harassment', blocked: true,
-    terms: ['idiot','stupid','loser','worthless','shut up','you suck','hate you','go away','moron','dumb'],
+    terms: ['idiot','stupid','loser','worthless','shut up','you suck','hate you','go away','moron','dumb','retard'],
     patterns: [],
     label: 'Message blocked: harassment',
     message: "This message was flagged for potential harassment and wasn't sent. Please keep interactions respectful. Everyone here is going through something difficult.",
