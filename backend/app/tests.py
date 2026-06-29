@@ -17,12 +17,14 @@ from .models import (
 
 class ConversationModelTests(TestCase):
     def setUp(self):
+        # Each conversation test gets its own user in the isolated test database.
         self.user = get_user_model().objects.create_user(
             username='aurora-user',
             password='testpass123',
         )
 
     def test_conversation_can_be_created_for_each_supported_type(self):
+        # The app supports AI, therapist, and peer conversations for a user.
         ai_conversation = Conversation.objects.create(
             user=self.user,
             type=Conversation.ConversationType.AI,
@@ -42,6 +44,7 @@ class ConversationModelTests(TestCase):
         self.assertEqual(self.user.conversations.count(), 3)
 
     def test_messages_are_attached_to_conversation_in_timestamp_order(self):
+        # Messages should stay linked to their conversation and come back oldest first.
         conversation = Conversation.objects.create(
             user=self.user,
             type=Conversation.ConversationType.AI,
@@ -66,12 +69,14 @@ class ConversationModelTests(TestCase):
 
 class JournalModelTests(TestCase):
     def setUp(self):
+        # Use a fresh user so journal ownership and defaults can be tested cleanly.
         self.user = get_user_model().objects.create_user(
             username='journal-user',
             password='testpass123',
         )
 
     def test_thought_journal_entries_are_owned_by_user(self):
+        # A journal entry should belong to the user who created it.
         entry = ThoughtJournalEntry.objects.create(
             user=self.user,
             title='Evening reflection',
@@ -83,6 +88,7 @@ class JournalModelTests(TestCase):
         self.assertEqual(entry.title, 'Evening reflection')
 
     def test_doodle_can_be_linked_to_entry_and_user(self):
+        # Doodles should stay connected to both the entry and the authoring user.
         entry = ThoughtJournalEntry.objects.create(
             user=self.user,
             content='Sketching helped me slow down.',
@@ -98,12 +104,14 @@ class JournalModelTests(TestCase):
         self.assertEqual(entry.doodles.count(), 1)
 
     def test_journal_privacy_settings_default_to_no_external_access(self):
+        # New privacy settings should start locked down by default.
         privacy = JournalPrivacySettings.objects.create(user=self.user)
 
         self.assertFalse(privacy.allow_ai_access)
         self.assertFalse(privacy.allow_therapist_access)
 
     def test_journal_entry_can_store_mood_for_the_day(self):
+        # Mood tracking is optional metadata stored alongside the journal entry.
         entry = ThoughtJournalEntry.objects.create(
             user=self.user,
             content='Today felt steadier.',
@@ -115,12 +123,14 @@ class JournalModelTests(TestCase):
 
 class CheckInModelTests(TestCase):
     def setUp(self):
+        # Each check-in test gets a clean user so streak math is deterministic.
         self.user = get_user_model().objects.create_user(
             username='checkin-user',
             password='testpass123',
         )
 
     def test_weekly_checkin_sets_monday_week_start(self):
+        # Weekly check-ins are grouped by the Monday that starts their week.
         checkin = CheckIn.objects.create(
             user=self.user,
             type=CheckIn.CheckInType.WEEKLY,
@@ -132,6 +142,7 @@ class CheckInModelTests(TestCase):
         self.assertEqual(checkin.week_start_date, date(2026, 6, 22))
 
     def test_streak_counts_consecutive_monday_sunday_weeks(self):
+        # Consecutive weekly check-ins should build an active streak and clear the due flag.
         CheckIn.objects.create(
             user=self.user,
             type=CheckIn.CheckInType.WEEKLY,
@@ -155,6 +166,7 @@ class CheckInModelTests(TestCase):
         self.assertEqual(summary['last_check_in_date'], date(2026, 6, 22))
 
     def test_missing_entire_week_resets_streak(self):
+        # Missing a full week should break the streak and mark the next check-in as due.
         CheckIn.objects.create(
             user=self.user,
             type=CheckIn.CheckInType.WEEKLY,
@@ -174,12 +186,14 @@ class CheckInModelTests(TestCase):
 
 class TherapistMatchModelTests(TestCase):
     def setUp(self):
+        # Use a separate user so therapist matches are verified per account.
         self.user = get_user_model().objects.create_user(
             username='therapist-match-user',
             password='testpass123',
         )
 
     def test_saved_therapist_match_is_owned_by_user(self):
+        # Saved matches should stay attached to the user who selected them.
         match = TherapistMatch.objects.create(
             user=self.user,
             therapist_id=3,
