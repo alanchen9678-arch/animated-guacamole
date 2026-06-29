@@ -82,7 +82,14 @@ export default function Home() {
   return (
     <section className="page">
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+
+        .page {
+          font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
         .home-greeting {
+          font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
           font-size: 2rem;
           letter-spacing: -0.03em;
           margin: 0 0 6px;
@@ -135,6 +142,7 @@ export default function Home() {
           color: var(--muted); margin-bottom: 6px;
         }
         .today-stat .value {
+          font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
           font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink);
         }
         .prompts-card {

@@ -117,6 +117,7 @@ function AppShell() {
   return (
     <div className="app-root">
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
         /* ── reset & tokens ────────────────────────────────── */
         *, *::before, *::after { box-sizing: border-box; }
         body { margin: 0; }
@@ -255,6 +256,7 @@ function AppShell() {
           margin: 0 auto;
           padding: 64px 24px 80px;
           width: 100%;
+          font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         }
 
         .landing-hero {
@@ -273,6 +275,7 @@ function AppShell() {
 
         .landing-hero h1 {
           margin: 0;
+          font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
           font-size: clamp(2.2rem, 4vw, 4rem);
           line-height: 1.05;
           letter-spacing: -0.04em;
@@ -315,16 +318,16 @@ function AppShell() {
           padding: 14px 32px;
           border-radius: 999px;
           border: 1.5px solid var(--line);
-          background: transparent;
+          background: rgba(250,244,232,0.90);
           color: var(--ink);
           font-size: 1rem;
           font-weight: 600;
           transition: border-color 140ms, color 140ms, background 140ms;
         }
         .btn-outline-lg:hover {
-          border-color: var(--blue);
-          background: var(--blue-soft);
-          color: var(--blue-dark);
+          border-color: rgba(46,42,38,0.22);
+          background: rgba(250,244,232,0.90);
+          color: var(--ink);
         }
 
         .features-label {
@@ -344,14 +347,14 @@ function AppShell() {
         }
 
         .feature-card-landing {
-          background: var(--panel-strong);
+          background: rgba(250,244,232,0.90);
           border: 1px solid var(--line);
           border-radius: 22px;
           padding: 24px;
           display: flex;
           flex-direction: column;
           gap: 10px;
-          box-shadow: 0 6px 18px rgba(46,42,38,0.06);
+          box-shadow: 0 3px 10px rgba(46,42,38,0.04);
         }
 
         .feature-tag {
@@ -361,12 +364,12 @@ function AppShell() {
           letter-spacing: -0.02em;
           line-height: 1.2;
           text-transform: none;
-          color: var(--blue-dark);
-          background: var(--blue-soft);
+          color: #fff;
+          background: var(--accent);
           padding: 9px 14px;
-          border-radius: 999px;
+          border-radius: 22px;
           width: fit-content;
-          border: 1px solid rgba(58,104,152,0.16);
+          border: 1px solid rgba(77,107,88,0.18);
         }
 
         .feature-card-landing h4 {
@@ -729,7 +732,6 @@ function AppShell() {
         /* ── public landing ── */
         <div className="landing">
           <div className="landing-hero">
-            <p className="eyebrow">Aurora · Mental wellness</p>
             <h1>
               <WhisperText
                 as="span"
