@@ -2,47 +2,550 @@ import { useEffect, useMemo, useState } from 'react'
 import { useUser } from '../context/UserContext'
 import { fetchCheckIns, submitCheckIn } from '../services/api'
 
-// ─── question bank (60 questions, 10 per category) ────────────────────────────
+// ─── personality questions (30 questions, 5 dimensions) ───────────────────────
 
-const INITIAL_QUESTIONS = [
-  { id: 1, cat: 'anxiety', text: 'How often do you feel excessive worry about things that may happen in the future?' },
-  { id: 2, cat: 'anxiety', text: 'How often do you feel unable to relax because your mind keeps racing?' },
-  { id: 3, cat: 'anxiety', text: 'How often do you avoid situations because you feel nervous, afraid, or overwhelmed?' },
-  { id: 4, cat: 'anxiety', text: 'How often do physical signs of anxiety (such as feeling tense, restless, or uneasy) affect your daily life?' },
-  { id: 5, cat: 'loneliness', text: 'How often do you feel disconnected from the people around you, even when you are with others?' },
-  { id: 6, cat: 'loneliness', text: 'How often do you feel like you do not have someone you can truly talk to?' },
-  { id: 7, cat: 'loneliness', text: 'How often do you feel left out or like you do not belong?' },
-  { id: 8, cat: 'loneliness', text: 'How often do you wish you had deeper or more meaningful connections with others?' },
-  { id: 9, cat: 'grief', text: 'How often do you find yourself struggling to accept a major change, loss, or ending in your life?' },
-  { id: 10, cat: 'grief', text: 'How often do memories of something you lost cause strong emotions?' },
-  { id: 11, cat: 'grief', text: 'How often do feelings related to a past loss affect your ability to focus or enjoy things?' },
-  { id: 12, cat: 'grief', text: 'How often do you feel like you are still trying to understand or process a difficult experience?' },
-  { id: 13, cat: 'burnout', text: 'How often do you feel emotionally exhausted from your responsibilities or daily demands?' },
-  { id: 14, cat: 'burnout', text: 'How often do you feel like your effort does not match the results you are getting?' },
-  { id: 15, cat: 'burnout', text: 'How often do you feel detached, unmotivated, or uninterested in things you normally care about?' },
-  { id: 16, cat: 'burnout', text: 'How often do you feel like you have too much to handle and not enough energy to keep up?' },
-  { id: 17, cat: 'stress', text: 'How often do you feel overwhelmed by the number of tasks, problems, or expectations in your life?' },
-  { id: 18, cat: 'stress', text: 'How often do you have difficulty managing pressure from school, work, relationships, or responsibilities?' },
-  { id: 19, cat: 'stress', text: 'How often do stressful situations affect your mood or ability to think clearly?' },
-  { id: 20, cat: 'stress', text: 'How often do you feel like you are constantly trying to catch up?' },
-  { id: 21, cat: 'confidence', text: 'How often do you doubt your abilities or question whether you can succeed?' },
-  { id: 22, cat: 'confidence', text: 'How often do you compare yourself negatively to others?' },
-  { id: 23, cat: 'confidence', text: 'How often do you avoid trying new things because you fear failure or judgment?' },
-  { id: 24, cat: 'confidence', text: 'How often do you struggle to recognize your own strengths or accomplishments?' },
+const PERSONALITY_QUESTIONS = [
+  // dim 0 — Mind
+  {
+    id: 'p1', dim: 0,
+    text: 'When facing a new problem, your first instinct is to…',
+    options: [
+      { text: 'Gather data and research existing solutions', value: 0 },
+      { text: 'Map out a logical framework step by step', value: 2 },
+      { text: 'Brainstorm freely and explore wild possibilities', value: 4 },
+      { text: 'Trust your gut and dive into something completely new', value: 6 },
+    ],
+  },
+  {
+    id: 'p2', dim: 0,
+    text: 'Your perfect Saturday afternoon looks like…',
+    options: [
+      { text: 'Solving a complex puzzle or brain teaser', value: 0 },
+      { text: 'Reading a deep non-fiction or theory book', value: 2 },
+      { text: 'Working on a creative project — art, music, writing', value: 4 },
+      { text: 'Making something entirely new from scratch', value: 6 },
+    ],
+  },
+  {
+    id: 'p3', dim: 0,
+    text: 'When learning something new, you prefer to…',
+    options: [
+      { text: 'Study the underlying theory and principles first', value: 0 },
+      { text: 'Follow a structured step-by-step guide', value: 2 },
+      { text: 'Experiment and figure things out as I go', value: 4 },
+      { text: 'Explore freely with no set method at all', value: 6 },
+    ],
+  },
+  {
+    id: 'p4', dim: 0,
+    text: 'Your mind is most naturally drawn to…',
+    options: [
+      { text: 'Systems, patterns, and how things mechanically work', value: 0 },
+      { text: 'Abstract concepts, theories, and big ideas', value: 2 },
+      { text: 'Stories, metaphors, and the power of imagination', value: 4 },
+      { text: 'Colors, sounds, textures, and sensory aesthetics', value: 6 },
+    ],
+  },
+  {
+    id: 'p5', dim: 0,
+    text: "You'd describe your thinking style as…",
+    options: [
+      { text: 'Methodical and precise — I like getting things right', value: 0 },
+      { text: 'Logical but genuinely open to fresh ideas', value: 2 },
+      { text: 'Imaginative and free-flowing', value: 4 },
+      { text: 'Intuitive and emotionally resonant', value: 6 },
+    ],
+  },
+  {
+    id: 'p6', dim: 0,
+    text: "Given a full week of free time, you'd rather…",
+    options: [
+      { text: 'Solve a deep scientific or mathematical problem', value: 0 },
+      { text: 'Write detailed research or in-depth analysis', value: 2 },
+      { text: 'Design or build something creative and new', value: 4 },
+      { text: 'Improvise, perform, or create spontaneous art', value: 6 },
+    ],
+  },
+  // dim 1 — Energy
+  {
+    id: 'p7', dim: 1,
+    text: 'After an exhausting social event, you recharge by…',
+    options: [
+      { text: 'Quiet time alone — reading, reflecting, or nothing', value: 0 },
+      { text: 'A calm, low-stimulation evening in', value: 2 },
+      { text: 'Catching up with one or two close friends', value: 4 },
+      { text: 'Jumping straight into another social activity', value: 6 },
+    ],
+  },
+  {
+    id: 'p8', dim: 1,
+    text: 'In a group project, you naturally tend to…',
+    options: [
+      { text: 'Work independently and contribute your part solo', value: 0 },
+      { text: 'Prefer close-knit collaboration with a small team', value: 2 },
+      { text: 'Enjoy the group energy and collaborative dynamic', value: 4 },
+      { text: 'Take the lead and rally everyone together', value: 6 },
+    ],
+  },
+  {
+    id: 'p9', dim: 1,
+    text: 'Your ideal work environment is…',
+    options: [
+      { text: 'A quiet, private space with zero interruptions', value: 0 },
+      { text: 'A small office with a few trusted colleagues', value: 2 },
+      { text: 'An open space where I can interact when I choose', value: 4 },
+      { text: 'A buzzing, collaborative environment full of energy', value: 6 },
+    ],
+  },
+  {
+    id: 'p10', dim: 1,
+    text: "At a party where you barely know anyone, you…",
+    options: [
+      { text: 'Find a quiet corner and stay near familiar faces', value: 0 },
+      { text: "Talk when approached but don't seek new people out", value: 2 },
+      { text: 'Enjoy meeting a few new people when the vibe is right', value: 4 },
+      { text: 'Introduce yourself to as many people as possible', value: 6 },
+    ],
+  },
+  {
+    id: 'p11', dim: 1,
+    text: 'Your ideal Friday night is…',
+    options: [
+      { text: 'Solo — cozy night in with a book, show, or hobby', value: 0 },
+      { text: 'Low-key dinner or movie with close friends', value: 2 },
+      { text: 'A fun outing with your wider friend group', value: 4 },
+      { text: 'A party, concert, or event somewhere lively', value: 6 },
+    ],
+  },
+  {
+    id: 'p12', dim: 1,
+    text: 'You feel most energized when…',
+    options: [
+      { text: 'You have uninterrupted time for deep solo focus', value: 0 },
+      { text: "You're in a meaningful one-on-one conversation", value: 2 },
+      { text: "You're collaborating with a small, excited group", value: 4 },
+      { text: "You're surrounded by people and right in the action", value: 6 },
+    ],
+  },
+  // dim 2 — Heart
+  {
+    id: 'p13', dim: 2,
+    text: 'When a close friend comes to you upset, you tend to…',
+    options: [
+      { text: 'Help them logically analyze what went wrong and find solutions', value: 0 },
+      { text: 'Listen, then offer practical and actionable advice', value: 2 },
+      { text: "Mostly listen and validate how they're feeling", value: 4 },
+      { text: "Drop everything and fully immerse in their emotions with them", value: 6 },
+    ],
+  },
+  {
+    id: 'p14', dim: 2,
+    text: 'You make important decisions primarily based on…',
+    options: [
+      { text: 'Hard data, cold facts, and rigorous logic', value: 0 },
+      { text: 'Evidence and rational common sense', value: 2 },
+      { text: 'A blend of logic and how it genuinely feels', value: 4 },
+      { text: 'What emotionally feels right and aligns with my values', value: 6 },
+    ],
+  },
+  {
+    id: 'p15', dim: 2,
+    text: 'In a heated disagreement, you prioritize…',
+    options: [
+      { text: 'Being factually correct — truth above all else', value: 0 },
+      { text: 'Finding the most rational and fair resolution', value: 2 },
+      { text: 'Making sure everyone feels genuinely heard', value: 4 },
+      { text: 'Preserving the relationship, even if it means conceding', value: 6 },
+    ],
+  },
+  {
+    id: 'p16', dim: 2,
+    text: 'Of the following, you value most highly…',
+    options: [
+      { text: 'Truth and honesty, even when it stings', value: 0 },
+      { text: 'Fairness and objective impartiality', value: 2 },
+      { text: 'Compassion and genuine human kindness', value: 4 },
+      { text: "Harmony and everyone's emotional well-being", value: 6 },
+    ],
+  },
+  {
+    id: 'p17', dim: 2,
+    text: 'When someone strongly disagrees with your idea, you…',
+    options: [
+      { text: "Defend it firmly with evidence if I believe I'm right", value: 0 },
+      { text: 'Consider their argument logically and update if warranted', value: 2 },
+      { text: 'Try to genuinely understand their perspective', value: 4 },
+      { text: 'Feel personally hurt, then work to reconnect emotionally', value: 6 },
+    ],
+  },
+  {
+    id: 'p18', dim: 2,
+    text: 'What keeps you up at night most often?',
+    options: [
+      { text: 'Unsolved intellectual problems or incomplete puzzles', value: 0 },
+      { text: 'Unfinished tasks or details I might have missed', value: 2 },
+      { text: 'Worrying about how someone I care about is doing', value: 4 },
+      { text: 'The emotional weight of relationships and past interactions', value: 6 },
+    ],
+  },
+  // dim 3 — Style
+  {
+    id: 'p19', dim: 3,
+    text: 'Your calendar or planner looks like…',
+    options: [
+      { text: 'Meticulously scheduled — every hour has a clear purpose', value: 0 },
+      { text: 'Well-organized with clear goals and deadlines', value: 2 },
+      { text: 'A rough outline with flexible, open-ended blocks', value: 4 },
+      { text: 'Whatever comes up — I mostly figure it out as I go', value: 6 },
+    ],
+  },
+  {
+    id: 'p20', dim: 3,
+    text: 'You strongly prefer…',
+    options: [
+      { text: 'Following a clear, step-by-step plan to the letter', value: 0 },
+      { text: 'Having structure but with some built-in flexibility', value: 2 },
+      { text: 'A loose framework I can freely improvise around', value: 4 },
+      { text: 'Complete freedom to follow the moment wherever it leads', value: 6 },
+    ],
+  },
+  {
+    id: 'p21', dim: 3,
+    text: 'When traveling somewhere new, you…',
+    options: [
+      { text: 'Research everything — itinerary, hotel, restaurants all booked', value: 0 },
+      { text: 'Have a rough plan but leave room for spontaneity', value: 2 },
+      { text: 'Book the basics and figure out the rest on arrival', value: 4 },
+      { text: 'Book a ticket and figure absolutely everything out when you land', value: 6 },
+    ],
+  },
+  {
+    id: 'p22', dim: 3,
+    text: 'Deadlines make you feel…',
+    options: [
+      { text: 'Focused — structure brings out my absolute best', value: 0 },
+      { text: "Motivated — I like knowing exactly what's due when", value: 2 },
+      { text: 'Mildly stressed, but I usually manage fine', value: 4 },
+      { text: "Restricted — I do my best work without time pressure", value: 6 },
+    ],
+  },
+  {
+    id: 'p23', dim: 3,
+    text: 'Your living space or workspace tends to be…',
+    options: [
+      { text: 'Highly organized — every item has its rightful place', value: 0 },
+      { text: 'Mostly tidy with a clear personal system', value: 2 },
+      { text: 'Creatively cluttered — organized chaos that works for me', value: 4 },
+      { text: 'Spontaneous and ever-shifting — rigid order feels stifling', value: 6 },
+    ],
+  },
+  {
+    id: 'p24', dim: 3,
+    text: 'When a plan suddenly changes last minute, you feel…',
+    options: [
+      { text: 'Genuinely frustrated — I rely on structure to perform well', value: 0 },
+      { text: 'Mildly annoyed but I adapt quickly enough', value: 2 },
+      { text: "Mostly fine — I'm naturally quite flexible", value: 4 },
+      { text: 'Excited — unexpected changes are honestly half the fun', value: 6 },
+    ],
+  },
+  // dim 4 — Drive
+  {
+    id: 'p25', dim: 4,
+    text: 'When facing a major life decision, you…',
+    options: [
+      { text: 'Research extensively and weigh every option before committing', value: 0 },
+      { text: 'Make a deliberate plan and take careful, calculated steps', value: 2 },
+      { text: "Trust my instincts after some honest reflection", value: 4 },
+      { text: "Leap in head-first and trust I'll figure it out", value: 6 },
+    ],
+  },
+  {
+    id: 'p26', dim: 4,
+    text: 'Your relationship with risk is best described as…',
+    options: [
+      { text: 'Avoidant — I prefer security and predictable outcomes', value: 0 },
+      { text: 'Tolerant — I accept it when the reward is clearly justified', value: 2 },
+      { text: 'Embracing — I genuinely get energized by uncertainty', value: 4 },
+      { text: 'Craving — life without risk feels completely flat to me', value: 6 },
+    ],
+  },
+  {
+    id: 'p27', dim: 4,
+    text: 'You feel most alive when…',
+    options: [
+      { text: 'Things are stable, predictable, and going exactly to plan', value: 0 },
+      { text: "I'm making steady, meaningful progress toward a clear goal", value: 2 },
+      { text: "I'm pushing my limits or exploring something brand new", value: 4 },
+      { text: "I'm in the middle of chaos, high stakes, or total uncertainty", value: 6 },
+    ],
+  },
+  {
+    id: 'p28', dim: 4,
+    text: 'When you fail at something that really mattered, you…',
+    options: [
+      { text: 'Carefully analyze exactly what went wrong before trying again', value: 0 },
+      { text: 'Feel genuine disappointment, then build a stronger plan', value: 2 },
+      { text: 'Shake it off relatively quickly and get right back at it', value: 4 },
+      { text: 'See it as data and immediately charge forward again', value: 6 },
+    ],
+  },
+  {
+    id: 'p29', dim: 4,
+    text: 'Your comfort zone is…',
+    options: [
+      { text: 'Sacred — I thrive inside it and actively protect it', value: 0 },
+      { text: 'A home base I leave only strategically when it counts', value: 2 },
+      { text: 'Something I regularly push against in order to grow', value: 4 },
+      { text: 'Nonexistent — comfort equals stagnation in my book', value: 6 },
+    ],
+  },
+  {
+    id: 'p30', dim: 4,
+    text: 'When you imagine your ideal life, it looks like…',
+    options: [
+      { text: 'A stable, deeply meaningful life with mastery in my domain', value: 0 },
+      { text: 'Steady, purposeful progress toward a goal that truly matters', value: 2 },
+      { text: 'A rich life full of adventure, variety, and new horizons', value: 4 },
+      { text: 'A legendary, boundary-breaking, world-changing life story', value: 6 },
+    ],
+  },
 ]
+
+// ─── personality archetypes (25) ──────────────────────────────────────────────
+
+const PERSONALITIES = [
+  {
+    id: 'architect', name: 'The Architect', emoji: '🏛️', category: 'Thinker', color: '#6366f1',
+    profile: [0, 1, 1, 0, 3],
+    description: "You're a master systems builder — methodical, precise, and driven by long-term vision.",
+    traits: ['Strategic', 'Analytical', 'Precise', 'Independent', 'Visionary'],
+    strengths: 'Exceptional planning, long-term thinking, and creating efficient systems others rely on.',
+    growth: 'Try embracing spontaneity and investing more emotionally in your relationships.',
+  },
+  {
+    id: 'philosopher', name: 'The Philosopher', emoji: '🔮', category: 'Thinker', color: '#6366f1',
+    profile: [1, 0, 2, 4, 2],
+    description: 'You\'re a deep thinker who questions everything. Truth, meaning, and understanding are your ultimate pursuits.',
+    traits: ['Introspective', 'Curious', 'Thoughtful', 'Idealistic', 'Perceptive'],
+    strengths: "You ask questions others don't dare, and help people see life from radically new angles.",
+    growth: "Ground your ideas in action — wisdom that isn't applied remains theoretical.",
+  },
+  {
+    id: 'scientist', name: 'The Scientist', emoji: '🔬', category: 'Thinker', color: '#6366f1',
+    profile: [0, 1, 0, 1, 3],
+    description: 'Evidence-driven and methodical, you trust data over intuition. You want to understand how things work at a fundamental level.',
+    traits: ['Empirical', 'Methodical', 'Curious', 'Objective', 'Focused'],
+    strengths: 'Your rigor and precision make you excellent at research and solving complex problems.',
+    growth: "Don't let logic override connection — emotions carry real data too.",
+  },
+  {
+    id: 'scholar', name: 'The Scholar', emoji: '📚', category: 'Thinker', color: '#6366f1',
+    profile: [1, 1, 3, 1, 1],
+    description: 'Knowledge is your currency. You\'re a lifelong learner who finds genuine joy in mastering captivating subjects.',
+    traits: ['Knowledgeable', 'Diligent', 'Thoughtful', 'Humble', 'Detail-oriented'],
+    strengths: 'Your depth of knowledge makes you a trusted expert and a brilliant teacher.',
+    growth: "Share your knowledge more generously — don't stay in the library forever.",
+  },
+  {
+    id: 'strategist', name: 'The Strategist', emoji: '♟️', category: 'Thinker', color: '#6366f1',
+    profile: [1, 3, 1, 1, 4],
+    description: 'You think several moves ahead. Calculated and sharp, you approach life like a chess game.',
+    traits: ['Calculated', 'Forward-thinking', 'Decisive', 'Competitive', 'Resourceful'],
+    strengths: 'You thrive in high-stakes environments and navigate complex situations with rare skill.',
+    growth: "Remember that people aren't chess pieces — relationships matter alongside results.",
+  },
+  {
+    id: 'visionary', name: 'The Visionary', emoji: '🚀', category: 'Creator', color: '#f59e0b',
+    profile: [5, 3, 3, 4, 5],
+    description: "You see what others can't yet imagine. Bold, future-focused, and endlessly imaginative.",
+    traits: ['Imaginative', 'Bold', 'Inspiring', 'Future-focused', 'Unconventional'],
+    strengths: 'You ignite possibility in everyone around you and dream at a scale that makes others uncomfortable.',
+    growth: 'Great visions need great execution — partner with those who can build your dreams.',
+  },
+  {
+    id: 'artist', name: 'The Artist', emoji: '🎨', category: 'Creator', color: '#f59e0b',
+    profile: [6, 2, 5, 5, 3],
+    description: 'Life is your canvas. You process the world through emotion and aesthetics, turning raw experience into expression.',
+    traits: ['Expressive', 'Sensitive', 'Original', 'Passionate', 'Aesthetic'],
+    strengths: 'You create beauty, evoke real emotion, and help others feel truly seen and understood.',
+    growth: "Share your work even when it feels vulnerable — the world needs your perspective.",
+  },
+  {
+    id: 'dreamer', name: 'The Dreamer', emoji: '💭', category: 'Creator', color: '#f59e0b',
+    profile: [5, 1, 5, 5, 2],
+    description: 'You live partly in another world — full of possibility, beauty, and breathtaking what-ifs.',
+    traits: ['Idealistic', 'Imaginative', 'Sensitive', 'Hopeful', 'Whimsical'],
+    strengths: 'You bring genuine hope and wonder, seeing beauty where others see nothing at all.',
+    growth: "Turn your dreams into tangible plans — the real world desperately needs your vision.",
+  },
+  {
+    id: 'inventor', name: 'The Inventor', emoji: '⚡', category: 'Creator', color: '#f59e0b',
+    profile: [4, 2, 2, 3, 5],
+    description: "You're a problem-solver at your core — combining creative thinking with technical curiosity to build new things.",
+    traits: ['Innovative', 'Resourceful', 'Tinkering', 'Curious', 'Persistent'],
+    strengths: 'You find creative solutions to hard problems and love building something from nothing.',
+    growth: "Not every problem needs reinventing from scratch — elegant simplicity often wins.",
+  },
+  {
+    id: 'storyteller', name: 'The Storyteller', emoji: '📖', category: 'Creator', color: '#f59e0b',
+    profile: [4, 4, 5, 4, 3],
+    description: 'You make sense of the world through narrative, weaving meaning from raw human experience with grace.',
+    traits: ['Empathetic', 'Expressive', 'Perceptive', 'Warm', 'Articulate'],
+    strengths: 'You help people feel understood and can move hearts with the power of your words.',
+    growth: "Listen as much as you speak — the best stories are born from deep, patient listening.",
+  },
+  {
+    id: 'commander', name: 'The Commander', emoji: '🦁', category: 'Leader', color: '#ef4444',
+    profile: [2, 6, 1, 1, 6],
+    description: 'Born to lead. Decisive, confident, and energized by taking charge.',
+    traits: ['Decisive', 'Confident', 'Direct', 'Goal-driven', 'Commanding'],
+    strengths: 'You excel under pressure, make tough calls others avoid, and drive real results with authority.',
+    growth: "Leadership means listening — make genuine room for other voices in your decisions.",
+  },
+  {
+    id: 'champion', name: 'The Champion', emoji: '🔥', category: 'Leader', color: '#ef4444',
+    profile: [3, 5, 5, 3, 5],
+    description: "You're a passionate, full-bodied force for what you believe in. You fight for causes with conviction.",
+    traits: ['Passionate', 'Courageous', 'Driven', 'Inspiring', 'Relentless'],
+    strengths: 'Your raw energy and deep conviction inspire others and drive meaningful, lasting change.',
+    growth: "Channel your fire strategically — not every hill is worth dying on. Pick your battles.",
+  },
+  {
+    id: 'pioneer', name: 'The Pioneer', emoji: '🏔️', category: 'Leader', color: '#ef4444',
+    profile: [4, 5, 2, 4, 6],
+    description: 'You go first — always. Trailblazing and fearless, you\'re most alive exploring uncharted territory.',
+    traits: ['Adventurous', 'Bold', 'Innovative', 'Fearless', 'Independent'],
+    strengths: 'You break barriers and open doors that others believed were permanently sealed shut.',
+    growth: "Bring others along — even the most legendary pioneers needed great teams.",
+  },
+  {
+    id: 'mentor', name: 'The Mentor', emoji: '🌿', category: 'Leader', color: '#ef4444',
+    profile: [2, 3, 6, 2, 2],
+    description: 'You lead by lifting others higher. Patient, wise, and deeply invested in human potential.',
+    traits: ['Nurturing', 'Patient', 'Wise', 'Encouraging', 'Invested'],
+    strengths: 'You consistently bring out the best in people and leave a lasting legacy through those you guide.',
+    growth: "Don't neglect your own growth while pouring so generously into everyone else.",
+  },
+  {
+    id: 'diplomat', name: 'The Diplomat', emoji: '🤝', category: 'Leader', color: '#ef4444',
+    profile: [2, 4, 5, 2, 3],
+    description: 'You navigate complexity with grace and emotional intelligence. A natural bridge-builder.',
+    traits: ['Tactful', 'Empathetic', 'Persuasive', 'Harmonious', 'Adaptive'],
+    strengths: 'You shine in conflict resolution, negotiation, and building consensus that actually holds.',
+    growth: "Don't sacrifice your own values in the relentless pursuit of harmony.",
+  },
+  {
+    id: 'caregiver', name: 'The Caregiver', emoji: '🌸', category: 'Helper', color: '#10b981',
+    profile: [2, 3, 6, 2, 1],
+    description: 'Your heart is your compass. Warm, selfless, and deeply attuned to others.',
+    traits: ['Compassionate', 'Generous', 'Nurturing', 'Loyal', 'Selfless'],
+    strengths: 'You make people feel truly seen, loved, and cared for — a rare and powerful gift.',
+    growth: "Remember to fill your own cup — you genuinely cannot pour from an empty vessel.",
+  },
+  {
+    id: 'connector', name: 'The Connector', emoji: '🌐', category: 'Helper', color: '#10b981',
+    profile: [2, 6, 5, 3, 3],
+    description: "You're the social glue of every room you enter. You build real communities and forge unlikely friendships.",
+    traits: ['Sociable', 'Warm', 'Inclusive', 'Energetic', 'Relational'],
+    strengths: "Your network is your superpower — you connect people who genuinely change each other's lives.",
+    growth: "Depth matters as much as breadth — invest your full self in your closest relationships.",
+  },
+  {
+    id: 'peacemaker', name: 'The Peacemaker', emoji: '🕊️', category: 'Helper', color: '#10b981',
+    profile: [2, 3, 6, 3, 1],
+    description: 'Harmony is your highest value. Calm, steady, and conflict-averse.',
+    traits: ['Calm', 'Mediating', 'Patient', 'Accepting', 'Steady'],
+    strengths: 'You de-escalate tension and help groups find the common ground that makes peace possible.',
+    growth: "Don't avoid every conflict — some issues genuinely need addressing, not just smoothing over.",
+  },
+  {
+    id: 'guardian', name: 'The Guardian', emoji: '🛡️', category: 'Helper', color: '#10b981',
+    profile: [1, 3, 4, 1, 3],
+    description: "You're the rock people anchor themselves to. Reliable, protective, and deeply loyal.",
+    traits: ['Loyal', 'Dependable', 'Protective', 'Traditional', 'Steadfast'],
+    strengths: 'People trust you completely. Your reliability is a foundation others build their lives on.',
+    growth: "Embrace change and new perspectives — true protection never means preventing growth.",
+  },
+  {
+    id: 'advocate', name: 'The Advocate', emoji: '⚖️', category: 'Helper', color: '#10b981',
+    profile: [2, 5, 5, 2, 4],
+    description: "Justice drives everything you do. You speak up fiercely for those who can't.",
+    traits: ['Principled', 'Courageous', 'Passionate', 'Fair', 'Determined'],
+    strengths: 'Your moral conviction makes you a powerful voice for real change and lasting equity.',
+    growth: "Grace and nuance are your allies — righteous anger needs strategic, thoughtful direction.",
+  },
+  {
+    id: 'explorer', name: 'The Explorer', emoji: '🧭', category: 'Independent', color: '#8b5cf6',
+    profile: [4, 5, 3, 5, 5],
+    description: 'Life is one continuous adventure. Restless, insatiably curious, and endlessly drawn to the new.',
+    traits: ['Curious', 'Adventurous', 'Open-minded', 'Spontaneous', 'Free-spirited'],
+    strengths: 'You collect perspectives and experiences that make you uniquely adaptable and endlessly interesting.',
+    growth: "Plant some roots — real depth comes from staying still as much as from always moving.",
+  },
+  {
+    id: 'rebel', name: 'The Rebel', emoji: '💥', category: 'Independent', color: '#8b5cf6',
+    profile: [4, 5, 3, 6, 5],
+    description: "You don't follow rules — you question their very existence. Bold, nonconformist, unapologetically authentic.",
+    traits: ['Nonconformist', 'Bold', 'Disruptive', 'Authentic', 'Unconventional'],
+    strengths: 'You break the mold and force the world to evolve beyond its own comfort zone.',
+    growth: "Channel rebellion constructively — disruption for its own sake only burns bridges.",
+  },
+  {
+    id: 'sage', name: 'The Sage', emoji: '🌙', category: 'Independent', color: '#8b5cf6',
+    profile: [2, 0, 4, 4, 2],
+    description: 'Still waters run extraordinarily deep. Quietly wise, deeply self-aware, at complete peace with your inner world.',
+    traits: ['Wise', 'Serene', 'Introspective', 'Perceptive', 'Grounded'],
+    strengths: 'Your composure and clarity make you a beacon of calm and genuine wisdom for those around you.',
+    growth: "Share your wisdom more freely — your silence robs the world of gifts it needs.",
+  },
+  {
+    id: 'survivor', name: 'The Survivor', emoji: '💪', category: 'Independent', color: '#8b5cf6',
+    profile: [3, 3, 3, 4, 4],
+    description: "You've walked through fire and emerged stronger every time. Resilient, adaptive, fundamentally unbreakable.",
+    traits: ['Resilient', 'Adaptive', 'Pragmatic', 'Strong', 'Determined'],
+    strengths: 'You handle crisis better than almost anyone and inspire profound strength in others.',
+    growth: "Vulnerability isn't weakness — let the right people in, not just during the hard times.",
+  },
+  {
+    id: 'maverick', name: 'The Maverick', emoji: '🎯', category: 'Independent', color: '#8b5cf6',
+    profile: [3, 4, 2, 5, 6],
+    description: "You play by your own rules — and somehow, it always works. Self-reliant, boldly original, completely unconventional.",
+    traits: ['Self-reliant', 'Original', 'Bold', 'Unconventional', 'Driven'],
+    strengths: 'Your unique approach consistently leads to breakthroughs that conventional thinkers miss.',
+    growth: "Collaboration multiplies impact — your best work might come from the right partnership.",
+  },
+]
+
+// ─── initial disorder questions (10, selected from INITIAL_QUESTIONS) ─────────
+
+const INITIAL_DISORDER_QUESTIONS = [
+  { id: 1,  cat: 'anxiety',    text: 'How often do you feel excessive worry about things that may happen in the future?' },
+  { id: 3,  cat: 'anxiety',    text: 'How often do you avoid situations because you feel nervous, afraid, or overwhelmed?' },
+  { id: 5,  cat: 'loneliness', text: 'How often do you feel disconnected from the people around you, even when you are with others?' },
+  { id: 7,  cat: 'loneliness', text: 'How often do you feel left out or like you do not belong?' },
+  { id: 9,  cat: 'grief',      text: 'How often do you find yourself struggling to accept a major change, loss, or ending in your life?' },
+  { id: 11, cat: 'grief',      text: 'How often do feelings related to a past loss affect your ability to focus or enjoy things?' },
+  { id: 13, cat: 'burnout',    text: 'How often do you feel emotionally exhausted from your responsibilities or daily demands?' },
+  { id: 15, cat: 'burnout',    text: 'How often do you feel detached, unmotivated, or uninterested in things you normally care about?' },
+  { id: 17, cat: 'stress',     text: 'How often do you feel overwhelmed by the number of tasks, problems, or expectations in your life?' },
+  { id: 21, cat: 'confidence', text: 'How often do you doubt your abilities or question whether you can succeed?' },
+]
+
+// ─── weekly question bank (60 questions, 10 per category) ────────────────────
 
 const WEEKLY_QUESTION_BANK = [
   { id: 101, cat: 'anxiety', text: 'I tend to rehearse conversations or situations in my head before they happen.' },
   { id: 102, cat: 'anxiety', text: 'Unexpected changes to plans can leave me unsettled for a while.' },
   { id: 103, cat: 'anxiety', text: 'I often notice potential problems before others do.' },
-  { id: 104, cat: 'anxiety', text: 'Even small mistakes can stay on my mind longer than I\'d like.' },
+  { id: 104, cat: 'anxiety', text: "Even small mistakes can stay on my mind longer than I'd like." },
   { id: 105, cat: 'anxiety', text: 'I like having backup plans "just in case."' },
   { id: 106, cat: 'anxiety', text: 'It is difficult for me to fully relax, even during free time.' },
   { id: 107, cat: 'anxiety', text: 'I frequently think about what could go wrong in the future.' },
   { id: 108, cat: 'anxiety', text: 'I become mentally preoccupied when waiting for important news.' },
   { id: 109, cat: 'anxiety', text: 'I prefer certainty over spontaneity whenever possible.' },
   { id: 110, cat: 'anxiety', text: 'My mind often feels active when I wish it would slow down.' },
-  { id: 111, cat: 'loneliness', text: 'I often feel that people around me don\'t fully understand me.' },
+  { id: 111, cat: 'loneliness', text: "I often feel that people around me don't fully understand me." },
   { id: 112, cat: 'loneliness', text: 'I have many interactions that feel superficial rather than meaningful.' },
   { id: 113, cat: 'loneliness', text: 'I wish I had more people I could genuinely rely on.' },
   { id: 114, cat: 'loneliness', text: 'Even in groups, I sometimes feel like an outsider.' },
@@ -57,7 +560,7 @@ const WEEKLY_QUESTION_BANK = [
   { id: 123, cat: 'grief', text: 'I carry experiences that changed me in lasting ways.' },
   { id: 124, cat: 'grief', text: 'Anniversaries, places, or reminders can bring up strong emotions.' },
   { id: 125, cat: 'grief', text: 'There are losses in my life that still influence my daily perspective.' },
-  { id: 126, cat: 'grief', text: 'I sometimes struggle to accept changes I didn\'t choose.' },
+  { id: 126, cat: 'grief', text: "I sometimes struggle to accept changes I didn't choose." },
   { id: 127, cat: 'grief', text: 'I find myself revisiting "what if" scenarios about the past.' },
   { id: 128, cat: 'grief', text: 'I keep parts of certain memories close because they remain meaningful.' },
   { id: 129, cat: 'grief', text: 'I have moments where emotions connected to the past resurface unexpectedly.' },
@@ -67,7 +570,7 @@ const WEEKLY_QUESTION_BANK = [
   { id: 133, cat: 'burnout', text: 'I struggle to maintain enthusiasm for responsibilities I once cared about.' },
   { id: 134, cat: 'burnout', text: 'I frequently push through exhaustion because things still need to get done.' },
   { id: 135, cat: 'burnout', text: 'I find myself operating on autopilot.' },
-  { id: 136, cat: 'burnout', text: 'Rest doesn\'t always leave me feeling recharged.' },
+  { id: 136, cat: 'burnout', text: "Rest doesn't always leave me feeling recharged." },
   { id: 137, cat: 'burnout', text: 'Small demands sometimes feel disproportionately overwhelming.' },
   { id: 138, cat: 'burnout', text: 'I have less patience than I used to.' },
   { id: 139, cat: 'burnout', text: 'It is difficult to find motivation, even for important tasks.' },
@@ -105,7 +608,7 @@ const CATEGORIES = [
   { id: 'confidence', label: 'Low Confidence', color: '#94a3b8', bg: 'rgba(148,163,184,0.10)', border: 'rgba(148,163,184,0.22)' },
 ]
 
-// ─── mock history (4 weekly check-ins before today) ──────────────────────────
+// ─── mock history ─────────────────────────────────────────────────────────────
 
 const MOCK_HISTORY = [
   {
@@ -130,6 +633,9 @@ const MOCK_HISTORY = [
   },
 ]
 
+// ─── storage key ──────────────────────────────────────────────────────────────
+
+const PERSONALITY_STORAGE_KEY = 'aurora.personality'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -200,24 +706,30 @@ function isWeeklyCheckInDue(history, today = new Date()) {
   return diffDays(parseDateKey(latestWeeklyEntry.date), today) >= 7
 }
 
-function buildSurvey(type, lastQIds = []) {
-  if (type === 'initial') return INITIAL_QUESTIONS
-
-  const perCat = 2
-  const questions = []
-  for (const cat of CATEGORIES) {
-    const pool    = WEEKLY_QUESTION_BANK.filter(q => q.cat === cat.id)
-    const unused  = pool.filter(q => !lastQIds.includes(q.id))
-    const source  = unused.length >= perCat ? unused : pool
-    questions.push(...shuffle(source).slice(0, perCat))
+function buildSurvey(type, lastDisorderQIds = [], lastPersonalityQIds = []) {
+  if (type === 'initial') {
+    // 40 questions: 10 disorder first, then 30 personality
+    return [...INITIAL_DISORDER_QUESTIONS, ...PERSONALITY_QUESTIONS]
   }
-  return shuffle(questions)
+  // Weekly: 3 disorder + 7 personality
+  const selectedCats = shuffle([...CATEGORIES.map(c => c.id)]).slice(0, 3)
+  const disorderQs = selectedCats.map(cat => {
+    const pool = WEEKLY_QUESTION_BANK.filter(q => q.cat === cat)
+    const unused = pool.filter(q => !lastDisorderQIds.includes(q.id))
+    const source = unused.length >= 1 ? unused : pool
+    return shuffle(source)[0]
+  })
+  const unusedPersonality = PERSONALITY_QUESTIONS.filter(q => !lastPersonalityQIds.includes(q.id))
+  const personalityPool = unusedPersonality.length >= 7 ? unusedPersonality : PERSONALITY_QUESTIONS
+  const personalityQs = shuffle(personalityPool).slice(0, 7)
+  return [...disorderQs, ...personalityQs]
 }
 
-function computeScores(answers, questions) {
+function computeDisorderScores(answers, questions) {
+  const disorderQs = questions.filter(q => q.cat)
   const raw = {}, count = {}
   for (const c of CATEGORIES) { raw[c.id] = 0; count[c.id] = 0 }
-  for (const q of questions) {
+  for (const q of disorderQs) {
     if (answers[q.id] != null) { raw[q.cat] += answers[q.id]; count[q.cat]++ }
   }
   const scores = {}
@@ -227,6 +739,29 @@ function computeScores(answers, questions) {
     scores[c.id] = Math.round(((raw[c.id] - n) / (6 * n)) * 99 + 1)
   }
   return scores
+}
+
+function computePersonalityProfile(answers, questions) {
+  const personalityQs = questions.filter(q => q.dim != null && q.options)
+  const dimSums = [0, 0, 0, 0, 0]
+  const dimCounts = [0, 0, 0, 0, 0]
+  for (const q of personalityQs) {
+    const idx = answers[q.id]
+    if (idx != null) {
+      dimSums[q.dim] += q.options[idx].value
+      dimCounts[q.dim]++
+    }
+  }
+  return dimSums.map((sum, i) => dimCounts[i] ? sum / dimCounts[i] : 3)
+}
+
+function findPersonality(profile) {
+  let best = null, bestDist = Infinity
+  for (const p of PERSONALITIES) {
+    const dist = Math.sqrt(p.profile.reduce((sum, v, i) => sum + (v - profile[i]) ** 2, 0))
+    if (dist < bestDist) { bestDist = dist; best = p }
+  }
+  return best
 }
 
 function scoreBand(n) {
@@ -267,11 +802,40 @@ function fmtDate(str) {
 // ─── hub view ─────────────────────────────────────────────────────────────────
 
 function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, onStart }) {
+  const [savedPersonality, setSavedPersonality] = useState(null)
 
-  // Last check-in was June 8; today is June 15 → due
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PERSONALITY_STORAGE_KEY)
+      if (raw) setSavedPersonality(JSON.parse(raw))
+    } catch {}
+  }, [])
 
   return (
     <div className="ci-hub">
+      {/* personality compact card */}
+      {savedPersonality && (
+        <div
+          className="ci-hub-personality"
+          style={{
+            borderColor: savedPersonality.color + '44',
+            background: savedPersonality.color + '0d',
+          }}
+        >
+          <span className="ci-hub-personality-emoji">{savedPersonality.emoji}</span>
+          <div className="ci-hub-personality-info">
+            <span className="ci-hub-personality-name">{savedPersonality.name}</span>
+            <span
+              className="ci-hub-personality-cat"
+              style={{ color: savedPersonality.color, background: savedPersonality.color + '1a' }}
+            >
+              {savedPersonality.category}
+            </span>
+          </div>
+          <span className="ci-hub-personality-label">Your personality</span>
+        </div>
+      )}
+
       {/* streak + due banner */}
       <div className="ci-top-row">
         <div className="ci-streak-card">
@@ -284,13 +848,13 @@ function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, onSt
           {!hasInitialAssessment ? (
             <>
               <div className="ci-due-badge">Get started</div>
-              <p className="ci-due-text">Before weekly check-ins begin, complete your 24-question initial assessment to set your baseline.</p>
+              <p className="ci-due-text">Before weekly check-ins begin, complete your 40-question initial assessment to set your baseline and discover your personality type.</p>
               <button className="ci-start-btn" onClick={() => onStart('initial')}>Start initial assessment</button>
             </>
           ) : dueToday ? (
             <>
               <div className="ci-due-badge">Due today</div>
-              <p className="ci-due-text">Your weekly check-in is ready. It takes about 3 minutes and helps Aurora detect changes in your well-being early.</p>
+              <p className="ci-due-text">Your weekly check-in is ready. It takes about 4 minutes and helps Aurora detect changes in your well-being early.</p>
               <button className="ci-start-btn" onClick={() => onStart('weekly')}>Start weekly check-in →</button>
             </>
           ) : (
@@ -302,9 +866,6 @@ function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, onSt
         </div>
       </div>
 
-      {/* history removed
-        {showHistory ? 'Hide history' : 'View check-in history'} {showHistory ? '↑' : '↓'}
-      */}
       <p className="ci-disclaimer">
         These check-ins are tools for self-reflection and trend awareness — not diagnostic tools. They do not determine whether you have a mental health condition.
       </p>
@@ -316,11 +877,12 @@ function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, onSt
 
 function IntroView({ type, onStart, onBack }) {
   const isInitial = type === 'initial'
-  const count     = isInitial ? 24 : 12
+  const count     = isInitial ? 40 : 10
+  const time      = isInitial ? '~15' : '~4'
   const title     = isInitial ? 'Initial Assessment' : 'Weekly Check-In'
   const desc      = isInitial
-    ? 'This one-time assessment establishes your personal baseline across six well-being dimensions. It takes about 6–8 minutes and uses scenario-based questions — no clinical language, no trick questions.'
-    : 'This quick check-in tracks how you\'ve been doing this week. Aurora looks for changes over time so it can step in early when something shifts.'
+    ? 'This one-time assessment establishes your personal baseline across six well-being dimensions and reveals your personality type. It takes about 15 minutes and uses scenario-based questions — no clinical language, no trick questions.'
+    : "This quick check-in tracks how you've been doing this week. Aurora looks for changes over time so it can step in early when something shifts."
 
   return (
     <div className="ci-intro">
@@ -334,12 +896,12 @@ function IntroView({ type, onStart, onBack }) {
           <div className="ci-stat-label">questions</div>
         </div>
         <div className="ci-stat">
-          <div className="ci-stat-num">{isInitial ? '~7' : '~3'}</div>
+          <div className="ci-stat-num">{time}</div>
           <div className="ci-stat-label">minutes</div>
         </div>
         <div className="ci-stat">
-          <div className="ci-stat-num">1</div>
-          <div className="ci-stat-label">baseline</div>
+          <div className="ci-stat-num">{isInitial ? '1' : '+'}</div>
+          <div className="ci-stat-label">{isInitial ? 'personality + wellness baseline' : 'personality + wellness'}</div>
         </div>
       </div>
 
@@ -361,10 +923,11 @@ const SCALE_LABELS = ['Strongly Disagree', 'Disagree', 'Slightly Disagree', 'Neu
 
 function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
   const [idx, setIdx] = useState(0)
-  const q        = questions[idx]
-  const total    = questions.length
-  const selected = answers[q.id]
-  const pct      = ((idx) / total) * 100
+  const q          = questions[idx]
+  const total      = questions.length
+  const isPersonality = q.dim != null && q.options
+  const selected   = answers[q.id]
+  const pct        = (idx / total) * 100
 
   function pick(val) { setAnswers(prev => ({ ...prev, [q.id]: val })) }
 
@@ -386,32 +949,55 @@ function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
       </div>
       <div className="ci-prog-row">
         <span className="ci-prog-count">Question {idx + 1} of {total}</span>
+        <span
+          className="ci-type-badge"
+          style={isPersonality
+            ? { background: 'rgba(99,102,241,0.12)', color: '#6366f1', borderColor: 'rgba(99,102,241,0.25)' }
+            : { background: 'var(--accent-soft)', color: 'var(--accent)', borderColor: 'rgba(77,107,88,0.25)' }
+          }
+        >
+          {isPersonality ? 'Personality' : 'Well-being'}
+        </span>
       </div>
 
       {/* question */}
       <p className="ci-question-text">{q.text}</p>
 
-      {/* 7-point scale */}
-      <div className="ci-scale">
-        <div className="ci-scale-btns">
-          {[1, 2, 3, 4, 5, 6, 7].map(v => (
+      {/* answer input */}
+      {isPersonality ? (
+        <div className="ci-choice-grid">
+          {q.options.map((opt, i) => (
             <button
-              key={v}
-              className={`ci-scale-btn${selected === v ? ' ci-scale-btn--on' : ''}`}
-              style={selected === v ? { background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff' } : {}}
-              onClick={() => pick(v)}
-              title={SCALE_LABELS[v - 1]}
+              key={i}
+              className={`ci-choice-btn${selected === i ? ' ci-choice-btn--on' : ''}`}
+              onClick={() => pick(i)}
             >
-              {v}
+              {opt.text}
             </button>
           ))}
         </div>
-        <div className="ci-scale-end-labels">
-          <span>Strongly Disagree</span>
-          <span>Neutral</span>
-          <span>Strongly Agree</span>
+      ) : (
+        <div className="ci-scale">
+          <div className="ci-scale-btns">
+            {[1, 2, 3, 4, 5, 6, 7].map(v => (
+              <button
+                key={v}
+                className={`ci-scale-btn${selected === v ? ' ci-scale-btn--on' : ''}`}
+                style={selected === v ? { background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff' } : {}}
+                onClick={() => pick(v)}
+                title={SCALE_LABELS[v - 1]}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+          <div className="ci-scale-end-labels">
+            <span>Strongly Disagree</span>
+            <span>Neutral</span>
+            <span>Strongly Agree</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* nav */}
       <div className="ci-survey-nav">
@@ -431,11 +1017,15 @@ function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
 
 // ─── results view ─────────────────────────────────────────────────────────────
 
-function ResultsView({ surveyType, onDone }) {
+function ResultsView({ surveyType, scores, prevScores, personality, onDone }) {
   const title = surveyType === 'initial' ? 'Assessment complete' : 'Check-in complete'
   const summary = surveyType === 'initial'
     ? 'Your responses have been saved as your starting baseline. Future weekly check-ins will help Aurora track changes over time.'
     : 'Your responses have been saved. Come back next week to keep your streak going and continue tracking how you are doing.'
+
+  const insightText = scores
+    ? generateInsight(scores, prevScores)
+    : 'Thank you for checking in. You can return to the dashboard whenever you are ready.'
 
   return (
     <div className="ci-results">
@@ -444,11 +1034,61 @@ function ResultsView({ surveyType, onDone }) {
         <p className="ci-results-sub">{summary}</p>
       </div>
 
+      {/* personality card */}
+      {personality && (
+        <div
+          className="ci-personality-card"
+          style={{
+            borderColor: personality.color + '40',
+            background: personality.color + '0a',
+          }}
+        >
+          <div className="ci-personality-header">
+            <span className="ci-personality-emoji">{personality.emoji}</span>
+            <div>
+              <p className="ci-personality-name" style={{ color: personality.color }}>{personality.name}</p>
+              <span
+                className="ci-personality-cat"
+                style={{ color: personality.color, background: personality.color + '1a', borderColor: personality.color + '33' }}
+              >
+                {personality.category}
+              </span>
+            </div>
+          </div>
+
+          <p className="ci-personality-desc">{personality.description}</p>
+
+          <div className="ci-traits-row">
+            {personality.traits.map(t => (
+              <span
+                key={t}
+                className="ci-trait-chip"
+                style={{ color: personality.color, borderColor: personality.color + '44', background: personality.color + '12' }}
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+
+          <div className="ci-personality-meta">
+            <div className="ci-personality-meta-item">
+              <span className="ci-personality-meta-label">Strengths</span>
+              <span>{personality.strengths}</span>
+            </div>
+            <div className="ci-personality-meta-item">
+              <span className="ci-personality-meta-label">Growth edge</span>
+              <span>{personality.growth}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* aurora insight */}
       <div className="ci-insight">
         <div className="ci-insight-icon" style={{ background: '#3a6898' }}>A</div>
         <div className="ci-insight-body">
           <strong className="ci-insight-label" style={{ color: '#3a6898' }}>Aurora</strong>
-          <p className="ci-insight-text">Thank you for checking in. You can return to the dashboard whenever you are ready.</p>
+          <p className="ci-insight-text">{insightText}</p>
         </div>
       </div>
 
@@ -461,11 +1101,13 @@ function ResultsView({ surveyType, onDone }) {
 
 export default function CheckIns() {
   const { token, loading: userLoading } = useUser()
-  const [view,    setView]    = useState('hub')      // hub | intro | survey | results
+  const [view,    setView]    = useState('hub')
   const [surveyType, setSurveyType] = useState('weekly')
   const [questions,  setQuestions]  = useState([])
   const [answers,    setAnswers]    = useState({})
   const [latestScores, setLatestScores] = useState(null)
+  const [latestPrevScores, setLatestPrevScores] = useState(null)
+  const [latestPersonality, setLatestPersonality] = useState(null)
   const [history,  setHistory]  = useState(MOCK_HISTORY)
   const [serverSummary, setServerSummary] = useState({
     streak: getWeeklyStreak(MOCK_HISTORY),
@@ -518,8 +1160,9 @@ export default function CheckIns() {
 
   function startSurvey(type) {
     const lastEntry = history[history.length - 1]
-    const lastQIds  = lastEntry?.qIds ?? []
-    const qs        = buildSurvey(type, lastQIds)
+    const lastDisorderQIds = lastEntry?.qIds ?? []
+    const lastPersonalityQIds = lastEntry?.personalityQIds ?? []
+    const qs = buildSurvey(type, lastDisorderQIds, lastPersonalityQIds)
     setSurveyType(type)
     setQuestions(qs)
     setAnswers({})
@@ -529,14 +1172,45 @@ export default function CheckIns() {
   function beginAnswering() { setView('survey') }
 
   async function onSurveyDone() {
-    const scores = computeScores(answers, questions)
+    const scores = computeDisorderScores(answers, questions)
     setLatestScores(scores)
 
+    // compute personality if there were personality questions
+    let personality = null
+    const hasPersonalityQs = questions.some(q => q.dim != null)
+    if (hasPersonalityQs) {
+      const profile = computePersonalityProfile(answers, questions)
+      personality = findPersonality(profile)
+      setLatestPersonality(personality)
+
+      // save to localStorage
+      if (personality) {
+        localStorage.setItem(PERSONALITY_STORAGE_KEY, JSON.stringify({
+          id: personality.id,
+          name: personality.name,
+          emoji: personality.emoji,
+          category: personality.category,
+          color: personality.color,
+          updatedAt: new Date().toISOString(),
+        }))
+      }
+    }
+
+    // save last completed date
+    localStorage.setItem('aurora.checkin.last-completed', formatDateKey(new Date()))
+
+    const personalityQIds = questions.filter(q => q.dim != null).map(q => q.id)
+
     if (token) {
+      // save prev scores for insight before updating
+      const prevEntry = getLatestWeeklyEntry(history)
+      if (prevEntry) setLatestPrevScores(prevEntry.scores)
+
       try {
         const data = await submitCheckIn({
           type: surveyType,
-          qIds: questions.map(q => q.id),
+          qIds: questions.filter(q => q.cat).map(q => q.id),
+          personalityQIds,
           scores,
         })
         setHistory(data.history?.length ? data.history : [])
@@ -552,11 +1226,15 @@ export default function CheckIns() {
         return
       }
     } else {
+      const prevEntry = getLatestWeeklyEntry(history)
+      if (prevEntry) setLatestPrevScores(prevEntry.scores)
+
       const newEntry = {
         id: `w${history.length + 1}`,
         date: formatDateKey(new Date()),
         type: surveyType,
-        qIds: questions.map(q => q.id),
+        qIds: questions.filter(q => q.cat).map(q => q.id),
+        personalityQIds,
         scores,
       }
       const nextHistory = [...history, newEntry]
@@ -576,6 +1254,8 @@ export default function CheckIns() {
   function onResultsDone() {
     setView('hub')
     setLatestScores(null)
+    setLatestPrevScores(null)
+    setLatestPersonality(null)
   }
 
   const hasInitialAssessment = useMemo(() => serverSummary.hasInitialAssessment, [serverSummary])
@@ -626,6 +1306,9 @@ export default function CheckIns() {
       {view === 'results' && (
         <ResultsView
           surveyType={surveyType}
+          scores={latestScores}
+          prevScores={latestPrevScores}
+          personality={latestPersonality}
           onDone={onResultsDone}
         />
       )}
@@ -664,6 +1347,22 @@ const CI_STYLES = `
 
   /* ── hub ── */
   .ci-hub { display: flex; flex-direction: column; gap: 18px; }
+
+  .ci-hub-personality {
+    display: flex; align-items: center; gap: 12px;
+    border: 1px solid; border-radius: 16px; padding: 14px 18px;
+  }
+  .ci-hub-personality-emoji { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
+  .ci-hub-personality-info { display: flex; align-items: center; gap: 10px; flex: 1; flex-wrap: wrap; }
+  .ci-hub-personality-name { font-size: 1rem; font-weight: 800; letter-spacing: -0.02em; }
+  .ci-hub-personality-cat {
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 2px 9px; border-radius: 999px;
+  }
+  .ci-hub-personality-label {
+    font-size: 0.72rem; color: var(--muted); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.1em; margin-left: auto;
+  }
 
   .ci-top-row { display: grid; grid-template-columns: 160px 1fr; gap: 14px; align-items: start; }
 
@@ -812,6 +1511,10 @@ const CI_STYLES = `
   .ci-prog-fill { height: 100%; border-radius: inherit; background: var(--accent); transition: width 280ms ease; }
   .ci-prog-row { display: flex; align-items: center; justify-content: space-between; }
   .ci-prog-count { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+  .ci-type-badge {
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 999px; border: 1px solid;
+  }
   .ci-cat-tag {
     font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
     padding: 3px 10px; border-radius: 999px; border: 1px solid;
@@ -820,6 +1523,21 @@ const CI_STYLES = `
   .ci-question-text {
     margin: 0; font-size: 1.1rem; font-weight: 600;
     color: var(--ink); line-height: 1.5; letter-spacing: -0.01em;
+  }
+
+  /* personality choice buttons */
+  .ci-choice-grid { display: flex; flex-direction: column; gap: 10px; }
+  .ci-choice-btn {
+    width: 100%; padding: 14px 18px; border-radius: 14px; text-align: left;
+    border: 1.5px solid var(--line); background: var(--panel-strong);
+    font-size: 0.92rem; font-weight: 500; color: var(--ink);
+    transition: border-color 140ms, background 140ms, transform 120ms;
+    cursor: pointer; line-height: 1.4;
+  }
+  .ci-choice-btn:hover { border-color: var(--accent); background: var(--accent-soft); transform: translateX(3px); }
+  .ci-choice-btn--on {
+    border-color: var(--accent); background: var(--accent-soft); font-weight: 700;
+    transform: translateX(3px); box-shadow: 0 4px 14px rgba(77,107,88,0.14);
   }
 
   .ci-scale { display: flex; flex-direction: column; gap: 8px; }
@@ -851,6 +1569,30 @@ const CI_STYLES = `
   .ci-results-header { }
   .ci-results-title { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
   .ci-results-sub   { margin: 6px 0 0; color: var(--muted); font-size: 0.88rem; }
+
+  /* personality result card */
+  .ci-personality-card {
+    border-radius: 20px; padding: 22px; border: 1px solid;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .ci-personality-header { display: flex; align-items: center; gap: 14px; }
+  .ci-personality-emoji { font-size: 2.4rem; line-height: 1; }
+  .ci-personality-name { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; margin: 0; }
+  .ci-personality-cat {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 999px; width: fit-content; margin-top: 4px;
+    border: 1px solid;
+  }
+  .ci-personality-desc { margin: 0; font-size: 0.9rem; line-height: 1.65; color: var(--muted); }
+  .ci-traits-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .ci-trait-chip {
+    font-size: 0.76rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; border: 1px solid;
+  }
+  .ci-personality-meta { display: flex; flex-direction: column; gap: 8px; }
+  .ci-personality-meta-item { display: flex; flex-direction: column; gap: 2px; font-size: 0.84rem; }
+  .ci-personality-meta-label {
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+  }
 
   .ci-score-bars { display: flex; flex-direction: column; gap: 10px; }
   .ci-score-row  { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -886,5 +1628,6 @@ const CI_STYLES = `
     .ci-mini-bar-row { grid-template-columns: 90px 1fr 32px 18px; }
     .ci-scale-btns { gap: 5px; }
     .ci-scale-btn { border-radius: 9px; font-size: 0.84rem; }
+    .ci-hub-personality-label { display: none; }
   }
 `

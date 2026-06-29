@@ -16,11 +16,15 @@ const features = [
   { id: 'library',   title: 'Info Library',      desc: 'Learn about mental health through interactive content and daily learning streaks.',       tag: 'Interactive' },
 ]
 
-const mockNotifications = [
-  { id: 1, text: 'Your daily check-in is due today',   time: '2h ago' },
-  { id: 2, text: 'New journal prompt available',        time: '5h ago' },
-  { id: 3, text: 'Therapist match suggestion ready',   time: '1d ago' },
-]
+function getDynamicNotifications() {
+  const notes = []
+  const lastCompleted = localStorage.getItem('aurora.checkin.last-completed')
+  if (lastCompleted) {
+    const days = Math.floor((new Date() - new Date(lastCompleted)) / (1000 * 60 * 60 * 24))
+    if (days >= 7) notes.push({ id: 'checkin', text: 'Your weekly check-in is ready', time: days === 7 ? 'Today' : `${days - 7}d overdue` })
+  }
+  return notes
+}
 
 function BellIcon() {
   return (
@@ -31,15 +35,69 @@ function BellIcon() {
   )
 }
 
+const DAILY_PROMPT_KEY   = 'aurora.journal.daily-prompt'
+const JOURNAL_ENTRIES_KEY = 'aurora.journal.entries'
+
+function getTodayKey() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
 function AppShell() {
   const { activePage, navigate }    = useNavigation()
   const { user, loading }   = useUser()
   const [showAuth, setShowAuth]     = useState(false)
   const [authMode, setAuthMode]     = useState('login')
   const [notifOpen, setNotifOpen]   = useState(false)
+  const [showDailyPrompt, setShowDailyPrompt] = useState(false)
+  const [showCheckinPrompt, setShowCheckinPrompt] = useState(false)
   const contentRef = useRef(null)
 
   const isLoggedIn = !!user
+
+  // dynamic notifications
+  const notifications = useMemo(() => getDynamicNotifications(), [isLoggedIn])
+
+  // daily journal prompt
+  useEffect(() => {
+    if (!isLoggedIn) return
+    const todayKey = getTodayKey()
+    if (localStorage.getItem(DAILY_PROMPT_KEY) === todayKey) return
+    try {
+      const entries = JSON.parse(localStorage.getItem(JOURNAL_ENTRIES_KEY) || '{}')
+      if (entries[todayKey]?.text || entries[todayKey]?.doodleData) return
+    } catch {}
+    setShowDailyPrompt(true)
+  }, [isLoggedIn])
+
+  // auto-show check-in prompt after 2 days of ignoring (7 days due + 2 days grace = 9)
+  useEffect(() => {
+    if (!isLoggedIn) return
+    const lastCompleted = localStorage.getItem('aurora.checkin.last-completed')
+    if (!lastCompleted) return // no history, initial assessment handles this
+    const days = Math.floor((new Date() - new Date(lastCompleted)) / (1000 * 60 * 60 * 24))
+    if (days < 9) return // 7 days due + 2 days grace
+    const todayKey = getTodayKey()
+    if (localStorage.getItem('aurora.checkin.prompt-shown') === todayKey) return
+    setShowCheckinPrompt(true)
+  }, [isLoggedIn])
+
+  function dismissDailyPrompt() {
+    localStorage.setItem(DAILY_PROMPT_KEY, getTodayKey())
+    setShowDailyPrompt(false)
+  }
+
+  function openJournalFromPrompt() {
+    localStorage.setItem(DAILY_PROMPT_KEY, getTodayKey())
+    setShowDailyPrompt(false)
+    navigate('journal')
+  }
+
+  function dismissCheckinPrompt(goToCheckins = false) {
+    localStorage.setItem('aurora.checkin.prompt-shown', getTodayKey())
+    setShowCheckinPrompt(false)
+    if (goToCheckins) navigate('checkins')
+  }
 
   const ActiveComponent = useMemo(
     () => pageConfig.find((p) => p.id === activePage)?.component ?? Home,
@@ -701,12 +759,144 @@ function AppShell() {
         </div>
       )}
 
+      {/* ── daily journal prompt ── */}
+      {isLoggedIn && showDailyPrompt && (
+        <div className="djp-backdrop" onClick={dismissDailyPrompt}>
+          <div className="djp-card" onClick={e => e.stopPropagation()}>
+            <div className="djp-top">
+              <div className="djp-icon">✦</div>
+              <div>
+                <strong className="djp-title">Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}</strong>
+                <p className="djp-sub">Take a moment to write in your journal today.</p>
+              </div>
+            </div>
+            <p className="djp-body">Even a few sentences about how you're feeling can help Aurora support you better. Your entries are private.</p>
+            <div className="djp-actions">
+              <button className="djp-skip" onClick={dismissDailyPrompt}>Maybe later</button>
+              <button className="djp-go" onClick={openJournalFromPrompt}>Open journal →</button>
+            </div>
+          </div>
+          <style>{`
+            .djp-backdrop {
+              position: fixed; inset: 0; z-index: 100;
+              display: flex; align-items: center; justify-content: center;
+              padding: 20px;
+              background: rgba(46,42,38,0.36);
+              backdrop-filter: blur(4px);
+              animation: fade-up 200ms ease;
+            }
+            .djp-card {
+              width: min(400px, 100%);
+              background: var(--panel-strong);
+              border: 1px solid var(--line);
+              border-radius: 24px;
+              padding: 28px;
+              box-shadow: 0 28px 72px rgba(46,42,38,0.22);
+              display: flex; flex-direction: column; gap: 16px;
+            }
+            .djp-top { display: flex; align-items: flex-start; gap: 14px; }
+            .djp-icon {
+              width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0;
+              background: linear-gradient(135deg, #4d6b58, #3a6898);
+              color: #fff; font-size: 1.3rem;
+              display: flex; align-items: center; justify-content: center;
+              box-shadow: 0 6px 18px rgba(77,107,88,0.28);
+            }
+            .djp-title { display: block; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+            .djp-sub   { margin: 3px 0 0; font-size: 0.84rem; color: var(--muted); }
+            .djp-body  { margin: 0; font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+            .djp-actions { display: flex; gap: 10px; align-items: center; }
+            .djp-skip {
+              padding: 10px 20px; border-radius: 999px;
+              border: 1.5px solid var(--line); background: transparent;
+              color: var(--muted); font-size: 0.88rem; font-weight: 600;
+              transition: border-color 140ms; cursor: pointer;
+            }
+            .djp-skip:hover { border-color: var(--accent); color: var(--accent); }
+            .djp-go {
+              padding: 10px 22px; border-radius: 999px; border: none;
+              background: var(--accent); color: #fff;
+              font-size: 0.88rem; font-weight: 700;
+              transition: opacity 140ms, transform 140ms; cursor: pointer;
+            }
+            .djp-go:hover { opacity: 0.88; transform: translateY(-1px); }
+          `}</style>
+        </div>
+      )}
+
+      {/* ── check-in overdue prompt ── */}
+      {isLoggedIn && showCheckinPrompt && !showDailyPrompt && (
+        <div className="cip-backdrop" onClick={() => dismissCheckinPrompt(false)}>
+          <div className="cip-card" onClick={e => e.stopPropagation()}>
+            <div className="cip-top">
+              <div className="cip-icon">◎</div>
+              <div>
+                <strong className="cip-title">Your weekly check-in is overdue</strong>
+                <p className="cip-sub">It's been a while since your last check-in.</p>
+              </div>
+            </div>
+            <p className="cip-body">Regular check-ins help Aurora detect changes in your well-being early and support you more effectively. It only takes about 4 minutes.</p>
+            <div className="cip-actions">
+              <button className="cip-skip" onClick={() => dismissCheckinPrompt(false)}>Maybe later</button>
+              <button className="cip-go" onClick={() => dismissCheckinPrompt(true)}>Start check-in →</button>
+            </div>
+          </div>
+          <style>{`
+            .cip-backdrop {
+              position: fixed; inset: 0; z-index: 100;
+              display: flex; align-items: center; justify-content: center;
+              padding: 20px;
+              background: rgba(46,42,38,0.36);
+              backdrop-filter: blur(4px);
+              animation: fade-up 200ms ease;
+            }
+            .cip-card {
+              width: min(400px, 100%);
+              background: var(--panel-strong);
+              border: 1px solid rgba(77,107,88,0.28);
+              border-radius: 24px;
+              padding: 28px;
+              box-shadow: 0 28px 72px rgba(46,42,38,0.22);
+              display: flex; flex-direction: column; gap: 16px;
+            }
+            .cip-top { display: flex; align-items: flex-start; gap: 14px; }
+            .cip-icon {
+              width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0;
+              background: linear-gradient(135deg, #4d6b58, #3a5244);
+              color: #fff; font-size: 1.3rem;
+              display: flex; align-items: center; justify-content: center;
+              box-shadow: 0 6px 18px rgba(77,107,88,0.28);
+            }
+            .cip-title { display: block; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+            .cip-sub   { margin: 3px 0 0; font-size: 0.84rem; color: var(--muted); }
+            .cip-body  { margin: 0; font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+            .cip-actions { display: flex; gap: 10px; align-items: center; }
+            .cip-skip {
+              padding: 10px 20px; border-radius: 999px;
+              border: 1.5px solid var(--line); background: transparent;
+              color: var(--muted); font-size: 0.88rem; font-weight: 600;
+              transition: border-color 140ms; cursor: pointer;
+            }
+            .cip-skip:hover { border-color: var(--accent); color: var(--accent); }
+            .cip-go {
+              padding: 10px 22px; border-radius: 999px; border: none;
+              background: var(--accent); color: #fff;
+              font-size: 0.88rem; font-weight: 700;
+              transition: opacity 140ms, transform 140ms; cursor: pointer;
+            }
+            .cip-go:hover { opacity: 0.88; transform: translateY(-1px); }
+          `}</style>
+        </div>
+      )}
+
       {/* ── bottom-left notifications ── */}
       {isLoggedIn && <div className="notif-anchor">
         {notifOpen && (
           <div className="notif-panel">
             <p className="notif-heading">Notifications</p>
-            {mockNotifications.map((n) => (
+            {notifications.length === 0 ? (
+              <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--muted)' }}>No new notifications</p>
+            ) : notifications.map((n) => (
               <div key={n.id} className="notif-item">
                 <span className="notif-text">{n.text}</span>
                 <span className="notif-time">{n.time}</span>
@@ -717,10 +907,12 @@ function AppShell() {
         <button
           className="notif-btn"
           onClick={() => setNotifOpen((o) => !o)}
-          aria-label={`${mockNotifications.length} notifications`}
+          aria-label={`${notifications.length} notifications`}
         >
           <BellIcon />
-          <span className="notif-badge">{mockNotifications.length}</span>
+          {notifications.length > 0 && (
+            <span className="notif-badge">{notifications.length}</span>
+          )}
         </button>
       </div>}
     </div>

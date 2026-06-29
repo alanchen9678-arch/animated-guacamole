@@ -8,13 +8,13 @@ import { fetchJournalEntries, saveJournalEntry } from '../services/api.js'
 // ─── mood config ───────────────────────────────────────────────────────────────
 
 const MOODS = [
-  { id: 'happy',   label: 'Happy',   color: '#fbbf24' },
-  { id: 'calm',    label: 'Calm',    color: '#34d399' },
-  { id: 'neutral', label: 'Neutral', color: '#6b7a8d' },
-  { id: 'sad',     label: 'Sad',     color: '#60a5fa' },
-  { id: 'anxious', label: 'Anxious', color: '#f87171' },
-  { id: 'tired',   label: 'Tired',   color: '#7c5ea8' },
-  { id: 'angry',   label: 'Angry',   color: '#fb923c' },
+  { id: 'happy',   label: 'Happy',      gentleLabel: 'Happy',       color: '#fbbf24' },
+  { id: 'calm',    label: 'Calm',       gentleLabel: 'Calm',        color: '#34d399' },
+  { id: 'neutral', label: 'Neutral',    gentleLabel: 'Neutral',     color: '#6b7a8d' },
+  { id: 'sad',     label: 'Sad',        gentleLabel: 'Reflective',  color: '#60a5fa' },
+  { id: 'anxious', label: 'Anxious',    gentleLabel: 'Processing',  color: '#f87171' },
+  { id: 'tired',   label: 'Tired',      gentleLabel: 'Low Energy',  color: '#7c5ea8' },
+  { id: 'angry',   label: 'Angry',      gentleLabel: 'Charged',     color: '#fb923c' },
 ]
 const MOOD_MAP = Object.fromEntries(MOODS.map(m => [m.id, m]))
 
@@ -280,7 +280,7 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
               style={mood ? { background: MOOD_MAP[mood]?.color, color: '#fff', borderColor: MOOD_MAP[mood]?.color } : {}}
               onClick={() => !isFuture && onSelectDate(k)}
               disabled={isFuture}
-              title={mood ? `${MOOD_MAP[mood]?.label}` : 'No mood logged'}
+              title={mood ? `${MOOD_MAP[mood]?.gentleLabel}` : 'No mood logged'}
             >
               {day}
             </button>
@@ -293,7 +293,7 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
         {MOODS.map(m => (
           <div key={m.id} className="jn-legend-item">
             <div className="jn-legend-dot" style={{ background: m.color }} />
-            <span>{m.label}</span>
+            <span>{m.gentleLabel}</span>
           </div>
         ))}
       </div>
@@ -302,7 +302,7 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
         <div className="jn-history-preview">
           <div className="jn-history-meta">
             <span>{formatDateKey(selectedDate)}</span>
-            <strong>{selectedMood ? MOOD_MAP[selectedMood]?.label : 'No mood logged'}</strong>
+            <strong>{selectedMood ? MOOD_MAP[selectedMood]?.gentleLabel : 'No mood logged'}</strong>
           </div>
           {(selectedEntry?.text || selectedEntry?.doodleData) ? (
             <button className="jn-history-open" onClick={() => onOpenEntry(selectedDate)}>
@@ -795,7 +795,7 @@ export default function Journal() {
             <div className="jn-modal-header">
               <div>
                 <h3 id="journal-entry-detail-title">{formatDateKey(expandedEntryDate)}</h3>
-                <p>{expandedMood ? MOOD_MAP[expandedMood]?.label : 'No mood logged'}</p>
+                <p>{expandedMood ? MOOD_MAP[expandedMood]?.gentleLabel : 'No mood logged'}</p>
               </div>
               <button className="jn-modal-close" onClick={() => setExpandedEntryDate(null)} aria-label="Close entry">
                 x
