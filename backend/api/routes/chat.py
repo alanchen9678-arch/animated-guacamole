@@ -10,6 +10,7 @@ from app.models import Conversation, Message
 WEEKLY_MESSAGE_LIMIT = 200
 WEEK_IN_SECONDS = 60 * 60 * 24 * 7
 CONTEXT_MESSAGE_LIMIT = 12
+HISTORY_MESSAGE_LIMIT = 100
 
 
 def get_or_create_ai_conversation(user):
@@ -36,7 +37,38 @@ def serialize_recent_history(conversation):
     ]
 
 
+def serialize_chat_messages(conversation):
+    messages = conversation.messages.order_by('timestamp', 'id')[:HISTORY_MESSAGE_LIMIT]
+    return [
+        {
+            "id": message.id,
+            "role": message.role,
+            "content": message.content,
+            "timestamp": message.timestamp.isoformat(),
+        }
+        for message in messages
+        if message.role in {Message.MessageRole.USER, Message.MessageRole.ASSISTANT}
+    ]
+
+
 class ChatView(APIView):
+    def get(self, request):
+        conversation = (
+            request.user.conversations.filter(type=Conversation.ConversationType.AI)
+            .order_by('-created_at', '-id')
+            .first()
+        )
+        if not conversation:
+            return Response({"messages": []}, status=status.HTTP_200_OK)
+
+        return Response(
+            {
+                "conversation_id": conversation.id,
+                "messages": serialize_chat_messages(conversation),
+            },
+            status=status.HTTP_200_OK,
+        )
+
     def post(self, request):
         user = request.user
         user_id = user.id

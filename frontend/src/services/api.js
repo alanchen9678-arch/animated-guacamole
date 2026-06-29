@@ -21,6 +21,11 @@ async function apiFetch(path, opts = {}) {
 
 // Chat
 
+export async function fetchChatHistory() {
+  const data = await apiFetch('/api/chat/')
+  return data.messages ?? []
+}
+
 export async function sendChatMessage(message) {
   const data = await apiFetch('/api/chat/', {
     method: 'POST',
@@ -65,6 +70,18 @@ export async function saveTherapistMatch(therapistId) {
   return apiFetch('/api/therapist/matches/', {
     method: 'POST',
     body: JSON.stringify({ therapistId }),
+  })
+}
+
+export async function fetchTherapistMessages(matchId) {
+  const data = await apiFetch(`/api/therapist/matches/${matchId}/messages/`)
+  return data.messages ?? []
+}
+
+export async function sendTherapistMessage(matchId, message) {
+  return apiFetch(`/api/therapist/matches/${matchId}/messages/`, {
+    method: 'POST',
+    body: JSON.stringify({ message }),
   })
 }
 

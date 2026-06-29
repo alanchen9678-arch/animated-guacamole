@@ -207,6 +207,64 @@ class TherapistMatchModelTests(TestCase):
         self.assertEqual(match.therapist_id, 3)
         self.assertEqual(self.user.therapist_matches.count(), 1)
 
+    def test_therapist_conversation_can_link_to_saved_match(self):
+        match = TherapistMatch.objects.create(
+            user=self.user,
+            therapist_id=7,
+        )
+        conversation = Conversation.objects.create(
+            user=self.user,
+            type=Conversation.ConversationType.THERAPIST,
+            therapist_match=match,
+        )
+
+        self.assertEqual(conversation.therapist_match, match)
+
+
+class TherapistMatchAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            username='therapist-api-user',
+            password='testpass123',
+        )
+        token, _ = Token.objects.get_or_create(user=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+
+    def test_therapist_match_messages_require_existing_match(self):
+        response = self.client.get(reverse('therapist-match-messages', args=[9999]))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_therapist_match_messages_bootstrap_conversation_history(self):
+        match = TherapistMatch.objects.create(user=self.user, therapist_id=2)
+
+        response = self.client.get(reverse('therapist-match-messages', args=[match.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['therapistId'], 2)
+        self.assertEqual(len(response.data['messages']), 1)
+        self.assertEqual(response.data['messages'][0]['role'], 'therapist')
+        self.assertTrue(self.user.conversations.filter(therapist_match=match).exists())
+
+    def test_therapist_match_messages_store_user_and_therapist_replies(self):
+        match = TherapistMatch.objects.create(user=self.user, therapist_id=4)
+
+        response = self.client.post(
+            reverse('therapist-match-messages', args=[match.id]),
+            {'message': 'I have been feeling burned out.'},
+            format='json',
+        )
+
+        conversation = self.user.conversations.get(therapist_match=match)
+        stored_roles = list(conversation.messages.values_list('role', flat=True))
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['userMessage']['role'], 'user')
+        self.assertEqual(response.data['userMessage']['content'], 'I have been feeling burned out.')
+        self.assertEqual(response.data['replyMessage']['role'], 'therapist')
+        self.assertEqual(stored_roles, ['therapist', 'user', 'therapist'])
+
 
 class AuthAPITests(TestCase):
     def setUp(self):
@@ -566,6 +624,12 @@ class ChatAPITests(TestCase):
 
         self.assertEqual(response.status_code, 401)
 
+    def test_chat_history_returns_empty_list_before_any_messages(self):
+        response = self.client.get(reverse('chat'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['messages'], [])
+
     @patch('api.routes.chat.generate_chat_reply')
     def test_chat_creates_or_reuses_ai_conversation_and_stores_messages(self, mock_generate_chat_reply):
         mock_generate_chat_reply.return_value = 'I am here with you.'
@@ -612,3 +676,33 @@ class ChatAPITests(TestCase):
                 {'role': 'user', 'content': 'Can you help me slow down?'},
             ],
         )
+
+    @patch('api.routes.chat.generate_chat_reply')
+    def test_chat_history_returns_saved_messages_in_order(self, mock_generate_chat_reply):
+        mock_generate_chat_reply.return_value = 'Let us take one step at a time.'
+
+        self.client.post(
+            reverse('chat'),
+            {'message': 'I am feeling stuck.'},
+            format='json',
+        )
+        self.client.post(
+            reverse('chat'),
+            {'message': 'What should I do first?'},
+            format='json',
+        )
+
+        response = self.client.get(reverse('chat'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['messages']), 4)
+        self.assertEqual(
+            [(message['role'], message['content']) for message in response.data['messages']],
+            [
+                ('user', 'I am feeling stuck.'),
+                ('assistant', 'Let us take one step at a time.'),
+                ('user', 'What should I do first?'),
+                ('assistant', 'Let us take one step at a time.'),
+            ],
+        )
+        self.assertTrue(all('timestamp' in message for message in response.data['messages']))

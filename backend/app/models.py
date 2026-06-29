@@ -35,6 +35,13 @@ class Conversation(models.Model):
         related_name='conversations',
     )
     type = models.CharField(max_length=20, choices=ConversationType.choices)
+    therapist_match = models.ForeignKey(
+        'TherapistMatch',
+        on_delete=models.CASCADE,
+        related_name='conversations',
+        null=True,
+        blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -45,6 +52,8 @@ class Conversation(models.Model):
         ]
 
     def __str__(self):
+        if self.therapist_match_id:
+            return f"{self.user.username} - therapist match {self.therapist_match_id}"
         return f"{self.user.username} - {self.type} conversation"
 
 

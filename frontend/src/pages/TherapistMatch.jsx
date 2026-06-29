@@ -1,7 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { AuroraDropdown } from '../components/ui/heroui-dropdown.jsx'
 import { useUser } from '../context/UserContext.jsx'
-import { fetchTherapistMatches, saveTherapistMatch } from '../services/api.js'
+import {
+  fetchTherapistMatches,
+  fetchTherapistMessages,
+  saveTherapistMatch,
+  sendTherapistMessage,
+} from '../services/api.js'
 
 // ─── mock data ─────────────────────────────────────────────────────────────────
 
@@ -148,6 +153,16 @@ const INSURER_OPTIONS = INSURERS.map((insurer) => ({ value: insurer, label: insu
 function hydrateTherapistsByIds(ids) {
   return ids
     .map((id) => THERAPISTS.find((therapist) => therapist.id === id))
+    .filter(Boolean)
+}
+
+function hydrateTherapistChatsFromMatches(matches) {
+  return matches
+    .map((match) => {
+      const therapist = THERAPISTS.find((item) => item.id === match.therapistId)
+      if (!therapist) return null
+      return { ...therapist, matchId: match.id }
+    })
     .filter(Boolean)
 }
 
@@ -947,6 +962,271 @@ function ChatView({ therapist: t, onBack }) {
 
 // ─── root ─────────────────────────────────────────────────────────────────────
 
+function PersistentTherapistChatView({ therapist: t, onBack }) {
+  const [messages, setMessages] = useState([])
+  const [input, setInput] = useState('')
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true)
+  const [isTyping, setIsTyping] = useState(false)
+  const [showApptForm, setShowApptForm] = useState(false)
+  const [showProfileCard, setShowProfileCard] = useState(false)
+  const [activeAppointment, setActiveAppointment] = useState(null)
+  const [appointmentExpanded, setAppointmentExpanded] = useState(false)
+  const [apptTitle, setApptTitle] = useState('')
+  const [apptDate, setApptDate] = useState('')
+  const [apptDesc, setApptDesc] = useState('')
+  const messagesRef = useRef(null)
+  const inputRef = useRef(null)
+  const shouldScrollRef = useRef(false)
+
+  useEffect(() => {
+    let isActive = true
+
+    async function loadHistory() {
+      if (!t.matchId) {
+        if (isActive) {
+          setMessages([])
+          setIsLoadingHistory(false)
+        }
+        return
+      }
+
+      try {
+        const history = await fetchTherapistMessages(t.matchId)
+        if (!isActive) return
+        setMessages(
+          history.map((message) => ({
+            id: message.id,
+            role: message.role,
+            text: message.content,
+            time: new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            type: 'text',
+          })),
+        )
+      } catch {
+        if (!isActive) return
+        setMessages([])
+      } finally {
+        if (isActive) setIsLoadingHistory(false)
+      }
+    }
+
+    loadHistory()
+
+    return () => {
+      isActive = false
+    }
+  }, [t.matchId])
+
+  useEffect(() => {
+    const messagesEl = messagesRef.current
+    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'auto' })
+    inputRef.current?.focus()
+  }, [isLoadingHistory])
+
+  useEffect(() => {
+    if (!shouldScrollRef.current) return
+    shouldScrollRef.current = false
+    const messagesEl = messagesRef.current
+    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' })
+    if (!isTyping) inputRef.current?.focus()
+  }, [messages, isTyping])
+
+  async function sendMessage() {
+    const text = input.trim()
+    if (!text || isTyping || isLoadingHistory || !t.matchId) return
+    shouldScrollRef.current = true
+    setInput('')
+    setIsTyping(true)
+    try {
+      const data = await sendTherapistMessage(t.matchId, text)
+      shouldScrollRef.current = true
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: data.userMessage.id,
+          role: data.userMessage.role,
+          text: data.userMessage.content,
+          time: new Date(data.userMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          type: 'text',
+        },
+        {
+          id: data.replyMessage.id,
+          role: data.replyMessage.role,
+          text: data.replyMessage.content,
+          time: new Date(data.replyMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          type: 'text',
+        },
+      ])
+    } finally {
+      setIsTyping(false)
+      inputRef.current?.focus()
+    }
+  }
+
+  function createAppointment() {
+    if (!apptTitle || !apptDate) return
+    setActiveAppointment({ title: apptTitle, date: apptDate, desc: apptDesc, therapist: t.name })
+    setAppointmentExpanded(false)
+    setApptTitle('')
+    setApptDate('')
+    setApptDesc('')
+    setShowApptForm(false)
+  }
+
+  function cancelAppointmentForm() {
+    setApptTitle('')
+    setApptDate('')
+    setApptDesc('')
+    setShowApptForm(false)
+  }
+
+  return (
+    <div className="tm-chat-root">
+      <div className="tm-chat-header">
+        <button className="tm-back tm-back--inline" onClick={onBack}>Back</button>
+        <button
+          className={`tm-chat-profile-trigger${showProfileCard ? ' tm-chat-profile-trigger--open' : ''}`}
+          onClick={() => setShowProfileCard((v) => !v)}
+          aria-expanded={showProfileCard}
+        >
+          <Avatar initials={t.initials} color={t.color} size={36} />
+          <span className="tm-chat-profile-copy">
+            <strong className="tm-chat-name">{t.name}</strong>
+            <span className="tm-chat-status">{t.credentials.license} - {t.credentials.location}</span>
+          </span>
+        </button>
+        <button
+          className="tm-appt-trigger"
+          onClick={() => setShowApptForm((v) => !v)}
+          title="Schedule appointment"
+        >
+          + Appointment
+        </button>
+      </div>
+
+      {activeAppointment && (
+        <div className="tm-appt-hanger">
+          <ActiveAppointmentBanner
+            appt={activeAppointment}
+            expanded={appointmentExpanded}
+            onToggle={() => setAppointmentExpanded((v) => !v)}
+          />
+        </div>
+      )}
+
+      {showApptForm && (
+        <div className="tm-appt-form">
+          <strong style={{ fontSize: '0.9rem' }}>Schedule an appointment</strong>
+          <input className="tm-input" placeholder="Title (e.g. Initial Consultation)" value={apptTitle} onChange={(e) => setApptTitle(e.target.value)} />
+          <input className="tm-input" type="datetime-local" value={apptDate} onChange={(e) => setApptDate(e.target.value)} />
+          <p className="tm-selected-date">
+            {apptDate ? `Selected: ${formatAppointmentDate(apptDate)}` : 'Choose a date before creating the appointment.'}
+          </p>
+          <input className="tm-input" placeholder="Description (optional)" value={apptDesc} onChange={(e) => setApptDesc(e.target.value)} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="tm-primary-btn" style={{ flex: 1 }} onClick={createAppointment}>Create appointment</button>
+            <button className="tm-outline-btn" onClick={cancelAppointmentForm}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className="tm-chat-messages" ref={messagesRef}>
+        {messages.map((message) => {
+          const isUser = message.role === 'user'
+          return (
+            <div key={message.id} className={`tm-msg-row${isUser ? ' tm-msg-row--user' : ''}`}>
+              {!isUser && <Avatar initials={t.initials} color={t.color} size={30} />}
+              <div className={`tm-bubble${isUser ? ' tm-bubble--user' : ' tm-bubble--them'}`}>
+                <p className="tm-bubble-text">{message.text}</p>
+                <span className="tm-bubble-time">{message.time}</span>
+              </div>
+              {isUser && (
+                <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.6rem', fontWeight: 800, flexShrink: 0 }}>You</div>
+              )}
+            </div>
+          )
+        })}
+        {isTyping && (
+          <div className="tm-msg-row">
+            <Avatar initials={t.initials} color={t.color} size={30} />
+            <div className="tm-bubble tm-bubble--them tm-typing-bubble">
+              <span className="dot" /><span className="dot" /><span className="dot" />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="tm-chat-input-bar">
+        <textarea
+          ref={inputRef}
+          className="chat-textarea"
+          placeholder="Message..."
+          rows={1}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
+          disabled={isTyping || isLoadingHistory || !t.matchId}
+        />
+        <button
+          className="send-btn"
+          onClick={sendMessage}
+          disabled={!input.trim() || isTyping || isLoadingHistory || !t.matchId}
+          aria-label="Send"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+
+      {showProfileCard && (
+        <div className="tm-profile-modal-backdrop" role="presentation" onClick={() => setShowProfileCard(false)}>
+          <div className="tm-profile-modal" role="dialog" aria-modal="true" aria-label={`${t.name} profile`} onClick={(e) => e.stopPropagation()}>
+            <button className="tm-profile-modal-close" onClick={() => setShowProfileCard(false)} aria-label="Close profile">x</button>
+            <div className="tm-detail-header">
+              <Avatar initials={t.initials} color={t.color} size={64} />
+              <div>
+                <h2 className="tm-detail-name">{t.name}</h2>
+                <p className="tm-detail-creds">{t.credentials.license} - {t.credentials.location}</p>
+                <Stars rating={t.rating} />
+                <span style={{ marginLeft: 8, fontSize: '0.82rem', color: 'var(--muted)' }}>{t.reviews} reviews</span>
+              </div>
+            </div>
+
+            <p className="tm-bio">{t.bio}</p>
+
+            <div className="tm-detail-section">
+              <p className="tm-section-label">Specialties</p>
+              <div className="tm-tag-row">{t.expertise.map((expertise) => <ExpertiseTag key={expertise} label={expertise} />)}</div>
+            </div>
+
+            <div className="tm-chat-profile-grid">
+              <div className="tm-detail-row">
+                <span className="tm-dr-label">Experience</span>
+                <span>{t.yearsExp} years</span>
+              </div>
+              <div className="tm-detail-row">
+                <span className="tm-dr-label">Languages</span>
+                <span>{t.languages.join(', ')}</span>
+              </div>
+              <div className="tm-detail-row">
+                <span className="tm-dr-label">Session type</span>
+                <span style={{ textTransform: 'capitalize' }}>{t.mode.join(' / ')}</span>
+              </div>
+              <div className="tm-detail-row">
+                <span className="tm-dr-label">Price</span>
+                <span>{t.priceRange}</span>
+              </div>
+              <div className="tm-detail-row">
+                <span className="tm-dr-label">Availability</span>
+                <span>{t.availability}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function TherapistMatch() {
   const { user } = useUser()
   const [view,     setView]     = useState('profile')   // profile | prefs | results | detail | chat
@@ -979,7 +1259,7 @@ export default function TherapistMatch() {
         }
 
         clearLegacyActiveTherapistChats()
-        if (!cancelled) setActiveChats(hydrateTherapistsByIds(therapistIds))
+        if (!cancelled) setActiveChats(hydrateTherapistChatsFromMatches(data.matches ?? []))
       } catch {
         if (!cancelled) setActiveChats(legacyChats)
       }
@@ -999,6 +1279,8 @@ export default function TherapistMatch() {
   }
 
   async function openChat(therapist) {
+    let selectedTherapist = therapist
+
     setActiveChats((prev) => {
       const nextChats = prev.some((item) => item.id === therapist.id) ? prev : [...prev, therapist]
       if (!user) saveLegacyActiveTherapistChats(nextChats)
@@ -1007,7 +1289,16 @@ export default function TherapistMatch() {
 
     if (user) {
       try {
-        await saveTherapistMatch(therapist.id)
+        const data = await saveTherapistMatch(therapist.id)
+        const savedMatch = data.match
+        if (savedMatch?.id) {
+          selectedTherapist = { ...therapist, matchId: savedMatch.id }
+          setActiveChats((prev) => prev.map((item) => (
+            item.id === therapist.id
+              ? { ...item, matchId: savedMatch.id }
+              : item
+          )))
+        }
       } catch {
         setActiveChats((prev) => {
           saveLegacyActiveTherapistChats(prev)
@@ -1016,7 +1307,7 @@ export default function TherapistMatch() {
       }
     }
 
-    setSelected(therapist)
+    setSelected(selectedTherapist)
     setView('chat')
   }
 
@@ -1027,7 +1318,7 @@ export default function TherapistMatch() {
       {view === 'prefs'    && <PreferencesView onBack={() => setView('profile')} onMatch={handleMatch} />}
       {view === 'results'  && <ResultsView matches={matches} prefs={prefs} onSelect={t => { setSelected(t); setView('detail') }} onBack={() => setView('prefs')} />}
       {view === 'detail'   && selected && <DetailView therapist={selected} prefs={prefs} onChat={() => openChat(selected)} onBook={openChat} onBack={() => setView('results')} />}
-      {view === 'chat'     && selected && <ChatView therapist={selected} onBack={() => setView('profile')} />}
+      {view === 'chat'     && selected && <PersistentTherapistChatView therapist={selected} onBack={() => setView('profile')} />}
     </>
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { sendChatMessage } from '../services/api.js'
+import { fetchChatHistory, sendChatMessage } from '../services/api.js'
 
 const CHATBOT_ONBOARDING_STORAGE_KEY = 'aurora.chatbot.onboarding'
 
@@ -22,6 +22,22 @@ function saveChatbotOnboardingState() {
 
 function timestamp() {
   return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+function formatMessageTime(value) {
+  if (!value) return timestamp()
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return timestamp()
+  return parsed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+function defaultGreeting() {
+  return {
+    id: 0,
+    role: 'ai',
+    text: "Hi, I'm Aurora. I'm here to listen with warmth and honesty. What's on your mind today?",
+    time: timestamp(),
+  }
 }
 
 function TypingIndicator() {
@@ -100,24 +116,54 @@ function ChatbotIntro({ onStart }) {
 }
 
 function ChatbotChat() {
-  const [messages, setMessages] = useState([
-    {
-      id: 0,
-      role: 'ai',
-      text: "Hi, I'm Aurora. I'm here to listen with warmth and honesty. What's on your mind today?",
-      time: timestamp(),
-    },
-  ])
+  const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true)
   const [isTyping, setIsTyping] = useState(false)
   const messagesRef = useRef(null)
   const inputRef = useRef(null)
 
   useEffect(() => {
+    let isActive = true
+
+    async function loadHistory() {
+      try {
+        const history = await fetchChatHistory()
+        if (!isActive) return
+
+        if (history.length === 0) {
+          setMessages([defaultGreeting()])
+          return
+        }
+
+        setMessages(
+          history.map((message) => ({
+            id: message.id,
+            role: message.role === 'assistant' ? 'ai' : message.role,
+            text: message.content,
+            time: formatMessageTime(message.timestamp),
+          })),
+        )
+      } catch {
+        if (!isActive) return
+        setMessages([defaultGreeting()])
+      } finally {
+        if (isActive) setIsLoadingHistory(false)
+      }
+    }
+
+    loadHistory()
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
+  useEffect(() => {
     const messagesEl = messagesRef.current
     messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'auto' })
     inputRef.current?.focus()
-  }, [])
+  }, [isLoadingHistory])
 
   useEffect(() => {
     const messagesEl = messagesRef.current
@@ -127,7 +173,7 @@ function ChatbotChat() {
 
   async function sendMessage() {
     const text = input.trim()
-    if (!text || isTyping) return
+    if (!text || isTyping || isLoadingHistory) return
 
     const userMsg = { id: Date.now(), role: 'user', text, time: timestamp() }
     setMessages((prev) => [...prev, userMsg])
@@ -187,12 +233,12 @@ function ChatbotChat() {
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={handleKeyDown}
           rows={1}
-          disabled={isTyping}
+          disabled={isTyping || isLoadingHistory}
         />
         <button
           className="send-btn"
           onClick={sendMessage}
-          disabled={!input.trim() || isTyping}
+          disabled={!input.trim() || isTyping || isLoadingHistory}
           aria-label="Send message"
         >
           <SendIcon />
