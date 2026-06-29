@@ -3,6 +3,7 @@ from datetime import date
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from unittest.mock import patch
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
@@ -542,3 +543,72 @@ class JournalAPITests(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertFalse(self.user.thought_journal_entries.exists())
+
+
+class ChatAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            username='chat-api-user',
+            password='testpass123',
+        )
+        token, _ = Token.objects.get_or_create(user=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+
+    def test_chat_requires_authentication(self):
+        anonymous_client = APIClient()
+
+        response = anonymous_client.post(
+            reverse('chat'),
+            {'message': 'Hello?'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    @patch('api.routes.chat.generate_chat_reply')
+    def test_chat_creates_or_reuses_ai_conversation_and_stores_messages(self, mock_generate_chat_reply):
+        mock_generate_chat_reply.return_value = 'I am here with you.'
+
+        first_response = self.client.post(
+            reverse('chat'),
+            {'message': 'I feel overwhelmed today.'},
+            format='json',
+        )
+        second_response = self.client.post(
+            reverse('chat'),
+            {'message': 'Can you help me slow down?'},
+            format='json',
+        )
+
+        conversations = self.user.conversations.filter(type=Conversation.ConversationType.AI)
+        conversation = conversations.get()
+        stored_messages = list(conversation.messages.values_list('role', 'content'))
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertEqual(second_response.status_code, 200)
+        self.assertEqual(conversations.count(), 1)
+        self.assertEqual(first_response.data['reply'], 'I am here with you.')
+        self.assertEqual(second_response.data['reply'], 'I am here with you.')
+        self.assertEqual(
+            stored_messages,
+            [
+                ('user', 'I feel overwhelmed today.'),
+                ('assistant', 'I am here with you.'),
+                ('user', 'Can you help me slow down?'),
+                ('assistant', 'I am here with you.'),
+            ],
+        )
+
+        first_history = mock_generate_chat_reply.call_args_list[0].kwargs['history']
+        second_history = mock_generate_chat_reply.call_args_list[1].kwargs['history']
+
+        self.assertEqual(first_history, [{'role': 'user', 'content': 'I feel overwhelmed today.'}])
+        self.assertEqual(
+            second_history,
+            [
+                {'role': 'user', 'content': 'I feel overwhelmed today.'},
+                {'role': 'assistant', 'content': 'I am here with you.'},
+                {'role': 'user', 'content': 'Can you help me slow down?'},
+            ],
+        )
