@@ -649,7 +649,12 @@ const PS_STYLES = `
     margin: 0 0 10px; font-size: 0.78rem; font-weight: 700;
     letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);
   }
-  .ps-heading { margin: 0 0 8px; font-size: 2rem; letter-spacing: -0.03em; }
+  .ps-heading {
+    margin: 0 0 8px;
+    font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 2rem;
+    letter-spacing: -0.03em;
+  }
   .ps-sub { margin: 0 0 24px; color: var(--muted); font-size: 1rem; line-height: 1.65; max-width: 60ch; }
   .ps-primary-btn {
     padding: 13px 32px; border-radius: 999px; border: none;
@@ -692,11 +697,11 @@ const PS_STYLES = `
     display: flex; align-items: center; gap: 14px;
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 20px; padding: 18px 20px;
-    box-shadow: 0 6px 18px rgba(46,42,38,0.06);
+    box-shadow: var(--shadow);
     cursor: pointer; text-align: left; width: 100%;
     transition: transform 140ms, box-shadow 140ms;
   }
-  .ps-hub-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(46,42,38,0.10); }
+  .ps-hub-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
   .ps-hub-card-icon { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .ps-hub-card-icon--purple { background: rgba(58,104,152,0.10); color: #3a6898; }
   .ps-hub-card-text { flex: 1; }
@@ -722,7 +727,7 @@ const PS_STYLES = `
     display: flex; align-items: center; gap: 14px;
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 18px; padding: 16px 18px;
-    box-shadow: 0 4px 14px rgba(46,42,38,0.06);
+    box-shadow: var(--shadow);
     transition: transform 140ms;
   }
   .ps-peer-card:hover { transform: translateY(-1px); }

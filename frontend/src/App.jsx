@@ -146,7 +146,7 @@ function AppShell() {
           --blue-soft:    #d6e8f5;
           --amber:        #9a6b2a;
           --amber-soft:   #f0e2c8;
-          --shadow:       0 24px 60px rgba(46,42,38,0.12);
+          --shadow:       0 8px 20px rgba(46,42,38,0.08);
         }
 
         /* ── root shell ────────────────────────────────────── */
@@ -168,6 +168,7 @@ function AppShell() {
           justify-content: center;
           padding: 0 28px;
           height: 62px;
+          font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
           background: rgba(250,244,232,0.90);
           backdrop-filter: blur(14px);
           border-bottom: 1px solid var(--line);
@@ -388,6 +389,7 @@ function AppShell() {
         .shell-body {
           flex: 1;
           padding: 28px 20px 48px;
+          font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         }
 
         .frame {
@@ -411,6 +413,7 @@ function AppShell() {
           padding: 24px 18px;
           border-right: 1px solid var(--line);
           background: rgba(250,244,232,0.54);
+          font-family: inherit;
         }
 
         .sidebar h2 {
@@ -450,6 +453,7 @@ function AppShell() {
         .content {
           padding: 28px;
           width: 100%;
+          font-family: inherit;
         }
 
         /* ── page / card primitives ─────────────────────────── */
@@ -463,6 +467,7 @@ function AppShell() {
 
         .page-header h2 {
           margin: 0;
+          font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
           font-size: 2rem;
           letter-spacing: -0.03em;
         }
@@ -635,12 +640,12 @@ function AppShell() {
           border: 1.5px solid var(--line);
           background: var(--panel-strong);
           color: var(--ink);
-          box-shadow: 0 6px 18px rgba(46,42,38,0.10);
+          box-shadow: var(--shadow);
           transition: transform 140ms, box-shadow 140ms;
         }
         .notif-btn:hover {
           transform: translateY(-2px);
-          box-shadow: 0 10px 24px rgba(46,42,38,0.14);
+          box-shadow: var(--shadow);
         }
 
         .notif-badge {

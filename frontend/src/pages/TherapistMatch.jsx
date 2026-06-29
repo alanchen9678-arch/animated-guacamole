@@ -1345,7 +1345,7 @@ const TM_STYLES = `
     border: 1px solid var(--line);
     border-radius: 20px;
     padding: 20px;
-    box-shadow: 0 6px 18px rgba(46,42,38,0.06);
+    box-shadow: var(--shadow);
   }
   .tm-big-score {
     font-size: 3.2rem; font-weight: 900;
@@ -1373,7 +1373,7 @@ const TM_STYLES = `
     border: 1px solid var(--line);
     border-radius: 20px;
     padding: 20px;
-    box-shadow: 0 6px 18px rgba(46,42,38,0.06);
+    box-shadow: var(--shadow);
   }
   .tm-active-head {
     display: flex;
@@ -1483,7 +1483,7 @@ const TM_STYLES = `
   .tm-pref-card {
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 20px; padding: 20px;
-    box-shadow: 0 6px 18px rgba(46,42,38,0.06);
+    box-shadow: var(--shadow);
     display: flex; flex-direction: column; gap: 10px;
   }
   .tm-pref-label { font-size: 0.88rem; font-weight: 600; }
@@ -1522,10 +1522,10 @@ const TM_STYLES = `
     display: flex; align-items: center; gap: 16px;
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 20px; padding: 20px;
-    box-shadow: 0 6px 18px rgba(46,42,38,0.06);
+    box-shadow: var(--shadow);
     transition: transform 140ms, box-shadow 140ms;
   }
-  .tm-result-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(46,42,38,0.10); }
+  .tm-result-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
   .tm-result-rank {
     font-size: 1.4rem; font-weight: 900; color: var(--accent);
     width: 36px; text-align: center; flex-shrink: 0;
@@ -1546,7 +1546,12 @@ const TM_STYLES = `
   }
   .tm-stars { color: #f59e0b; font-size: 0.82rem; }
   .tm-score-block { text-align: center; flex-shrink: 0; width: 90px; }
-  .tm-score-num { font-size: 2rem; font-weight: 900; letter-spacing: -0.04em; }
+  .tm-score-num {
+    font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+  }
   .tm-score-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 10px; }
   .tm-view-btn {
     padding: 7px 14px; border-radius: 999px; border: 1.5px solid var(--accent);
@@ -1601,7 +1606,7 @@ const TM_STYLES = `
   .tm-match-score-card, .tm-booking-card {
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 20px; padding: 20px;
-    box-shadow: 0 6px 18px rgba(46,42,38,0.06);
+    box-shadow: var(--shadow);
     margin-bottom: 14px;
   }
   .tm-score-breakdown-title { font-size: 0.8rem; color: var(--muted); margin: 10px 0 8px; font-weight: 600; }

@@ -81,7 +81,7 @@ export default function Login({ initialMode = 'login', onClose }) {
           border: 1px solid rgba(46,42,38,0.14);
           border-radius: 28px;
           padding: 36px 32px 32px;
-          box-shadow: 0 32px 72px rgba(46,42,38,0.18);
+          box-shadow: var(--shadow);
           animation: slide-up 200ms ease;
         }
         @keyframes slide-up {

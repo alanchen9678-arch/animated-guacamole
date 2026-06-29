@@ -23,7 +23,7 @@
   --blue-soft:    #d6e8f5;
   --amber:        #9a6b2a;
   --amber-soft:   #f0e2c8;
-  --shadow:       0 24px 60px rgba(46,42,38,0.12);
+  --shadow:       0 8px 20px rgba(46,42,38,0.08);
   --demo-bg:      #ffffff;
   --demo-text:    #1a1a1a;
 }

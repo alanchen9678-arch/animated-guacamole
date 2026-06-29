@@ -631,7 +631,12 @@ export default function InfoLibrary() {
 const IL_STYLES = `
   /* page header */
   .il-page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-  .il-page-title  { margin: 0 0 4px; font-size: 2rem; letter-spacing: -0.03em; }
+  .il-page-title  {
+    margin: 0 0 4px;
+    font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 2rem;
+    letter-spacing: -0.03em;
+  }
   .il-page-sub    { margin: 0; color: var(--muted); font-size: 0.95rem; }
 
   /* streak badge */
@@ -719,7 +724,7 @@ const IL_STYLES = `
     background: linear-gradient(135deg, rgba(210,228,220,0.5), rgba(255,255,255,0.95));
     border: 1px solid rgba(77,107,88,0.18); border-radius: 20px;
     padding: 24px 26px;
-    box-shadow: 0 6px 18px rgba(46,42,38,0.07);
+    box-shadow: var(--shadow);
   }
   .il-clue-eyebrow { margin: 0 0 10px; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
   .il-clue-text { margin: 0; font-size: 1.05rem; line-height: 1.65; color: var(--ink); }
@@ -767,9 +772,21 @@ const IL_STYLES = `
     background: var(--panel-strong); display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 2px;
   }
-  .il-results-num   { font-size: 2.2rem; font-weight: 900; color: var(--accent); letter-spacing: -0.04em; line-height: 1; }
+  .il-results-num   {
+    font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--accent);
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
   .il-results-sub   { font-size: 0.74rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
-  .il-results-heading { margin: 4px 0 0; font-size: 1.5rem; letter-spacing: -0.02em; }
+  .il-results-heading {
+    margin: 4px 0 0;
+    font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+  }
   .il-primary-btn {
     padding: 12px 28px; border-radius: 999px; border: none;
     background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 700;

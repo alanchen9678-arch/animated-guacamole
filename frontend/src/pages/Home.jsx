@@ -105,7 +105,7 @@ export default function Home() {
           border: 1px solid var(--line);
           border-radius: 20px;
           padding: 20px;
-          box-shadow: 0 6px 18px rgba(23, 48, 66, 0.06);
+          box-shadow: var(--shadow);
           display: flex;
           flex-direction: column;
           gap: 8px;
@@ -114,7 +114,7 @@ export default function Home() {
           cursor: pointer;
           transition: transform 140ms ease, box-shadow 140ms ease;
         }
-        .feature-card:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(23, 48, 66, 0.1); }
+        .feature-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
         .feature-card:focus-visible { outline: 3px solid rgba(58, 104, 152, 0.28); outline-offset: 3px; }
         .feature-tag {
           display: inline-block;
@@ -135,7 +135,7 @@ export default function Home() {
           border: 1px solid var(--line);
           border-radius: 20px;
           padding: 18px 20px;
-          box-shadow: 0 6px 18px rgba(23, 48, 66, 0.06);
+          box-shadow: var(--shadow);
         }
         .today-stat .label {
           font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;

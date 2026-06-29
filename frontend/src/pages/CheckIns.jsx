@@ -1381,7 +1381,7 @@ const CI_STYLES = `
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 20px; padding: 20px 22px;
     display: flex; flex-direction: column; gap: 10px;
-    box-shadow: 0 6px 18px rgba(46,42,38,0.06);
+    box-shadow: var(--shadow);
   }
   .ci-due-card--due { border-color: rgba(77,107,88,0.28); background: rgba(210,228,220,0.4); }
 
@@ -1414,7 +1414,7 @@ const CI_STYLES = `
   .ci-last-wrap {
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 20px; padding: 18px 20px;
-    box-shadow: 0 4px 14px rgba(46,42,38,0.06);
+    box-shadow: var(--shadow);
   }
 
   .ci-mini-bars { display: flex; flex-direction: column; gap: 10px; }
@@ -1459,7 +1459,7 @@ const CI_STYLES = `
   .ci-intro {
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 22px; padding: 28px;
-    box-shadow: 0 8px 24px rgba(46,42,38,0.08);
+    box-shadow: var(--shadow);
     display: flex; flex-direction: column; gap: 16px;
     width: 100%;
     animation: fade-up 200ms ease;
@@ -1470,12 +1470,24 @@ const CI_STYLES = `
     padding: 3px 10px; border-radius: 999px; width: fit-content;
     background: var(--accent-soft); color: var(--accent);
   }
-  .ci-intro-title { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
+  .ci-intro-title {
+    margin: 0;
+    font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
   .ci-intro-desc  { margin: 0; font-size: 0.92rem; color: var(--muted); line-height: 1.6; }
 
   .ci-intro-stats { display: flex; gap: 24px; }
   .ci-stat { text-align: center; }
-  .ci-stat-num   { font-size: 1.8rem; font-weight: 900; color: var(--ink); line-height: 1; }
+  .ci-stat-num   {
+    font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--ink);
+    line-height: 1;
+  }
   .ci-stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
 
   .ci-intro-cats { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -1567,7 +1579,13 @@ const CI_STYLES = `
   /* ── results ── */
   .ci-results { display: flex; flex-direction: column; gap: 20px; animation: fade-up 200ms ease; }
   .ci-results-header { }
-  .ci-results-title { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
+  .ci-results-title {
+    margin: 0;
+    font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
   .ci-results-sub   { margin: 6px 0 0; color: var(--muted); font-size: 0.88rem; }
 
   /* personality result card */

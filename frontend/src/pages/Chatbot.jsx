@@ -70,7 +70,7 @@ function Message({ msg }) {
 
 const highlights = [
   { label: 'Honest, not just agreeable', body: 'Aurora can respond thoughtfully and ground the conversation instead of only mirroring you back.' },
-  { label: 'Personalized to you', body: 'This chat can evolve into a real backend service that uses your check-ins and journal data later.' },
+  { label: 'Personalized to you', body: 'This app can grow into a personal digital space that securely saves your daily check-ins and notes for future use.' },
   { label: 'Knows its limits', body: 'The assistant is supportive, but not a substitute for licensed mental health care.' },
   { label: 'Connected to the platform', body: 'It can eventually point people toward Peer Support, Therapist Match, and other Aurora features.' },
 ]
@@ -80,8 +80,7 @@ function ChatbotIntro({ onStart }) {
     <section className="page">
       <div className="intro-wrap">
         <p className="intro-eyebrow">Aurora · AI Chatbot</p>
-        <h2 className="intro-heading">Your 24/7 mental wellness companion</h2>
-        <span className="intro-badge">Available around the clock</span>
+        <h2 className="intro-heading">Your 24/7 Mental Wellness Companion</h2>
 
         <p className="intro-body">
           Aurora gives you access to an interactive AI chatbot you can reach any time of day or
@@ -258,16 +257,16 @@ function SendIcon() {
 }
 
 const styles = `
-  .intro-wrap { max-width: 680px; }
+  .intro-wrap { max-width: 680px; font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; }
   .intro-eyebrow {
-    margin: 0 0 10px;
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--accent);
+    display: none;
   }
-  .intro-heading { margin: 0 0 10px; font-size: 2rem; letter-spacing: -0.03em; }
+  .intro-heading {
+    margin: 0 0 10px;
+    font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 2rem;
+    letter-spacing: -0.03em;
+  }
   .intro-badge {
     display: inline-block;
     padding: 3px 12px;
@@ -290,7 +289,7 @@ const styles = `
     border: 1px solid var(--line);
     border-radius: 18px;
     padding: 18px 20px;
-    box-shadow: 0 4px 14px rgba(46, 42, 38, 0.06);
+    box-shadow: var(--shadow);
   }
   .highlight-card strong { display: block; margin-bottom: 6px; font-size: 0.92rem; }
   .highlight-card p { margin: 0; font-size: 0.86rem; color: var(--muted); line-height: 1.55; }

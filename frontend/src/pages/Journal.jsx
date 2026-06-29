@@ -887,7 +887,7 @@ const JN_STYLES = `
   .jn-cal-wrap {
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 20px; padding: 20px;
-    box-shadow: 0 6px 18px rgba(46,42,38,0.06);
+    box-shadow: var(--shadow);
   }
   .jn-cal-nav {
     display: flex; align-items: center; justify-content: space-between;
@@ -1129,7 +1129,7 @@ const JN_STYLES = `
     flex: 1; resize: none; border: none; background: transparent;
     padding: 8px 16px; font-size: 0.9rem; line-height: 28px;
     color: var(--ink); outline: none; min-height: 250px;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
   .jn-textarea:disabled { opacity: 0.7; }
   .jn-textarea::placeholder { color: rgba(46,42,38,0.3); }
