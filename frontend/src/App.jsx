@@ -21,7 +21,7 @@ function getDynamicNotifications() {
   const lastCompleted = localStorage.getItem('aurora.checkin.last-completed')
   if (lastCompleted) {
     const days = Math.floor((new Date() - new Date(lastCompleted)) / (1000 * 60 * 60 * 24))
-    if (days >= 7) notes.push({ id: 'checkin', text: 'Your weekly check-in is ready', time: days === 7 ? 'Today' : `${days - 7}d overdue` })
+    if (days >= 7) notes.push({ id: 'checkin', text: 'Your weekly check-in is ready', time: days === 7 ? 'Today' : `${days - 7}d overdue`, page: 'checkins' })
   }
   return notes
 }
@@ -615,6 +615,11 @@ function AppShell() {
           border-bottom: 1px solid var(--line);
         }
         .notif-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .notif-item--clickable {
+          width: 100%; text-align: left; background: transparent; border: none; cursor: pointer;
+          border-radius: 10px; transition: background 140ms;
+        }
+        .notif-item--clickable:hover { background: var(--accent-soft); }
 
         .notif-text { font-size: 0.88rem; color: var(--ink); }
         .notif-time { font-size: 0.76rem; color: var(--muted); }
@@ -899,10 +904,14 @@ function AppShell() {
             {notifications.length === 0 ? (
               <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--muted)' }}>No new notifications</p>
             ) : notifications.map((n) => (
-              <div key={n.id} className="notif-item">
+              <button
+                key={n.id}
+                className="notif-item notif-item--clickable"
+                onClick={() => { navigate(n.page); setNotifOpen(false) }}
+              >
                 <span className="notif-text">{n.text}</span>
                 <span className="notif-time">{n.time}</span>
-              </div>
+              </button>
             ))}
           </div>
         )}
