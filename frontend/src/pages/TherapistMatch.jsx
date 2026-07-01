@@ -1741,8 +1741,6 @@ const TM_STYLES = `
     flex: 1; overflow-y: auto; padding: 18px;
     display: flex; flex-direction: column; gap: 14px;
   }
-  .tm-chat-messages::-webkit-scrollbar { width: 5px; }
-  .tm-chat-messages::-webkit-scrollbar-thumb { background: rgba(46,42,38,0.12); border-radius: 999px; }
   .tm-msg-row { display: flex; align-items: flex-end; gap: 8px; animation: fade-up 180ms ease; }
   .tm-msg-row--user { flex-direction: row-reverse; }
   .tm-bubble { max-width: 70%; padding: 10px 14px 7px; border-radius: 18px; display: flex; flex-direction: column; gap: 4px; }

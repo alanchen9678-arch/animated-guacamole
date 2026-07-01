@@ -115,7 +115,7 @@ function AppShell() {
   }, [activePage, isLoggedIn])
 
   return (
-    <div className="app-root">
+    <div className={`app-root${isLoggedIn ? ' app-root--dashboard' : ''}`}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
         /* ── reset & tokens ────────────────────────────────── */
@@ -156,6 +156,11 @@ function AppShell() {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
+        }
+
+        .app-root--dashboard {
+          height: 100vh;
+          overflow: hidden;
         }
 
         /* ── top bar ───────────────────────────────────────── */
@@ -388,11 +393,15 @@ function AppShell() {
         /* ── logged-in shell ────────────────────────────────── */
         .shell-body {
           flex: 1;
+          min-height: 0;
           padding: 28px 20px 48px;
           font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+          overflow: hidden;
         }
 
         .frame {
+          height: 100%;
+          min-height: 0;
           max-width: 1180px;
           margin: 0 auto;
           background: var(--panel);
@@ -406,10 +415,12 @@ function AppShell() {
         .layout {
           display: grid;
           grid-template-columns: 240px minmax(0,1fr);
-          min-height: 620px;
+          height: 100%;
+          min-height: 0;
         }
 
         .sidebar {
+          min-height: 0;
           padding: 24px 18px;
           border-right: 1px solid var(--line);
           background: rgba(250,244,232,0.54);
@@ -451,9 +462,12 @@ function AppShell() {
         }
 
         .content {
+          min-height: 0;
           padding: 28px;
           width: 100%;
           font-family: inherit;
+          overflow-y: auto;
+          overscroll-behavior: contain;
         }
 
         /* ── page / card primitives ─────────────────────────── */
@@ -674,8 +688,12 @@ function AppShell() {
 
         /* ── responsive ─────────────────────────────────────── */
         @media (max-width: 960px) {
+          .app-root--dashboard { height: auto; overflow: visible; }
+          .shell-body { overflow: visible; }
+          .frame { height: auto; min-height: 0; }
           .layout { grid-template-columns: 1fr; }
           .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
+          .content { overflow-y: visible; }
           .nav-list { grid-template-columns: repeat(2, minmax(0,1fr)); }
           .span-4,.span-5,.span-6,.span-7,.span-8 { grid-column: span 12; }
           .feature-grid-landing { grid-template-columns: repeat(2, minmax(0,1fr)); }

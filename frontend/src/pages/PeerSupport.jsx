@@ -804,8 +804,6 @@ const PS_STYLES = `
 
   /* messages */
   .ps-messages { flex: 1; overflow-y: auto; padding: 16px 0 8px; display: flex; flex-direction: column; gap: 10px; }
-  .ps-messages::-webkit-scrollbar { width: 5px; }
-  .ps-messages::-webkit-scrollbar-thumb { background: rgba(46,42,38,0.12); border-radius: 999px; }
   .ps-msg-row { display: flex; align-items: flex-end; gap: 8px; animation: fade-up 180ms ease; }
   .ps-msg-row--self { flex-direction: row-reverse; }
   .ps-bubble { max-width: 72%; padding: 9px 13px 7px; border-radius: 18px; display: flex; flex-direction: column; gap: 3px; }

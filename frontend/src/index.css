@@ -24,6 +24,9 @@
   --amber:        #9a6b2a;
   --amber-soft:   #f0e2c8;
   --shadow:       0 8px 20px rgba(46,42,38,0.08);
+  --scrollbar-thumb: rgba(77,107,88,0.24);
+  --scrollbar-thumb-hover: rgba(77,107,88,0.36);
+  --scrollbar-track: rgba(77,107,88,0.06);
   --demo-bg:      #ffffff;
   --demo-text:    #1a1a1a;
 }
@@ -40,6 +43,34 @@ body,
 
 html {
   scrollbar-gutter: stable;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 body {
