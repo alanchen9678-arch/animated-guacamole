@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useUser } from '../context/UserContext'
 import { fetchCheckIns, submitCheckIn } from '../services/api'
 
@@ -913,18 +913,33 @@ const SCALE_LABELS = ['Strongly Disagree', 'Disagree', 'Slightly Disagree', 'Neu
 
 function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
   const [idx, setIdx] = useState(0)
+  const [flashChoice, setFlashChoice] = useState(null)
+  const advanceTimerRef = useRef(null)
   const q          = questions[idx]
   const total      = questions.length
   const isPersonality = q.dim != null && q.options
   const selected   = answers[q.id]
   const pct        = (idx / total) * 100
 
+  useEffect(() => () => {
+    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
+  }, [])
+
   function pick(val) { setAnswers(prev => ({ ...prev, [q.id]: val })) }
 
   function pickAndAdvance(val) {
+    const isNewAnswer = selected == null
     pick(val)
-    if (idx < total - 1) setIdx((current) => current + 1)
-    else onDone()
+
+    if (!isNewAnswer) return
+
+    setFlashChoice(val)
+    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
+    advanceTimerRef.current = setTimeout(() => {
+      setFlashChoice(null)
+      if (idx < total - 1) setIdx((current) => current + 1)
+      else onDone()
+    }, 180)
   }
 
   function next() {
@@ -965,7 +980,7 @@ function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
           {q.options.map((opt, i) => (
             <button
               key={i}
-              className={`ci-choice-btn${selected === i ? ' ci-choice-btn--on' : ''}`}
+              className={`ci-choice-btn${selected === i ? ' ci-choice-btn--on' : ''}${flashChoice === i ? ' ci-choice-btn--flash' : ''}`}
               onClick={() => pickAndAdvance(i)}
             >
               {opt.text}
@@ -978,7 +993,7 @@ function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
             {[1, 2, 3, 4, 5, 6, 7].map(v => (
               <button
                 key={v}
-                className={`ci-scale-btn${selected === v ? ' ci-scale-btn--on' : ''}`}
+                className={`ci-scale-btn${selected === v ? ' ci-scale-btn--on' : ''}${flashChoice === v ? ' ci-scale-btn--flash' : ''}`}
                 style={selected === v ? { background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff' } : {}}
                 onClick={() => pickAndAdvance(v)}
                 title={SCALE_LABELS[v - 1]}
@@ -1557,6 +1572,7 @@ const CI_STYLES = `
     border-color: var(--accent); background: var(--accent-soft); font-weight: 700;
     transform: translateX(3px); box-shadow: 0 4px 14px rgba(77,107,88,0.14);
   }
+  .ci-choice-btn--flash { animation: ci-choice-flash 180ms ease; }
 
   .ci-scale { display: flex; flex-direction: column; gap: 8px; }
   .ci-scale-btns { display: flex; gap: 8px; }
@@ -1569,6 +1585,7 @@ const CI_STYLES = `
   }
   .ci-scale-btn:hover { transform: scale(1.08); border-color: var(--accent); }
   .ci-scale-btn--on { box-shadow: 0 4px 14px rgba(0,0,0,0.14); transform: scale(1.06); }
+  .ci-scale-btn--flash { animation: ci-scale-flash 180ms ease; }
   .ci-scale-end-labels {
     display: flex; justify-content: space-between;
     font-size: 0.73rem; color: var(--muted);
@@ -1581,6 +1598,18 @@ const CI_STYLES = `
     transition: opacity 140ms, transform 140ms;
   }
   .ci-next-btn:not(:disabled):hover { opacity: 0.88; transform: translateY(-1px); }
+
+  @keyframes ci-choice-flash {
+    0% { transform: translateX(3px) scale(1); }
+    50% { transform: translateX(3px) scale(1.015); }
+    100% { transform: translateX(3px) scale(1); }
+  }
+
+  @keyframes ci-scale-flash {
+    0% { transform: scale(1.06); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1.06); }
+  }
 
   /* ── results ── */
   .ci-results { display: flex; flex-direction: column; gap: 20px; animation: fade-up 200ms ease; }
