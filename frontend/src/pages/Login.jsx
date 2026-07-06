@@ -75,8 +75,6 @@ export default function Login({ initialMode = 'login', onClose }) {
 
         .auth-card {
           width: 100%;
-          max-width: 420px;
-          margin: 16px;
           background: #faf4e8;
           border: 1px solid rgba(46,42,38,0.14);
           border-radius: 28px;
@@ -210,20 +208,25 @@ export default function Login({ initialMode = 'login', onClose }) {
           right: 16px;
           width: 32px;
           height: 32px;
+          padding: 0;
           border-radius: 50%;
           border: 1px solid rgba(46,42,38,0.14);
           background: transparent;
           color: #6b6460;
-          font-size: 1.1rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          font-size: 1rem;
+          line-height: 1;
+          display: grid;
+          place-items: center;
           cursor: pointer;
           transition: background 140ms;
         }
         .auth-close:hover { background: rgba(46,42,38,0.07); }
 
-        .auth-card-wrap { position: relative; }
+        .auth-card-wrap {
+          position: relative;
+          width: min(420px, calc(100vw - 32px));
+          margin: 16px;
+        }
       `}</style>
 
       <div className="auth-overlay" onClick={(event) => event.target === event.currentTarget && onClose()}>

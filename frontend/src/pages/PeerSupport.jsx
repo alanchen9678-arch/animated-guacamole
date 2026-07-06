@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/chat-input.jsx'
 import {
   fetchPeerProfile,
   completePeerOnboarding,
@@ -339,6 +340,7 @@ function RoomView({ profile, room, onBack }) {
     if (flag) setModAlert(flag)
     setSending(true)
     setInput('')
+    window.requestAnimationFrame(() => inputRef.current?.focus())
     try {
       const msg = await sendRoomMessage(room.id, text)
       setMessages(prev => {
@@ -398,19 +400,22 @@ function RoomView({ profile, room, onBack }) {
       </div>
 
       <div className="ps-input-bar">
-        <textarea
-          ref={inputRef}
-          className="chat-textarea"
-          placeholder="Send a message to the room"
-          rows={1}
+        <ChatInput
           value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-          disabled={sending}
-        />
-        <button className="send-btn" onClick={send} disabled={!input.trim() || sending} aria-label="Send">
-          <SendIcon />
-        </button>
+          onChange={(e) => setInput(e.target.value)}
+          onSubmit={send}
+          loading={sending}
+          className="ps-chat-compose"
+        >
+          <ChatInputTextArea
+            ref={inputRef}
+            className="chat-textarea"
+            placeholder="Send a message to the room"
+          />
+          <ChatInputSubmit className="send-btn">
+            <SendIcon />
+          </ChatInputSubmit>
+        </ChatInput>
       </div>
     </div>
   )
@@ -472,6 +477,7 @@ function DMView({ peer, profile, onBack, onLeave }) {
     if (flag) setModAlert(flag)
     setSending(true)
     setInput('')
+    window.requestAnimationFrame(() => inputRef.current?.focus())
     try {
       const msg = await sendDM(peer.userId, text)
       setMessages(prev => {
@@ -535,19 +541,22 @@ function DMView({ peer, profile, onBack, onLeave }) {
       </div>
 
       <div className="ps-input-bar">
-        <textarea
-          ref={inputRef}
-          className="chat-textarea"
-          placeholder="Message"
-          rows={1}
+        <ChatInput
           value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-          disabled={sending}
-        />
-        <button className="send-btn" onClick={send} disabled={!input.trim() || sending} aria-label="Send">
-          <SendIcon />
-        </button>
+          onChange={(e) => setInput(e.target.value)}
+          onSubmit={send}
+          loading={sending}
+          className="ps-chat-compose"
+        >
+          <ChatInputTextArea
+            ref={inputRef}
+            className="chat-textarea"
+            placeholder="Message"
+          />
+          <ChatInputSubmit className="send-btn">
+            <SendIcon />
+          </ChatInputSubmit>
+        </ChatInput>
       </div>
     </div>
   )
@@ -761,8 +770,8 @@ const PS_STYLES = `
   .ps-chat-root {
     display: flex; flex-direction: column;
     width: 100%;
-    height: calc(100dvh - 168px);
-    max-height: calc(100dvh - 168px);
+    height: 100%;
+    max-height: none;
     min-height: 0;
     overflow: hidden;
     box-sizing: border-box;
@@ -803,7 +812,7 @@ const PS_STYLES = `
   .ps-error-bar button { background: none; border: none; color: #dc2626; cursor: pointer; font-size: 1rem; }
 
   /* messages */
-  .ps-messages { flex: 1; overflow-y: auto; padding: 16px 0 8px; display: flex; flex-direction: column; gap: 10px; }
+  .ps-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 0 8px; display: flex; flex-direction: column; gap: 10px; }
   .ps-msg-row { display: flex; align-items: flex-end; gap: 8px; animation: fade-up 180ms ease; }
   .ps-msg-row--self { flex-direction: row-reverse; }
   .ps-bubble { max-width: 72%; padding: 9px 13px 7px; border-radius: 18px; display: flex; flex-direction: column; gap: 3px; }
@@ -829,38 +838,15 @@ const PS_STYLES = `
 
   /* input bar */
   .ps-input-bar {
-    display: flex; align-items: flex-end; gap: 10px;
     padding: 12px 0 0; border-top: 1px solid rgba(46,42,38,0.12);
     flex-shrink: 0;
   }
+  .ps-chat-compose { width: 100%; }
   .chat-textarea {
-    flex: 1; resize: none; border: 1.5px solid rgba(77,107,88,0.18);
-    border-radius: 18px; padding: 12px 15px;
-    min-height: 44px; max-height: 120px; overflow-y: auto;
-    font-size: 0.92rem; line-height: 1.45;
-    background: rgba(255,255,255,0.84); color: var(--ink);
-    outline: none;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.92), 0 4px 14px rgba(46,42,38,0.05);
-    transition: border-color 140ms, box-shadow 140ms, background 140ms;
+    min-height: 26px; max-height: 120px;
   }
-  .chat-textarea::placeholder { color: rgba(46,42,38,0.38); }
-  .chat-textarea:focus {
-    border-color: rgba(77,107,88,0.58); background: #fff;
-    box-shadow: 0 0 0 3px rgba(77,107,88,0.12), 0 8px 20px rgba(46,42,38,0.07);
-  }
-  .chat-textarea:disabled { opacity: 0.6; }
   .send-btn {
-    flex: none; width: 44px; height: 44px; border-radius: 15px;
-    border: 1px solid rgba(58,82,68,0.24);
-    background: linear-gradient(135deg,var(--accent),var(--blue));
-    color: #fff; display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 10px 22px rgba(77,107,88,0.22);
-    transition: opacity 140ms, transform 140ms, box-shadow 140ms;
-  }
-  .send-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(58,104,152,0.25); }
-  .send-btn:disabled {
-    background: #d8ded8; color: rgba(46,42,38,0.38);
-    box-shadow: none; cursor: not-allowed; border-color: transparent;
+    width: 40px; height: 40px;
   }
 
   @media (max-width: 640px) {

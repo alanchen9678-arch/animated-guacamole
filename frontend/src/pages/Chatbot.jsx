@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/chat-input.jsx'
 import { fetchChatHistory, sendChatMessage } from '../services/api.js'
 
 const CHATBOT_ONBOARDING_STORAGE_KEY = 'aurora.chatbot.onboarding'
@@ -201,13 +202,6 @@ function ChatbotChat() {
     }
   }
 
-  function handleKeyDown(event) {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault()
-      sendMessage()
-    }
-  }
-
   return (
     <div className="chat-root">
       <div className="chat-header">
@@ -224,35 +218,26 @@ function ChatbotChat() {
       </div>
 
       <div className="chat-input-bar">
-        <textarea
-          ref={inputRef}
-          className="chat-textarea"
-          placeholder="Type a message... (Enter to send)"
+        <ChatInput
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          onKeyDown={handleKeyDown}
-          rows={1}
-          disabled={isTyping || isLoadingHistory}
-        />
-        <button
-          className="send-btn"
-          onClick={sendMessage}
-          disabled={!input.trim() || isTyping || isLoadingHistory}
-          aria-label="Send message"
+          onSubmit={sendMessage}
+          loading={isTyping || isLoadingHistory}
+          className="chat-compose"
         >
-          <SendIcon />
-        </button>
+          <ChatInputTextArea
+            ref={inputRef}
+            className="chat-textarea"
+            placeholder="Type a message... (Enter to send)"
+            disabled={isTyping || isLoadingHistory}
+          />
+          <ChatInputSubmit
+            className="send-btn"
+            disabled={isLoadingHistory}
+          />
+        </ChatInput>
       </div>
     </div>
-  )
-}
-
-function SendIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <line x1="22" y1="2" x2="11" y2="13" />
-      <polygon points="22 2 15 22 11 13 2 9 22 2" />
-    </svg>
   )
 }
 
@@ -332,12 +317,14 @@ const styles = `
   .chat-root {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 180px);
-    min-height: 480px;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
     background: var(--panel-strong);
     border: 1px solid var(--line);
     border-radius: 22px;
     overflow: hidden;
+    box-sizing: border-box;
   }
   .chat-header {
     display: flex;
@@ -362,10 +349,15 @@ const styles = `
     font-size: 0.9rem;
     flex: none;
   }
-  .chat-header-name { display: block; font-size: 0.95rem; }
-  .chat-header-status { font-size: 0.76rem; color: var(--accent); font-weight: 600; }
+  .chat-header-name {
+    display: block;
+    font-size: 1.18rem;
+    letter-spacing: -0.02em;
+  }
+  .chat-header-status { display: none; }
   .chat-messages {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 20px 20px 8px;
     display: flex;
@@ -441,57 +433,20 @@ const styles = `
     30% { transform: translateY(-6px); opacity: 1; }
   }
   .chat-input-bar {
-    display: flex;
-    align-items: flex-end;
-    gap: 10px;
     padding: 12px 14px;
     border-top: 1px solid rgba(46, 42, 38, 0.12);
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(250, 244, 232, 0.96)), var(--panel-strong);
     flex: none;
     box-shadow: 0 -8px 24px rgba(46, 42, 38, 0.04);
   }
+  .chat-compose { width: 100%; }
   .chat-textarea {
-    flex: 1;
-    resize: none;
-    border: 1.5px solid rgba(77, 107, 88, 0.18);
-    border-radius: 18px;
-    padding: 12px 15px;
-    min-height: 44px;
+    min-height: 26px;
     max-height: 120px;
-    overflow-y: auto;
-    font-size: 0.92rem;
-    line-height: 1.45;
-    background: rgba(255, 255, 255, 0.82);
-    color: var(--ink);
-    outline: none;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 4px 14px rgba(46, 42, 38, 0.05);
   }
-  .chat-textarea::placeholder { color: rgba(46, 42, 38, 0.38); }
-  .chat-textarea:focus {
-    border-color: rgba(77, 107, 88, 0.58);
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(77, 107, 88, 0.12), 0 8px 20px rgba(46, 42, 38, 0.07);
-  }
-  .chat-textarea:disabled { opacity: 0.6; }
   .send-btn {
-    flex: none;
-    width: 44px;
-    height: 44px;
-    border-radius: 15px;
-    border: 1px solid rgba(58, 82, 68, 0.24);
-    background: linear-gradient(135deg, var(--accent), var(--blue));
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 10px 22px rgba(77, 107, 88, 0.22);
-  }
-  .send-btn:disabled {
-    background: #d8ded8;
-    color: rgba(46, 42, 38, 0.38);
-    box-shadow: none;
-    cursor: not-allowed;
-    border-color: transparent;
+    width: 40px;
+    height: 40px;
   }
   @media (max-width: 640px) {
     .highlights-grid { grid-template-columns: 1fr; }

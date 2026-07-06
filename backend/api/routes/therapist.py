@@ -1,3 +1,5 @@
+from random import choice
+
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
@@ -120,8 +122,17 @@ class TherapistMatchMessageView(APIView):
             content=serializer.validated_data['message'],
         )
 
-        reply_index = conversation.messages.filter(role=Message.MessageRole.THERAPIST).count()
-        reply_text = THERAPIST_AUTO_REPLIES[reply_index % len(THERAPIST_AUTO_REPLIES)]
+        last_therapist_message = (
+            conversation.messages
+            .filter(role=Message.MessageRole.THERAPIST)
+            .order_by('-timestamp', '-id')
+            .first()
+        )
+        candidate_replies = [
+            reply for reply in THERAPIST_AUTO_REPLIES
+            if reply != (last_therapist_message.content if last_therapist_message else None)
+        ]
+        reply_text = choice(candidate_replies or THERAPIST_AUTO_REPLIES)
         reply_message = Message.objects.create(
             conversation=conversation,
             role=Message.MessageRole.THERAPIST,

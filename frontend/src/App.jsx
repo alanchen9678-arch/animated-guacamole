@@ -463,11 +463,20 @@ function AppShell() {
 
         .content {
           min-height: 0;
+          display: flex;
+          flex-direction: column;
           padding: 28px;
           width: 100%;
           font-family: inherit;
           overflow-y: auto;
           overscroll-behavior: contain;
+        }
+
+        .content > .chat-root,
+        .content > .tm-chat-root,
+        .content > .ps-chat-root {
+          flex: 1 1 auto;
+          min-height: 0;
         }
 
         /* ── page / card primitives ─────────────────────────── */

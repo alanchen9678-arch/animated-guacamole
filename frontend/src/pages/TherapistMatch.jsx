@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { AuroraDropdown } from '../components/ui/heroui-dropdown.jsx'
+import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/chat-input.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import {
   fetchTherapistMatches,
@@ -967,6 +968,7 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
   const [input, setInput] = useState('')
   const [isLoadingHistory, setIsLoadingHistory] = useState(true)
   const [isTyping, setIsTyping] = useState(false)
+  const [chatError, setChatError] = useState('')
   const [showApptForm, setShowApptForm] = useState(false)
   const [showProfileCard, setShowProfileCard] = useState(false)
   const [activeAppointment, setActiveAppointment] = useState(null)
@@ -1002,9 +1004,11 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
             type: 'text',
           })),
         )
-      } catch {
+        setChatError('')
+      } catch (error) {
         if (!isActive) return
         setMessages([])
+        setChatError(error.message || 'Unable to load therapist chat history right now.')
       } finally {
         if (isActive) setIsLoadingHistory(false)
       }
@@ -1034,14 +1038,27 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
   async function sendMessage() {
     const text = input.trim()
     if (!text || isTyping || isLoadingHistory || !t.matchId) return
+    const optimisticId = `pending-${Date.now()}`
+    const optimisticMessage = {
+      id: optimisticId,
+      role: 'user',
+      text,
+      time: timestamp(),
+      type: 'text',
+    }
+
     shouldScrollRef.current = true
     setInput('')
+    setChatError('')
+    setMessages((prev) => {
+      return [...prev, optimisticMessage]
+    })
     setIsTyping(true)
     try {
       const data = await sendTherapistMessage(t.matchId, text)
       shouldScrollRef.current = true
       setMessages((prev) => [
-        ...prev,
+        ...prev.filter((message) => message.id !== optimisticId),
         {
           id: data.userMessage.id,
           role: data.userMessage.role,
@@ -1057,6 +1074,9 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
           type: 'text',
         },
       ])
+    } catch (error) {
+      setMessages((prev) => prev.filter((message) => message.id !== optimisticId))
+      setChatError(error.message || 'Unable to send your message right now.')
     } finally {
       setIsTyping(false)
       inputRef.current?.focus()
@@ -1130,6 +1150,12 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
         </div>
       )}
 
+      {chatError && (
+        <div className="tm-chat-error" role="status">
+          {chatError}
+        </div>
+      )}
+
       <div className="tm-chat-messages" ref={messagesRef}>
         {messages.map((message) => {
           const isUser = message.role === 'user'
@@ -1157,24 +1183,26 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
       </div>
 
       <div className="tm-chat-input-bar">
-        <textarea
-          ref={inputRef}
-          className="chat-textarea"
-          placeholder="Message..."
-          rows={1}
+        <ChatInput
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-          disabled={isTyping || isLoadingHistory || !t.matchId}
-        />
-        <button
-          className="send-btn"
-          onClick={sendMessage}
-          disabled={!input.trim() || isTyping || isLoadingHistory || !t.matchId}
-          aria-label="Send"
+          onSubmit={sendMessage}
+          loading={isTyping || isLoadingHistory}
+          className="tm-chat-compose"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </button>
+          <ChatInputTextArea
+            ref={inputRef}
+            className="chat-textarea"
+            placeholder="Message..."
+            disabled={isTyping || isLoadingHistory || !t.matchId}
+          />
+          <ChatInputSubmit
+            className="send-btn"
+            disabled={!t.matchId || isLoadingHistory}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </ChatInputSubmit>
+        </ChatInput>
       </div>
 
       {showProfileCard && (
@@ -1633,9 +1661,12 @@ const TM_STYLES = `
   /* chat */
   .tm-chat-root {
     display: flex; flex-direction: column;
-    height: calc(100vh - 180px); min-height: 500px;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 22px; overflow: hidden;
+    box-sizing: border-box;
   }
   .tm-chat-header {
     display: flex; align-items: center; gap: 10px;
@@ -1738,8 +1769,18 @@ const TM_STYLES = `
     font-size: 0.78rem;
   }
   .tm-chat-messages {
-    flex: 1; overflow-y: auto; padding: 18px;
+    flex: 1; min-height: 0; overflow-y: auto; padding: 18px;
     display: flex; flex-direction: column; gap: 14px;
+  }
+  .tm-chat-error {
+    margin: 0 18px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(220, 38, 38, 0.18);
+    background: rgba(254, 242, 242, 0.92);
+    color: #b91c1c;
+    font-size: 0.82rem;
+    line-height: 1.45;
   }
   .tm-msg-row { display: flex; align-items: flex-end; gap: 8px; animation: fade-up 180ms ease; }
   .tm-msg-row--user { flex-direction: row-reverse; }
@@ -1806,7 +1847,6 @@ const TM_STYLES = `
   .tm-appt-desc { font-style: italic; }
   .tm-appt-time { font-size: 0.7rem; color: var(--muted); }
   .tm-chat-input-bar {
-    display: flex; align-items: flex-end; gap: 10px;
     padding: 12px 14px; border-top: 1px solid rgba(46,42,38,0.12);
     background:
       linear-gradient(180deg, rgba(255,255,255,0.88), rgba(250,244,232,0.96)),
@@ -1814,36 +1854,12 @@ const TM_STYLES = `
     flex-shrink: 0;
     box-shadow: 0 -8px 24px rgba(46,42,38,0.04);
   }
+  .tm-chat-compose { width: 100%; }
   .chat-textarea {
-    flex: 1; resize: none; border: 1.5px solid rgba(77,107,88,0.18);
-    border-radius: 18px; padding: 12px 15px;
-    min-height: 44px; max-height: 120px; overflow-y: auto;
-    font-size: 0.92rem; line-height: 1.45;
-    background: rgba(255,255,255,0.82); color: var(--ink);
-    outline: none; cursor: text;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.92), 0 4px 14px rgba(46,42,38,0.05);
-    transition: border-color 140ms, box-shadow 140ms, background 140ms;
+    min-height: 26px; max-height: 120px; cursor: text;
   }
-  .chat-textarea::placeholder { color: rgba(46,42,38,0.38); }
-  .chat-textarea:focus {
-    border-color: rgba(77,107,88,0.58);
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(77,107,88,0.12), 0 8px 20px rgba(46,42,38,0.07);
-  }
-  .chat-textarea:disabled { opacity: 0.6; }
   .send-btn {
-    flex: none; width: 44px; height: 44px; border-radius: 15px;
-    border: 1px solid rgba(58,82,68,0.24);
-    background: linear-gradient(135deg,var(--accent),var(--blue));
-    color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 10px 22px rgba(77,107,88,0.22);
-    transition: opacity 140ms, transform 140ms, box-shadow 140ms;
-  }
-  .send-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(58,104,152,0.25); }
-  .send-btn:disabled {
-    background: #d8ded8; color: rgba(46,42,38,0.38);
-    box-shadow: none; cursor: not-allowed; border-color: transparent;
+    width: 40px; height: 40px;
   }
 
   /* typing dots (reuse from chatbot) */
