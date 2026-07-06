@@ -921,6 +921,12 @@ function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
 
   function pick(val) { setAnswers(prev => ({ ...prev, [q.id]: val })) }
 
+  function pickAndAdvance(val) {
+    pick(val)
+    if (idx < total - 1) setIdx((current) => current + 1)
+    else onDone()
+  }
+
   function next() {
     if (idx < total - 1) setIdx(i => i + 1)
     else onDone()
@@ -960,7 +966,7 @@ function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
             <button
               key={i}
               className={`ci-choice-btn${selected === i ? ' ci-choice-btn--on' : ''}`}
-              onClick={() => pick(i)}
+              onClick={() => pickAndAdvance(i)}
             >
               {opt.text}
             </button>
@@ -974,7 +980,7 @@ function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
                 key={v}
                 className={`ci-scale-btn${selected === v ? ' ci-scale-btn--on' : ''}`}
                 style={selected === v ? { background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff' } : {}}
-                onClick={() => pick(v)}
+                onClick={() => pickAndAdvance(v)}
                 title={SCALE_LABELS[v - 1]}
               >
                 {v}
