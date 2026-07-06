@@ -706,23 +706,22 @@ function isWeeklyCheckInDue(history, today = new Date()) {
   return diffDays(parseDateKey(latestWeeklyEntry.date), today) >= 7
 }
 
-function buildSurvey(type, lastDisorderQIds = [], lastPersonalityQIds = []) {
+function buildSurvey(type, lastDisorderQIds = []) {
   if (type === 'initial') {
     // 40 questions: 10 disorder first, then 30 personality
     return [...INITIAL_DISORDER_QUESTIONS, ...PERSONALITY_QUESTIONS]
   }
-  // Weekly: 3 disorder + 7 personality
-  const selectedCats = shuffle([...CATEGORIES.map(c => c.id)]).slice(0, 3)
-  const disorderQs = selectedCats.map(cat => {
+  // Weekly: 12 disorder questions total, 2 from each of the 6 categories.
+  const disorderQs = CATEGORIES.flatMap(({ id: cat }) => {
     const pool = WEEKLY_QUESTION_BANK.filter(q => q.cat === cat)
-    const unused = pool.filter(q => !lastDisorderQIds.includes(q.id))
-    const source = unused.length >= 1 ? unused : pool
-    return shuffle(source)[0]
+    const unused = shuffle(pool.filter(q => !lastDisorderQIds.includes(q.id))).slice(0, 2)
+    if (unused.length === 2) return unused
+
+    const seen = new Set(unused.map(q => q.id))
+    const fallback = shuffle(pool.filter(q => !seen.has(q.id))).slice(0, 2 - unused.length)
+    return [...unused, ...fallback]
   })
-  const unusedPersonality = PERSONALITY_QUESTIONS.filter(q => !lastPersonalityQIds.includes(q.id))
-  const personalityPool = unusedPersonality.length >= 7 ? unusedPersonality : PERSONALITY_QUESTIONS
-  const personalityQs = shuffle(personalityPool).slice(0, 7)
-  return [...disorderQs, ...personalityQs]
+  return shuffle(disorderQs)
 }
 
 function computeDisorderScores(answers, questions) {
@@ -801,16 +800,7 @@ function fmtDate(str) {
 
 // ─── hub view ─────────────────────────────────────────────────────────────────
 
-function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, onStart }) {
-  const [savedPersonality, setSavedPersonality] = useState(null)
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(PERSONALITY_STORAGE_KEY)
-      if (raw) setSavedPersonality(JSON.parse(raw))
-    } catch {}
-  }, [])
-
+function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, onStart, savedPersonality }) {
   return (
     <div className="ci-hub">
       {/* personality compact card */}
@@ -854,7 +844,7 @@ function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, onSt
           ) : dueToday ? (
             <>
               <div className="ci-due-badge">Due today</div>
-              <p className="ci-due-text">Your weekly check-in is ready. It takes about 4 minutes and helps Aurora detect changes in your well-being early.</p>
+              <p className="ci-due-text">Your weekly check-in is ready. It takes about 5 minutes and covers all six well-being categories for a fuller profile update.</p>
               <button className="ci-start-btn" onClick={() => onStart('weekly')}>Start weekly check-in →</button>
             </>
           ) : (
@@ -877,12 +867,12 @@ function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, onSt
 
 function IntroView({ type, onStart, onBack }) {
   const isInitial = type === 'initial'
-  const count     = isInitial ? 40 : 10
-  const time      = isInitial ? '~15' : '~4'
+  const count     = isInitial ? 40 : 12
+  const time      = isInitial ? '~15' : '~5'
   const title     = isInitial ? 'Initial Assessment' : 'Weekly Check-In'
   const desc      = isInitial
     ? 'This one-time assessment establishes your personal baseline across six well-being dimensions and reveals your personality type. It takes about 15 minutes and uses scenario-based questions — no clinical language, no trick questions.'
-    : "This quick check-in tracks how you've been doing this week. Aurora looks for changes over time so it can step in early when something shifts."
+    : "This weekly check-in tracks how you've been doing across all six well-being dimensions. Aurora uses it to keep your score profile current and spot meaningful changes over time."
 
   return (
     <div className="ci-intro">
@@ -900,8 +890,8 @@ function IntroView({ type, onStart, onBack }) {
           <div className="ci-stat-label">minutes</div>
         </div>
         <div className="ci-stat">
-          <div className="ci-stat-num">{isInitial ? '1' : '+'}</div>
-          <div className="ci-stat-label">{isInitial ? 'personality + wellness baseline' : 'personality + wellness'}</div>
+          <div className="ci-stat-num">{isInitial ? '1' : '6'}</div>
+          <div className="ci-stat-label">{isInitial ? 'personality + wellness baseline' : 'categories scored'}</div>
         </div>
       </div>
 
@@ -1100,7 +1090,7 @@ function ResultsView({ surveyType, scores, prevScores, personality, onDone }) {
 // ─── root component ───────────────────────────────────────────────────────────
 
 export default function CheckIns() {
-  const { token, loading: userLoading } = useUser()
+  const { token, user, loading: userLoading, refreshUser } = useUser()
   const [view,    setView]    = useState('hub')
   const [surveyType, setSurveyType] = useState('weekly')
   const [questions,  setQuestions]  = useState([])
@@ -1161,8 +1151,7 @@ export default function CheckIns() {
   function startSurvey(type) {
     const lastEntry = history[history.length - 1]
     const lastDisorderQIds = lastEntry?.qIds ?? []
-    const lastPersonalityQIds = lastEntry?.personalityQIds ?? []
-    const qs = buildSurvey(type, lastDisorderQIds, lastPersonalityQIds)
+    const qs = buildSurvey(type, lastDisorderQIds)
     setSurveyType(type)
     setQuestions(qs)
     setAnswers({})
@@ -1199,8 +1188,6 @@ export default function CheckIns() {
     // save last completed date
     localStorage.setItem('aurora.checkin.last-completed', formatDateKey(new Date()))
 
-    const personalityQIds = questions.filter(q => q.dim != null).map(q => q.id)
-
     if (token) {
       // save prev scores for insight before updating
       const prevEntry = getLatestWeeklyEntry(history)
@@ -1210,8 +1197,8 @@ export default function CheckIns() {
         const data = await submitCheckIn({
           type: surveyType,
           qIds: questions.filter(q => q.cat).map(q => q.id),
-          personalityQIds,
           scores,
+          personality,
         })
         setHistory(data.history?.length ? data.history : [])
         setServerSummary({
@@ -1220,6 +1207,7 @@ export default function CheckIns() {
           lastCheckInDate: data.lastCheckInDate ?? null,
           hasInitialAssessment: Boolean(data.hasInitialAssessment),
         })
+        await refreshUser()
         setSaveError('')
       } catch (error) {
         setSaveError(error.message)
@@ -1234,7 +1222,6 @@ export default function CheckIns() {
         date: formatDateKey(new Date()),
         type: surveyType,
         qIds: questions.filter(q => q.cat).map(q => q.id),
-        personalityQIds,
         scores,
       }
       const nextHistory = [...history, newEntry]
@@ -1262,6 +1249,18 @@ export default function CheckIns() {
   const streak = useMemo(() => serverSummary.streak, [serverSummary])
   const dueToday = useMemo(() => serverSummary.dueToday, [serverSummary])
   const latestEntryDate = useMemo(() => serverSummary.lastCheckInDate, [serverSummary])
+  const savedPersonality = useMemo(() => {
+    if (token) {
+      return user?.personality && Object.keys(user.personality).length ? user.personality : null
+    }
+
+    try {
+      const raw = localStorage.getItem(PERSONALITY_STORAGE_KEY)
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return null
+    }
+  }, [token, user])
 
   return (
     <section className="page ci-page">
@@ -1282,6 +1281,7 @@ export default function CheckIns() {
           lastCheckInDate={latestEntryDate}
           hasInitialAssessment={hasInitialAssessment}
           onStart={startSurvey}
+          savedPersonality={savedPersonality}
         />
       )}
 

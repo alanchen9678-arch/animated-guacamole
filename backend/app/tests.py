@@ -16,6 +16,7 @@ from .models import (
     TherapistMatch,
     ThoughtJournalEntry,
     get_user_checkin_summary,
+    update_user_profile_insights,
 )
 
 
@@ -294,6 +295,7 @@ class AuthAPITests(TestCase):
         self.assertIn('token', response.data)
         self.assertEqual(response.data['user']['username'], 'new-user')
         self.assertEqual(response.data['user']['firstName'], 'Jordan')
+        self.assertFalse(response.data['user']['hasInitialAssessment'])
         self.assertTrue(get_user_model().objects.filter(username='new-user').exists())
 
     def test_register_rejects_duplicate_username(self):
@@ -356,6 +358,9 @@ class AuthAPITests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['username'], 'auth-user')
         self.assertEqual(response.data['firstName'], 'Avery')
+        self.assertIn('personality', response.data)
+        self.assertIn('needsProfile', response.data)
+        self.assertFalse(response.data['hasInitialAssessment'])
 
     def test_me_patch_updates_user_and_profile_fields(self):
         # Profile edits should persist both built-in user fields and custom profile metadata.
@@ -440,15 +445,128 @@ class CheckInAPITests(TestCase):
                 'type': CheckIn.CheckInType.INITIAL,
                 'qIds': [1, 2, 3],
                 'scores': {'stress': 44, 'sleep': 72},
+                'personality': {
+                    'id': 'architect',
+                    'name': 'The Architect',
+                    'category': 'Thinker',
+                },
             },
             format='json',
         )
+
+        self.user.profile.refresh_from_db()
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['entry']['type'], CheckIn.CheckInType.INITIAL)
         self.assertEqual(response.data['entry']['qIds'], [1, 2, 3])
         self.assertTrue(response.data['hasInitialAssessment'])
         self.assertEqual(self.user.checkins.count(), 1)
+        self.assertEqual(self.user.profile.personality['id'], 'architect')
+        self.assertEqual(self.user.profile.needs_profile['basis'], 'initial_assessment')
+        self.assertEqual(self.user.profile.needs_profile['concerns']['stress'], 44)
+
+    def test_needs_profile_uses_initial_assessment_until_five_weeklies_exist(self):
+        CheckIn.objects.create(
+            user=self.user,
+            type=CheckIn.CheckInType.INITIAL,
+            question_ids=[1, 2, 3],
+            scores={
+                'anxiety': 81,
+                'loneliness': 33,
+                'grief': 29,
+                'burnout': 64,
+                'stress': 72,
+                'confidence': 55,
+            },
+        )
+
+        for day, stress in ((date(2026, 6, 1), 20), (date(2026, 6, 8), 30), (date(2026, 6, 15), 40), (date(2026, 6, 22), 50)):
+            CheckIn.objects.create(
+                user=self.user,
+                type=CheckIn.CheckInType.WEEKLY,
+                check_in_date=day,
+                scores={
+                    'anxiety': 10,
+                    'loneliness': 10,
+                    'grief': 10,
+                    'burnout': 10,
+                    'stress': stress,
+                    'confidence': 10,
+                },
+            )
+
+        profile = update_user_profile_insights(self.user)
+
+        self.assertEqual(profile.needs_profile['basis'], 'initial_assessment')
+        self.assertEqual(profile.needs_profile['concerns']['stress'], 72)
+        self.assertEqual(profile.needs_profile['concerns']['lowConfidence'], 55)
+
+    def test_needs_profile_uses_average_of_last_five_weeklies(self):
+        CheckIn.objects.create(
+            user=self.user,
+            type=CheckIn.CheckInType.INITIAL,
+            question_ids=[1, 2, 3],
+            scores={
+                'anxiety': 99,
+                'loneliness': 99,
+                'grief': 99,
+                'burnout': 99,
+                'stress': 99,
+                'confidence': 99,
+            },
+        )
+
+        weekly_rows = [
+            (date(2026, 5, 25), 10, 20),
+            (date(2026, 6, 1), 20, 30),
+            (date(2026, 6, 8), 30, 40),
+            (date(2026, 6, 15), 40, 50),
+            (date(2026, 6, 22), 50, 60),
+            (date(2026, 6, 29), 90, 100),
+        ]
+        for day, stress, confidence in weekly_rows:
+            CheckIn.objects.create(
+                user=self.user,
+                type=CheckIn.CheckInType.WEEKLY,
+                check_in_date=day,
+                scores={
+                    'anxiety': 50,
+                    'loneliness': 40,
+                    'grief': 30,
+                    'burnout': 20,
+                    'stress': stress,
+                    'confidence': confidence,
+                },
+            )
+
+        profile = update_user_profile_insights(self.user)
+
+        self.assertEqual(profile.needs_profile['basis'], 'weekly_average')
+        self.assertEqual(profile.needs_profile['sources']['checkins'], 5)
+        self.assertEqual(profile.needs_profile['concerns']['stress'], 46)
+        self.assertEqual(profile.needs_profile['concerns']['lowConfidence'], 56)
+
+    def test_post_initial_checkin_rejects_second_initial_assessment(self):
+        CheckIn.objects.create(
+            user=self.user,
+            type=CheckIn.CheckInType.INITIAL,
+            question_ids=[1, 2],
+            scores={'stress': 44},
+        )
+
+        response = self.client.post(
+            reverse('checkins'),
+            {
+                'type': CheckIn.CheckInType.INITIAL,
+                'qIds': [3, 4],
+                'scores': {'stress': 72},
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data['error'], 'Initial assessment already completed.')
+        self.assertEqual(self.user.checkins.filter(type=CheckIn.CheckInType.INITIAL).count(), 1)
 
     def test_post_weekly_checkin_reuses_current_week_entry(self):
         # Weekly submissions should update the same week instead of creating duplicate weekly records.

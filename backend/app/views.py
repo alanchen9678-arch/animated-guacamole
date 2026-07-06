@@ -6,11 +6,11 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import UserProfile, get_user_checkin_summary
+from .models import UserProfile, get_user_checkin_summary, update_user_profile_insights
 
 
 def _user_payload(user):
-    profile, _ = UserProfile.objects.get_or_create(user=user)
+    profile = update_user_profile_insights(user)
     checkin_summary = get_user_checkin_summary(user)
     return {
         'id': user.id,
@@ -25,6 +25,9 @@ def _user_payload(user):
         'avatarColor': profile.avatar_color,
         'anonymousName': profile.anonymous_name or '',
         'isPeerOnboarded': profile.is_peer_onboarded,
+        'personality': profile.personality,
+        'needsProfile': profile.needs_profile,
+        'hasInitialAssessment': checkin_summary['has_initial_assessment'],
         'lastCheckInDate': checkin_summary['last_check_in_date'],
         'checkInDueThisWeek': checkin_summary['due_this_week'],
     }

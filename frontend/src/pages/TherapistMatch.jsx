@@ -31,9 +31,29 @@ const CONCERN_LABEL = {
   loneliness: 'Loneliness', lowConfidence: 'Low Confidence', grief: 'Grief',
 }
 
+function formatNeedsProfile(rawProfile) {
+  if (!rawProfile?.concerns) return null
+
+  const updated = rawProfile.updated ? new Date(rawProfile.updated) : null
+  const updatedLabel = updated && !Number.isNaN(updated.getTime())
+    ? updated.toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    : 'Recently'
+
+  return {
+    ...rawProfile,
+    updatedLabel,
+  }
+}
+
 const ACTIVE_THERAPIST_CHATS_KEY = 'aurora.therapistMatch.activeChats'
 
-const THERAPISTS = [
+const CORE_THERAPISTS = [
   {
     id: 1, initials: 'PS', color: '#3a6898',
     name: 'Dr. Priya Sharma',
@@ -150,6 +170,175 @@ const LANGUAGES = ['English','Spanish','French','Mandarin','Hindi','Arabic','Por
 const INSURERS  = ['Aetna','BlueCross BlueShield','United Healthcare','Cigna','Humana','Self-pay / Out-of-pocket']
 const STATE_OPTIONS = US_STATES.map((stateCode) => ({ value: stateCode, label: stateCode }))
 const INSURER_OPTIONS = INSURERS.map((insurer) => ({ value: insurer, label: insurer }))
+
+const STATE_MARKETS = {
+  AL: 'Birmingham', AK: 'Anchorage', AZ: 'Phoenix', AR: 'Little Rock', CA: 'Los Angeles',
+  CO: 'Denver', CT: 'Hartford', DE: 'Wilmington', FL: 'Miami', GA: 'Atlanta',
+  HI: 'Honolulu', ID: 'Boise', IL: 'Chicago', IN: 'Indianapolis', IA: 'Des Moines',
+  KS: 'Wichita', KY: 'Louisville', LA: 'New Orleans', ME: 'Portland', MD: 'Baltimore',
+  MA: 'Boston', MI: 'Detroit', MN: 'Minneapolis', MS: 'Jackson', MO: 'St. Louis',
+  MT: 'Billings', NE: 'Omaha', NV: 'Las Vegas', NH: 'Manchester', NJ: 'Newark',
+  NM: 'Albuquerque', NY: 'New York', NC: 'Charlotte', ND: 'Fargo', OH: 'Columbus',
+  OK: 'Oklahoma City', OR: 'Portland', PA: 'Philadelphia', RI: 'Providence', SC: 'Charleston',
+  SD: 'Sioux Falls', TN: 'Nashville', TX: 'Austin', UT: 'Salt Lake City', VT: 'Burlington',
+  VA: 'Richmond', WA: 'Seattle', WV: 'Charleston', WI: 'Milwaukee', WY: 'Cheyenne',
+}
+
+const FIRST_NAMES = [
+  'Avery', 'Jordan', 'Morgan', 'Taylor', 'Riley', 'Cameron', 'Skyler', 'Quinn', 'Rowan', 'Parker',
+  'Reese', 'Sage', 'Devon', 'Casey', 'Harper', 'Emerson', 'Finley', 'Hayden', 'Kendall', 'Logan',
+  'Micah', 'Noel', 'Payton', 'Shiloh', 'Tatum', 'Adrian', 'Bailey', 'Dakota', 'Elliot', 'Jamie',
+]
+
+const LAST_NAMES = [
+  'Bennett', 'Carter', 'Delgado', 'Foster', 'Griffin', 'Hayes', 'Kim', 'Lopez', 'Morgan', 'Nguyen',
+  'Patel', 'Rivera', 'Sullivan', 'Turner', 'Wright', 'Brooks', 'Chavez', 'Ellis', 'Flores', 'Jenkins',
+]
+
+const COLOR_PALETTE = ['#3a6898', '#4d6b58', '#b45309', '#1d4ed8', '#be185d', '#15803d', '#9333ea', '#0891b2', '#c2410c', '#0f766e']
+const AVAILABILITY_OPTIONS = [
+  'Next available: Today',
+  'Next available: Tomorrow',
+  'Next available: This week',
+  'Next available: Within 3 days',
+  'Next available: Accepting new clients now',
+]
+
+const THERAPIST_ARCHETYPES = [
+  {
+    license: 'PhD, LMFT',
+    expertise: ['anxiety', 'stress', 'burnout'],
+    insurance: ['Aetna', 'BlueCross BlueShield', 'United Healthcare'],
+    mode: ['online', 'in-person'],
+    priceRange: '$115-$145 / session',
+    languageSets: [['English'], ['English', 'Hindi'], ['English', 'Arabic']],
+    ratingBase: 4.7,
+    reviewBase: 24,
+    yearsExpBase: 8,
+    bio:
+      'specializes in practical support for anxiety, overload, and burnout using structured coping tools, nervous-system regulation, and steady goal-setting.',
+  },
+  {
+    license: 'LCSW',
+    expertise: ['loneliness', 'grief', 'anxiety'],
+    insurance: ['United Healthcare', 'Cigna', 'Self-pay / Out-of-pocket'],
+    mode: ['in-person', 'online'],
+    priceRange: '$95-$125 / session',
+    languageSets: [['English'], ['English', 'Spanish'], ['English', 'French']],
+    ratingBase: 4.6,
+    reviewBase: 18,
+    yearsExpBase: 6,
+    bio:
+      'focuses on grief, disconnection, and major life transitions with a calm, relational style that helps clients rebuild closeness and emotional safety.',
+  },
+  {
+    license: 'PsyD',
+    expertise: ['stress', 'burnout', 'lowConfidence'],
+    insurance: ['Aetna', 'Humana', 'BlueCross BlueShield'],
+    mode: ['online'],
+    priceRange: '$105-$135 / session',
+    languageSets: [['English'], ['English', 'Spanish'], ['English', 'Portuguese']],
+    ratingBase: 4.8,
+    reviewBase: 30,
+    yearsExpBase: 10,
+    bio:
+      'helps clients navigate pressure, burnout, and self-doubt with a blend of evidence-based skills, identity work, and strengths-based reflection.',
+  },
+  {
+    license: 'LPC',
+    expertise: ['anxiety', 'lowConfidence', 'loneliness'],
+    insurance: ['Humana', 'Cigna', 'United Healthcare'],
+    mode: ['online', 'in-person'],
+    priceRange: '$90-$120 / session',
+    languageSets: [['English'], ['English', 'Mandarin'], ['English', 'Arabic']],
+    ratingBase: 4.5,
+    reviewBase: 16,
+    yearsExpBase: 5,
+    bio:
+      'works especially well with young adults who need support building confidence, reducing social avoidance, and feeling more secure in relationships.',
+  },
+  {
+    license: 'LMFT',
+    expertise: ['grief', 'burnout', 'stress'],
+    insurance: ['Aetna', 'Self-pay / Out-of-pocket', 'BlueCross BlueShield'],
+    mode: ['in-person', 'online'],
+    priceRange: '$110-$140 / session',
+    languageSets: [['English'], ['English', 'Spanish'], ['English', 'French']],
+    ratingBase: 4.7,
+    reviewBase: 22,
+    yearsExpBase: 9,
+    bio:
+      'brings a warm, steady approach to grief, caregiver fatigue, and emotional exhaustion, balancing validation with practical next steps.',
+  },
+]
+
+const DEFAULT_GENERATED_THERAPISTS_PER_STATE = THERAPIST_ARCHETYPES.length
+const GENERATED_THERAPIST_COUNT_BY_STATE = {
+  TX: 25,
+}
+
+function getGeneratedName(index) {
+  const firstName = FIRST_NAMES[index % FIRST_NAMES.length]
+  const lastName = LAST_NAMES[Math.floor(index / FIRST_NAMES.length) % LAST_NAMES.length]
+  return `${firstName} ${lastName}`
+}
+
+function getInitials(name) {
+  return name
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+}
+
+function buildGeneratedTherapists() {
+  let generatedIndex = 0
+
+  return US_STATES.flatMap((stateCode, stateIndex) => {
+    const therapistCount = GENERATED_THERAPIST_COUNT_BY_STATE[stateCode] ?? DEFAULT_GENERATED_THERAPISTS_PER_STATE
+
+    return Array.from({ length: therapistCount }, (_, therapistSlotIndex) => {
+      const archetype = THERAPIST_ARCHETYPES[therapistSlotIndex % THERAPIST_ARCHETYPES.length]
+      const currentGeneratedIndex = generatedIndex
+      generatedIndex += 1
+      const rawName = getGeneratedName(currentGeneratedIndex)
+      const name = `Dr. ${rawName}`
+      const city = STATE_MARKETS[stateCode] ?? stateCode
+      const languageSet = archetype.languageSets[(stateIndex + therapistSlotIndex) % archetype.languageSets.length]
+      const rating = Number(
+        Math.min(4.9, archetype.ratingBase + ((stateIndex + therapistSlotIndex) % 3) * 0.1).toFixed(1),
+      )
+      const reviews = archetype.reviewBase + stateIndex * 4 + therapistSlotIndex * 9
+      const yearsExp = archetype.yearsExpBase + ((stateIndex + therapistSlotIndex) % 6)
+      const availability = AVAILABILITY_OPTIONS[(stateIndex + therapistSlotIndex) % AVAILABILITY_OPTIONS.length]
+
+      return {
+        id: CORE_THERAPISTS.length + currentGeneratedIndex + 1,
+        initials: getInitials(rawName),
+        color: COLOR_PALETTE[currentGeneratedIndex % COLOR_PALETTE.length],
+        name,
+        credentials: {
+          license: archetype.license,
+          state: stateCode,
+          location: archetype.mode.includes('in-person') ? `${city}, ${stateCode}` : `Telehealth in ${stateCode}`,
+        },
+        expertise: archetype.expertise,
+        insurance: archetype.insurance,
+        priceRange: archetype.priceRange,
+        languages: languageSet,
+        mode: archetype.mode,
+        rating,
+        reviews,
+        yearsExp,
+        availability,
+        bio: `${name} ${archetype.bio} They currently serve clients based in ${stateCode}${archetype.mode.includes('in-person') ? `, with appointments centered in ${city}` : ''}.`,
+      }
+    })
+  })
+}
+
+const THERAPISTS = [...CORE_THERAPISTS, ...buildGeneratedTherapists()]
 
 function hydrateTherapistsByIds(ids) {
   return ids
@@ -316,8 +505,29 @@ function ActiveTherapistChats({ chats, onOpen }) {
 }
 
 function NeedsProfileView({ profile, activeChats, onOpenChat, onFind }) {
-  const top3 = getTop3(profile.concerns)
+  const top3 = profile?.concerns ? getTop3(profile.concerns) : []
   const [refreshed, setRefreshed] = useState(false)
+
+  if (!profile?.concerns) {
+    return (
+      <section className="page tm-page">
+        <header className="page-header">
+          <h2>Your Needs Profile</h2>
+          <p>Complete your initial assessment to generate a stored needs profile before therapist matching begins.</p>
+        </header>
+
+        <div className="tm-profile-grid">
+          <ActiveTherapistChats chats={activeChats} onOpen={onOpenChat} />
+          <div className="tm-overall-card">
+            <p className="tm-section-label">Profile status</p>
+            <div className="tm-big-score" style={{ fontSize: '1.6rem', letterSpacing: '-0.02em' }}>Not ready</div>
+            <div className="tm-big-score-sub">No assessment data yet</div>
+            <p className="tm-updated">Start with your initial assessment in Check-Ins.</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className="page tm-page">
@@ -333,11 +543,12 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind }) {
           <p className="tm-section-label">Overall score</p>
           <div className="tm-big-score">{profile.overall}</div>
           <div className="tm-big-score-sub">out of 100</div>
-          <p className="tm-updated">Updated {profile.updated}</p>
+          <p className="tm-updated">Updated {profile.updatedLabel}</p>
           <div className="tm-sources">
             <span className="tm-source-pill">{profile.sources.checkins} check-ins</span>
-            <span className="tm-source-pill">{profile.sources.chatbot} chatbot sessions</span>
-            <span className="tm-source-pill">{profile.sources.journal} journal entries</span>
+            <span className="tm-source-pill">
+              {profile.basis === 'weekly_average' ? 'Average of last 5 weeklies' : 'Based on initial assessment'}
+            </span>
           </div>
           <button className="tm-regen-btn" onClick={() => setRefreshed(true)}>
             {refreshed ? 'Profile up to date ✓' : 'Regenerate profile'}
@@ -345,9 +556,12 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind }) {
         </div>
 
         <div className="tm-top3-card">
+          <p className="tm-section-label">Top concerns</p>
+          <div className="tm-tag-row">
+            {top3.map(([concern]) => <ExpertiseTag key={concern} label={concern} />)}
+          </div>
           <p className="tm-privacy-note">
-            Your therapist will see your wellness profile and check-in data.
-            Chatbot transcripts and journal entries are shared only with your permission.
+            Your therapist will see your stored wellness profile and check-in data when you choose to connect.
           </p>
         </div>
       </div>
@@ -1257,6 +1471,7 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
 
 export default function TherapistMatch() {
   const { user } = useUser()
+  const needsProfile = formatNeedsProfile(user?.needsProfile)
   const [view,     setView]     = useState('profile')   // profile | prefs | results | detail | chat
   const [prefs,    setPrefs]    = useState(null)
   const [matches,  setMatches]  = useState([])
@@ -1301,8 +1516,9 @@ export default function TherapistMatch() {
   }, [user])
 
   function handleMatch(p) {
+    if (!needsProfile) return
     setPrefs(p)
-    setMatches(runMatching(PROFILE, p).filter(t => !activeChats.some(active => active.id === t.id)))
+    setMatches(runMatching(needsProfile, p).filter(t => !activeChats.some(active => active.id === t.id)))
     setView('results')
   }
 
@@ -1342,7 +1558,7 @@ export default function TherapistMatch() {
   return (
     <>
       <style>{TM_STYLES}</style>
-      {view === 'profile'  && <NeedsProfileView profile={PROFILE} activeChats={activeChats} onOpenChat={openChat} onFind={() => setView('prefs')} />}
+      {view === 'profile'  && <NeedsProfileView profile={needsProfile} activeChats={activeChats} onOpenChat={openChat} onFind={() => setView('prefs')} />}
       {view === 'prefs'    && <PreferencesView onBack={() => setView('profile')} onMatch={handleMatch} />}
       {view === 'results'  && <ResultsView matches={matches} prefs={prefs} onSelect={t => { setSelected(t); setView('detail') }} onBack={() => setView('prefs')} />}
       {view === 'detail'   && selected && <DetailView therapist={selected} prefs={prefs} onChat={() => openChat(selected)} onBook={openChat} onBack={() => setView('results')} />}

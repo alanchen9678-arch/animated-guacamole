@@ -54,13 +54,16 @@ function AppShell() {
   const contentRef = useRef(null)
 
   const isLoggedIn = !!user
+  const hasInitialAssessment = !!user?.hasInitialAssessment
+  const assessmentLocked = isLoggedIn && !hasInitialAssessment
+  const activeShellPage = assessmentLocked && activePage !== 'checkins' ? 'checkins' : activePage
 
   // dynamic notifications
-  const notifications = useMemo(() => getDynamicNotifications(), [isLoggedIn])
+  const notifications = useMemo(() => (assessmentLocked ? [] : getDynamicNotifications()), [assessmentLocked])
 
   // daily journal prompt
   useEffect(() => {
-    if (!isLoggedIn) return
+    if (!isLoggedIn || assessmentLocked) return
     const todayKey = getTodayKey()
     if (localStorage.getItem(DAILY_PROMPT_KEY) === todayKey) return
     try {
@@ -68,11 +71,11 @@ function AppShell() {
       if (entries[todayKey]?.text || entries[todayKey]?.doodleData) return
     } catch {}
     setShowDailyPrompt(true)
-  }, [isLoggedIn])
+  }, [isLoggedIn, assessmentLocked])
 
   // auto-show check-in prompt after 2 days of ignoring (7 days due + 2 days grace = 9)
   useEffect(() => {
-    if (!isLoggedIn) return
+    if (!isLoggedIn || assessmentLocked) return
     const lastCompleted = localStorage.getItem('aurora.checkin.last-completed')
     if (!lastCompleted) return // no history, initial assessment handles this
     const days = Math.floor((new Date() - new Date(lastCompleted)) / (1000 * 60 * 60 * 24))
@@ -80,7 +83,13 @@ function AppShell() {
     const todayKey = getTodayKey()
     if (localStorage.getItem('aurora.checkin.prompt-shown') === todayKey) return
     setShowCheckinPrompt(true)
-  }, [isLoggedIn])
+  }, [isLoggedIn, assessmentLocked])
+
+  useEffect(() => {
+    if (assessmentLocked && activePage !== 'checkins') {
+      navigate('checkins')
+    }
+  }, [assessmentLocked, activePage, navigate])
 
   function dismissDailyPrompt() {
     localStorage.setItem(DAILY_PROMPT_KEY, getTodayKey())
@@ -100,8 +109,8 @@ function AppShell() {
   }
 
   const ActiveComponent = useMemo(
-    () => pageConfig.find((p) => p.id === activePage)?.component ?? Home,
-    [activePage],
+    () => pageConfig.find((p) => p.id === activeShellPage)?.component ?? Home,
+    [activeShellPage],
   )
 
   function openAuth(mode) {
@@ -112,7 +121,7 @@ function AppShell() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     contentRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-  }, [activePage, isLoggedIn])
+  }, [activeShellPage, isLoggedIn])
 
   return (
     <div className={`app-root${isLoggedIn ? ' app-root--dashboard' : ''}`}>
@@ -746,11 +755,11 @@ function AppShell() {
               <aside className="sidebar">
                 <h2>Aurora</h2>
                 <nav className="nav-list">
-                  {pageConfig.map((page) => (
+                  {(assessmentLocked ? pageConfig.filter((page) => page.id === 'checkins') : pageConfig).map((page) => (
                     <button
                       key={page.id}
                       type="button"
-                      className={`nav-item${page.id === activePage ? ' active' : ''}`}
+                      className={`nav-item${page.id === activeShellPage ? ' active' : ''}`}
                       onClick={() => navigate(page.id)}
                     >
                       {page.label}
@@ -774,10 +783,6 @@ function AppShell() {
                 as="span"
                 text="Your calm, always-on mental wellness companion."
                 className="landing-whisper"
-                delay={100}
-                duration={0.5}
-                x={-20}
-                y={0}
               />
             </h1>
             <div className="landing-cta">
@@ -962,12 +967,21 @@ function AppShell() {
   )
 }
 
+function AppContent() {
+  const { user } = useUser()
+  const lockedPageId = user && !user.hasInitialAssessment ? 'checkins' : null
+
+  return (
+    <NavigationProvider lockedPageId={lockedPageId}>
+      <AppShell />
+    </NavigationProvider>
+  )
+}
+
 export default function App() {
   return (
-    <NavigationProvider>
-      <UserProvider>
-        <AppShell />
-      </UserProvider>
-    </NavigationProvider>
+    <UserProvider>
+      <AppContent />
+    </UserProvider>
   )
 }

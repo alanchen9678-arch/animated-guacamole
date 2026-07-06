@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 
 
@@ -17,6 +18,8 @@ class UserProfile(models.Model):
     avatar_color = models.CharField(max_length=7, default='#4d6b58')
     anonymous_name = models.CharField(max_length=50, blank=True, unique=True, null=True, default=None)
     is_peer_onboarded = models.BooleanField(default=False)
+    personality = models.JSONField(default=dict, blank=True)
+    needs_profile = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -185,6 +188,13 @@ class CheckIn(models.Model):
             models.Index(fields=['user', 'type', 'check_in_date']),
             models.Index(fields=['user', 'week_start_date']),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user'],
+                condition=Q(type='initial'),
+                name='unique_initial_checkin_per_user',
+            ),
+        ]
 
     def save(self, *args, **kwargs):
         if self.type == self.CheckInType.WEEKLY:
@@ -195,6 +205,84 @@ class CheckIn(models.Model):
 
     def __str__(self):
         return f'{self.user.username} - {self.type} - {self.check_in_date}'
+
+
+CHECKIN_NEEDS_PROFILE_CATEGORIES = (
+    ('anxiety', 'anxiety'),
+    ('stress', 'stress'),
+    ('burnout', 'burnout'),
+    ('loneliness', 'loneliness'),
+    ('confidence', 'lowConfidence'),
+    ('grief', 'grief'),
+)
+
+
+def _serialize_checkin_scores(scores, divisor=1):
+    concerns = {}
+    for source_key, profile_key in CHECKIN_NEEDS_PROFILE_CATEGORIES:
+        concerns[profile_key] = round((scores.get(source_key, 0) or 0) / divisor)
+    return concerns
+
+
+def build_user_needs_profile(user):
+    weekly_entries = list(
+        user.checkins
+        .filter(type=CheckIn.CheckInType.WEEKLY)
+        .order_by('-check_in_date', '-created_at', '-id')[:5]
+    )
+
+    if len(weekly_entries) >= 5:
+        totals = {}
+        for entry in weekly_entries:
+            for source_key, _ in CHECKIN_NEEDS_PROFILE_CATEGORIES:
+                totals[source_key] = totals.get(source_key, 0) + (entry.scores.get(source_key, 0) or 0)
+        concerns = _serialize_checkin_scores(totals, divisor=5)
+        updated_at = weekly_entries[0].updated_at.isoformat()
+        source_count = 5
+        basis = 'weekly_average'
+    else:
+        initial_entry = (
+            user.checkins
+            .filter(type=CheckIn.CheckInType.INITIAL)
+            .order_by('-check_in_date', '-created_at', '-id')
+            .first()
+        )
+        if not initial_entry:
+            return {}
+        concerns = _serialize_checkin_scores(initial_entry.scores)
+        updated_at = initial_entry.updated_at.isoformat()
+        source_count = 1
+        basis = 'initial_assessment'
+
+    overall = round(sum(concerns.values()) / len(concerns)) if concerns else 0
+    return {
+        'basis': basis,
+        'updated': updated_at,
+        'sources': {
+            'checkins': source_count,
+        },
+        'overall': overall,
+        'concerns': concerns,
+    }
+
+
+def update_user_profile_insights(user, personality=None):
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    updated_fields = []
+
+    needs_profile = build_user_needs_profile(user)
+    if profile.needs_profile != needs_profile:
+        profile.needs_profile = needs_profile
+        updated_fields.append('needs_profile')
+
+    if personality is not None and profile.personality != personality:
+        profile.personality = personality
+        updated_fields.append('personality')
+
+    if updated_fields:
+        profile.save(update_fields=updated_fields)
+
+    return profile
 
 
 class TherapistMatch(models.Model):

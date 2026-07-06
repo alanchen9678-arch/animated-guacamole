@@ -11,14 +11,31 @@ export function UserProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('aurora_token'))
   const [loading, setLoading] = useState(!!localStorage.getItem('aurora_token'))
 
+  const refreshUser = useCallback(async (tokenOverride = token) => {
+    if (!tokenOverride) {
+      setUser(null)
+      return null
+    }
+
+    const res = await fetch(`${API}/me/`, { headers: { Authorization: `Token ${tokenOverride}` } })
+    if (!res.ok) {
+      localStorage.removeItem('aurora_token')
+      setToken(null)
+      setUser(null)
+      throw new Error('Unable to load user.')
+    }
+
+    const data = await res.json()
+    setUser(data)
+    return data
+  }, [token])
+
   useEffect(() => {
     if (!token) { setLoading(false); return }
-    fetch(`${API}/me/`, { headers: { Authorization: `Token ${token}` } })
-      .then((r) => r.ok ? r.json() : Promise.reject())
-      .then((data) => setUser(data))
-      .catch(() => { localStorage.removeItem('aurora_token'); setToken(null) })
+    refreshUser(token)
+      .catch(() => {})
       .finally(() => setLoading(false))
-  }, [token])
+  }, [token, refreshUser])
 
   const _persist = (tok, userData) => {
     localStorage.setItem('aurora_token', tok)
@@ -77,7 +94,7 @@ export function UserProvider({ children }) {
   }, [])
 
   return (
-    <UserContext.Provider value={{ user, token, loading, login, register, logout, updateProfile }}>
+    <UserContext.Provider value={{ user, token, loading, login, register, logout, updateProfile, refreshUser }}>
       {children}
     </UserContext.Provider>
   )

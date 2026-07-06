@@ -39,7 +39,7 @@ export default function Login({ initialMode = 'login', onClose }) {
         await register(form.username, form.email, form.password, form.firstName)
       }
 
-      navigate('home')
+      navigate(mode === 'register' ? 'checkins' : 'home')
       onClose()
     } catch (err) {
       setError(err.message)
