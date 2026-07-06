@@ -16,11 +16,14 @@ SYSTEM_PROMPT = (
 )
 
 
-def generate_chat_reply(message: str, history=None) -> str:
+def generate_chat_reply(message: str, history=None, style_context: str | None = None) -> str:
     client = get_openai_client()
     input_messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
     ]
+
+    if style_context:
+        input_messages.append({"role": "system", "content": style_context})
 
     for item in history or []:
         role = item.get("role")

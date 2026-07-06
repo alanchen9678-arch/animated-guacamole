@@ -13,6 +13,7 @@ from .models import (
     JournalDoodle,
     JournalPrivacySettings,
     Message,
+    UserProfile,
     TherapistMatch,
     ThoughtJournalEntry,
     get_user_checkin_summary,
@@ -794,6 +795,31 @@ class ChatAPITests(TestCase):
                 {'role': 'user', 'content': 'Can you help me slow down?'},
             ],
         )
+
+    @patch('api.routes.chat.generate_chat_reply')
+    def test_chat_forwarding_includes_subtle_personality_style_context(self, mock_generate_chat_reply):
+        mock_generate_chat_reply.return_value = 'I am here with you.'
+        UserProfile.objects.create(
+            user=self.user,
+            personality={
+                'name': 'The Architect',
+                'category': 'Thinker',
+                'traits': ['Strategic', 'Analytical', 'Precise'],
+                'strengths': 'Exceptional planning and long-term thinking.',
+            },
+        )
+
+        self.client.post(
+            reverse('chat'),
+            {'message': 'I need help getting organized.'},
+            format='json',
+        )
+
+        style_context = mock_generate_chat_reply.call_args.kwargs['style_context']
+
+        self.assertIn('The Architect', style_context)
+        self.assertIn('structured, direct, and concrete', style_context)
+        self.assertIn('Strategic', style_context)
 
     @patch('api.routes.chat.generate_chat_reply')
     def test_chat_history_returns_saved_messages_in_order(self, mock_generate_chat_reply):

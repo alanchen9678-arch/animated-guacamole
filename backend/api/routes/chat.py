@@ -5,12 +5,19 @@ from rest_framework.views import APIView
 
 from ai_engine.pipeline import generate_chat_reply
 from api.serializers.chat import ChatRequestSerializer
-from app.models import Conversation, Message
+from app.models import Conversation, Message, UserProfile
 
 WEEKLY_MESSAGE_LIMIT = 200
 WEEK_IN_SECONDS = 60 * 60 * 24 * 7
 CONTEXT_MESSAGE_LIMIT = 12
 HISTORY_MESSAGE_LIMIT = 100
+
+PERSONALITY_STYLE_BY_CATEGORY = {
+    'Thinker': 'Keep the tone a little more structured, direct, and concrete.',
+    'Creator': 'Leave room for light imagery, curiosity, and reflective language.',
+    'Leader': 'Sound steady, clear, and action-oriented without being pushy.',
+    'Helper': 'Lean a bit more into warmth, validation, and relational language.',
+}
 
 
 def get_or_create_ai_conversation(user):
@@ -51,6 +58,39 @@ def serialize_chat_messages(conversation):
     ]
 
 
+def build_style_context(user):
+    profile = UserProfile.objects.filter(user=user).first()
+    if not profile or not profile.personality:
+        return None
+
+    personality = profile.personality or {}
+    category = personality.get('category')
+    name = personality.get('name')
+    traits = [trait for trait in personality.get('traits') or [] if isinstance(trait, str) and trait.strip()]
+    strengths = personality.get('strengths')
+
+    parts = []
+    if name:
+        parts.append(f'The user identifies with {name}.')
+    elif category:
+        parts.append(f"The user's personality leans toward {category}.")
+
+    category_hint = PERSONALITY_STYLE_BY_CATEGORY.get(category)
+    if category_hint:
+        parts.append(category_hint)
+
+    if traits:
+        parts.append(f"Subtly mirror cues like {', '.join(traits[:3])}.")
+
+    if strengths:
+        parts.append('When helpful, reflect their strengths without naming the profile.')
+
+    if not parts:
+        return None
+
+    return 'Personality style guidance: ' + ' '.join(parts) + ' Keep this subtle and never mention the profile explicitly.'
+
+
 class ChatView(APIView):
     def get(self, request):
         conversation = (
@@ -85,6 +125,7 @@ class ChatView(APIView):
         serializer.is_valid(raise_exception=True)
         message_text = serializer.validated_data["message"]
         conversation = get_or_create_ai_conversation(user)
+        style_context = build_style_context(user)
 
         Message.objects.create(
             conversation=conversation,
@@ -96,6 +137,7 @@ class ChatView(APIView):
             reply = generate_chat_reply(
                 message_text,
                 history=serialize_recent_history(conversation),
+                style_context=style_context,
             )
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
