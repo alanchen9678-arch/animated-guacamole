@@ -433,10 +433,10 @@ function DisorderCard({ d }) {
 function LibraryTab() {
   return (
     <div className="il-library">
-      <div className="il-who-note">
+      {false && <div className="il-who-note">
         <strong>8 common mental health conditions</strong> — Information sourced from Mayo Clinic and the World Health Organization (WHO).
         Click any condition to expand its entry.
-      </div>
+      </div>}
       <div className="il-disorders-list">
         {DISORDERS.map(d => <DisorderCard key={d.id} d={d} />)}
       </div>

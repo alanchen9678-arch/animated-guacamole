@@ -2,11 +2,55 @@ import { useMemo } from 'react'
 import { useUser } from '../context/UserContext.jsx'
 import { useNavigation } from '../context/NavigationContext.jsx'
 
-const JOURNAL_PROMPTS = [
+const JOURNAL_PROMPT_BANK = [
   'What helped you feel grounded today?',
   'Where did you notice pressure building?',
   'What would make tomorrow gentler?',
+  'What emotion stayed with you the longest today?',
+  'What felt lighter than expected today?',
+  'What moment made you pause and notice yourself?',
+  'What do you wish someone understood about today?',
+  'What part of your day felt most draining?',
+  'What gave you a small sense of relief today?',
+  'What are you carrying tonight that you do not want to carry tomorrow?',
+  'What did you handle better than you usually give yourself credit for?',
+  'What felt unresolved today?',
+  'What did your body seem to need today?',
+  'What thought kept repeating itself today?',
+  'What felt steady or safe today?',
+  'What felt harder than it looked from the outside?',
+  'What are you learning about your limits lately?',
+  'What would support look like for you right now?',
+  'What are you proud of yourself for today?',
+  'What did you avoid today, and why do you think that was?',
+  'What felt meaningful, even if it was small?',
+  'What would you say to yourself if you were being more gentle?',
+  'What triggered frustration or tension today?',
+  'What would a softer ending to today look like?',
+  'What are you hoping tomorrow feels like?',
+  'What felt surprisingly manageable today?',
+  'What did you need but not ask for today?',
+  'What boundary do you wish you had protected today?',
+  'What helped you keep going today?',
+  'What deserves a little more attention in your inner world right now?',
 ]
+
+function getTodayKey() {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = `${today.getMonth() + 1}`.padStart(2, '0')
+  const day = `${today.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function hashPromptForDay(prompt, dayKey) {
+  let hash = 0
+  const input = `${dayKey}:${prompt}`
+  for (let index = 0; index < input.length; index++) {
+    hash = ((hash << 5) - hash + input.charCodeAt(index)) | 0
+  }
+  return hash
+}
 
 const GREETINGS = [
   'Hello',
@@ -76,6 +120,12 @@ export default function Home() {
     () => GREETINGS[Math.floor(Math.random() * GREETINGS.length)],
     [],
   )
+  const journalPrompts = useMemo(() => {
+    const dayKey = getTodayKey()
+    return [...JOURNAL_PROMPT_BANK]
+      .sort((a, b) => hashPromptForDay(a, dayKey) - hashPromptForDay(b, dayKey))
+      .slice(0, 3)
+  }, [])
 
   const checkInLabel = user?.checkInDueThisWeek === false ? 'Up to date' : 'Due this week'
 
@@ -195,7 +245,7 @@ export default function Home() {
       <div className="prompts-card">
         <h3>Journal prompts for today</h3>
         <ul className="prompt-list">
-          {JOURNAL_PROMPTS.map((prompt) => (
+          {journalPrompts.map((prompt) => (
             <li key={prompt} onClick={() => navigate('journal')}>{prompt}</li>
           ))}
         </ul>

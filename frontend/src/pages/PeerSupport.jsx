@@ -219,7 +219,7 @@ function HubView({ profile, rooms, peers, setPeers, onRoom, onDM, loadingPeers }
             </div>
             <div className="ps-hub-card-text">
               <strong>{room.name}</strong>
-              <p>{room.memberCount} {room.memberCount === 1 ? 'member' : 'members'} - Live chat - AI-moderated</p>
+              <p>{room.memberCount} {room.memberCount === 1 ? 'member' : 'members'}</p>
             </div>
             <span className="ps-hub-arrow">→</span>
           </button>
@@ -365,7 +365,7 @@ function RoomView({ profile, room, onBack }) {
         </div>
         <div>
           <strong className="ps-chat-name">{room.name}</strong>
-          <span className="ps-chat-sub">Live chat - AI-moderated - updates every 5s</span>
+          <span className="ps-chat-sub">{room.memberCount} {room.memberCount === 1 ? 'member' : 'members'}</span>
         </div>
         <div className="ps-leave-wrap">
           <button className="ps-leave-btn" onClick={() => setConfirmLeave(true)}>Leave room</button>

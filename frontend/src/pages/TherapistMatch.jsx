@@ -505,15 +505,16 @@ function ActiveTherapistChats({ chats, onOpen }) {
 }
 
 function NeedsProfileView({ profile, activeChats, onOpenChat, onFind }) {
-  const top3 = profile?.concerns ? getTop3(profile.concerns) : []
   const [refreshed, setRefreshed] = useState(false)
+  const [shareChat, setShareChat] = useState(false)
+  const [shareJournal, setShareJournal] = useState(false)
 
   if (!profile?.concerns) {
     return (
       <section className="page tm-page">
         <header className="page-header">
-          <h2>Your Needs Profile</h2>
-          <p>Complete your initial assessment to generate a stored needs profile before therapist matching begins.</p>
+          <h2>Therapist Match</h2>
+          <p>Complete your initial assessment to unlock therapist matching and sharing controls.</p>
         </header>
 
         <div className="tm-profile-grid">
@@ -532,8 +533,8 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind }) {
   return (
     <section className="page tm-page">
       <header className="page-header">
-        <h2>Your Needs Profile</h2>
-        <p>Generated from your check-ins, chatbot sessions, and journal — updated automatically.</p>
+        <h2>Therapist Match</h2>
+        <p>Review your therapist sharing settings, then find a therapist who fits your profile.</p>
       </header>
 
       <div className="tm-profile-grid">
@@ -556,13 +557,36 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind }) {
         </div>
 
         <div className="tm-top3-card">
-          <p className="tm-section-label">Top concerns</p>
-          <div className="tm-tag-row">
-            {top3.map(([concern]) => <ExpertiseTag key={concern} label={concern} />)}
-          </div>
-          <p className="tm-privacy-note">
-            Your therapist will see your stored wellness profile and check-in data when you choose to connect.
+          <p className="tm-section-label">Therapist sharing</p>
+          <p className="tm-privacy-always">
+            Always shared: your stored needs profile and check-in scores.
           </p>
+          <div className="tm-privacy-row">
+            <div>
+              <strong>Allow AI chat logs</strong>
+              <p>Share recent Aurora conversations with your therapist.</p>
+            </div>
+            <button
+              className={`tm-toggle${shareChat ? ' tm-toggle--on' : ''}`}
+              onClick={() => setShareChat((value) => !value)}
+              aria-pressed={shareChat}
+            >
+              <span className="tm-toggle-knob" />
+            </button>
+          </div>
+          <div className="tm-privacy-row">
+            <div>
+              <strong>Allow journal history</strong>
+              <p>Share past journal entries with your therapist.</p>
+            </div>
+            <button
+              className={`tm-toggle${shareJournal ? ' tm-toggle--on' : ''}`}
+              onClick={() => setShareJournal((value) => !value)}
+              aria-pressed={shareJournal}
+            >
+              <span className="tm-toggle-knob" />
+            </button>
+          </div>
         </div>
       </div>
 

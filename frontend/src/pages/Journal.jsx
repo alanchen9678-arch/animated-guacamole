@@ -640,7 +640,7 @@ export default function Journal() {
       <header className="page-header jn-page-header">
         <div>
           <h2>Thought Journal</h2>
-          <p>Track your mood, write freely, and doodle. Aurora reflects back when you're ready.</p>
+          <p>Track your mood, write freely, and doodle.</p>
         </div>
         <button className="jn-calendar-btn" onClick={() => setCalendarOpen(true)}>
           View calendar
@@ -714,9 +714,6 @@ export default function Journal() {
 
       {tab === 'doodle' && (
         <div className="jn-doodle-section">
-          <p className="jn-doodle-note">
-            Doodling lowers cortisol and helps regulate emotions. No skill needed — just express.
-          </p>
           <DoodleCanvas
             bgColor={JOURNAL_PAGE_COLOR}
             value={doodleData}
