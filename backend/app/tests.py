@@ -910,6 +910,17 @@ class PeerModerationAPITests(TestCase):
         self.assertIn('potential harassment', response.data['error'])
         self.assertEqual(PeerRoomMessage.objects.count(), 0)
 
+    def test_room_message_blocks_obfuscated_harassment_without_ai(self):
+        response = self.client.post(
+            reverse('peer-room-messages', args=[self.room.id]),
+            {'content': 'y0u are d u m b'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('potential harassment', response.data['error'])
+        self.assertEqual(PeerRoomMessage.objects.count(), 0)
+
     def test_dm_blocks_harmful_advice(self):
         response = self.client.post(
             reverse('peer-dm', args=[self.other_user.id]),

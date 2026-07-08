@@ -45,6 +45,16 @@ MOD_RULES = [
         'message': "This message was flagged for potentially harmful advice and wasn't sent. If you or someone else is struggling, please reach out to a licensed professional.",
     },
 ]
+LEETSPEAK_MAP = str.maketrans({
+    '0': 'o',
+    '1': 'i',
+    '3': 'e',
+    '4': 'a',
+    '5': 's',
+    '7': 't',
+    '@': 'a',
+    '$': 's',
+})
 AI_MODERATION_BLOCK_MESSAGE = (
     "This message was blocked by Aurora's safety system and wasn't sent. "
     "Please rephrase it in a way that feels safe and respectful for peer support."
@@ -97,10 +107,14 @@ def _connection_status(user, other_id):
 
 
 def _moderation_error(content):
-    lower = content.lower()
+    lowered = content.lower()
+    normalized = re.sub(r'[^a-z0-9]+', '', lowered.translate(LEETSPEAK_MAP))
     for rule in MOD_RULES:
-        term_hit = any(term in lower for term in rule['terms'])
-        pattern_hit = any(re.search(pattern, content) for pattern in rule['patterns'])
+        term_hit = any(
+            term in lowered or re.sub(r'[^a-z0-9]+', '', term.lower().translate(LEETSPEAK_MAP)) in normalized
+            for term in rule['terms']
+        )
+        pattern_hit = any(re.search(pattern, content, flags=re.IGNORECASE) for pattern in rule['patterns'])
         if term_hit or pattern_hit:
             return rule['message']
     return None
