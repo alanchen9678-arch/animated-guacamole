@@ -13,6 +13,10 @@ from .models import (
     JournalDoodle,
     JournalPrivacySettings,
     Message,
+    PeerConnection,
+    PeerDM,
+    PeerRoom,
+    PeerRoomMessage,
     UserProfile,
     TherapistMatch,
     ThoughtJournalEntry,
@@ -850,3 +854,118 @@ class ChatAPITests(TestCase):
             ],
         )
         self.assertTrue(all('timestamp' in message for message in response.data['messages']))
+
+
+class PeerModerationAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            username='peer-user',
+            password='testpass123',
+        )
+        self.other_user = get_user_model().objects.create_user(
+            username='peer-friend',
+            password='testpass123',
+        )
+        token, _ = Token.objects.get_or_create(user=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+        UserProfile.objects.create(
+            user=self.user,
+            anonymous_name='CalmRiver17',
+            avatar_color='#3a6898',
+            is_peer_onboarded=True,
+        )
+        UserProfile.objects.create(
+            user=self.other_user,
+            anonymous_name='QuietStone24',
+            avatar_color='#4d6b58',
+            is_peer_onboarded=True,
+        )
+        self.room = PeerRoom.objects.create(name='Anxiety Support Room', topic='anxiety')
+        PeerConnection.objects.create(
+            requester=self.user,
+            recipient=self.other_user,
+            status=PeerConnection.Status.CONNECTED,
+        )
+
+    def test_room_message_blocks_contact_sharing(self):
+        response = self.client.post(
+            reverse('peer-room-messages', args=[self.room.id]),
+            {'content': 'Message me on discord or at me@example.com'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("isn't allowed in anonymous chats", response.data['error'])
+        self.assertEqual(PeerRoomMessage.objects.count(), 0)
+
+    def test_room_message_blocks_harassment(self):
+        response = self.client.post(
+            reverse('peer-room-messages', args=[self.room.id]),
+            {'content': 'You are such an idiot'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('potential harassment', response.data['error'])
+        self.assertEqual(PeerRoomMessage.objects.count(), 0)
+
+    def test_dm_blocks_harmful_advice(self):
+        response = self.client.post(
+            reverse('peer-dm', args=[self.other_user.id]),
+            {'content': 'You should stop taking medication right away'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('potentially harmful advice', response.data['error'])
+        self.assertEqual(PeerDM.objects.count(), 0)
+
+    @patch('api.routes.peer.moderate_peer_message')
+    def test_dm_allows_safe_message_and_persists(self, mock_moderate_peer_message):
+        mock_moderate_peer_message.return_value = {
+            'decision': 'allow',
+            'reason': 'supportive peer message',
+        }
+
+        response = self.client.post(
+            reverse('peer-dm', args=[self.other_user.id]),
+            {'content': 'I am glad you are here today.'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(PeerDM.objects.count(), 1)
+        self.assertEqual(PeerDM.objects.get().content, 'I am glad you are here today.')
+        mock_moderate_peer_message.assert_called_once_with('I am glad you are here today.')
+
+    @patch('api.routes.peer.moderate_peer_message')
+    def test_room_message_ai_blocks_bypassed_unsafe_content(self, mock_moderate_peer_message):
+        mock_moderate_peer_message.return_value = {
+            'decision': 'block',
+            'reason': 'encourages harm indirectly',
+        }
+
+        response = self.client.post(
+            reverse('peer-room-messages', args=[self.room.id]),
+            {'content': 'Maybe everyone would be better off if you disappeared.'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Aurora's safety system", response.data['error'])
+        self.assertEqual(PeerRoomMessage.objects.count(), 0)
+
+    @patch('api.routes.peer.moderate_peer_message')
+    def test_room_message_returns_503_when_ai_moderation_is_unavailable(self, mock_moderate_peer_message):
+        mock_moderate_peer_message.side_effect = ValueError('OPENAI_API_KEY is not set.')
+
+        response = self.client.post(
+            reverse('peer-room-messages', args=[self.room.id]),
+            {'content': 'I am having a rough day but trying to hang in there.'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertIn('temporarily unavailable', response.data['error'])
+        self.assertEqual(PeerRoomMessage.objects.count(), 0)

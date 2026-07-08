@@ -1,4 +1,5 @@
 import random
+import re
 
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -7,6 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from ai_engine.pipeline import moderate_peer_message
 from app.models import (
     PeerConnection,
     PeerDM,
@@ -21,6 +23,39 @@ AVATAR_COLORS = [
     '#3a6898', '#b45309', '#15803d', '#1d4ed8', '#be185d',
     '#0891b2', '#9333ea', '#c2410c', '#4d6b58', '#a21caf', '#047857', '#2563eb',
 ]
+MOD_RULES = [
+    {
+        'terms': ['fuck you', 'kill yourself', 'kys', 'kms', 'kill myself', 'murder'],
+        'patterns': [],
+        'message': "This message was flagged for unsafe or abusive language and wasn't sent. Please keep interactions respectful and safe for everyone here.",
+    },
+    {
+        'terms': ['idiot', 'stupid', 'loser', 'worthless', 'shut up', 'you suck', 'hate you', 'go away', 'moron', 'dumb', 'retard'],
+        'patterns': [],
+        'message': "This message was flagged for potential harassment and wasn't sent. Please keep interactions respectful. Everyone here is going through something difficult.",
+    },
+    {
+        'terms': ['instagram', 'snapchat', 'whatsapp', 'telegram', 'discord', 'facebook', 'twitter', 'tiktok'],
+        'patterns': [r'@\S+', r'\b\d{3}[.\-\s]?\d{3}[.\-\s]?\d{4}\b', r'\.com\b|\.net\b|\.org\b'],
+        'message': "Sharing contact details, social handles, or links isn't allowed in anonymous chats. This keeps everyone safe. Your message was not sent.",
+    },
+    {
+        'terms': ['cut yourself', 'self harm', 'self-harm', 'stop taking medication', 'stop your meds', 'dont take your meds', 'harm yourself', 'hurt yourself'],
+        'patterns': [],
+        'message': "This message was flagged for potentially harmful advice and wasn't sent. If you or someone else is struggling, please reach out to a licensed professional.",
+    },
+]
+AI_MODERATION_BLOCK_MESSAGE = (
+    "This message was blocked by Aurora's safety system and wasn't sent. "
+    "Please rephrase it in a way that feels safe and respectful for peer support."
+)
+AI_MODERATION_CRISIS_MESSAGE = (
+    "This message wasn't sent because it may describe an immediate safety crisis. "
+    "Please contact 988 right now by call or text for immediate support."
+)
+AI_MODERATION_UNAVAILABLE_MESSAGE = (
+    "Peer chat moderation is temporarily unavailable. Please try again in a moment."
+)
 
 
 def _color(name):
@@ -59,6 +94,27 @@ def _connection_status(user, other_id):
     if not conn:
         return 'none', None
     return conn.status, conn.requester_id == user.id
+
+
+def _moderation_error(content):
+    lower = content.lower()
+    for rule in MOD_RULES:
+        term_hit = any(term in lower for term in rule['terms'])
+        pattern_hit = any(re.search(pattern, content) for pattern in rule['patterns'])
+        if term_hit or pattern_hit:
+            return rule['message']
+    return None
+
+
+def _moderate_with_ai(content):
+    result = moderate_peer_message(content)
+    decision = result.get('decision')
+
+    if decision == 'allow':
+        return None
+    if decision == 'crisis':
+        return AI_MODERATION_CRISIS_MESSAGE
+    return AI_MODERATION_BLOCK_MESSAGE
 
 
 class PeerProfileView(APIView):
@@ -141,6 +197,15 @@ class PeerRoomMessageView(APIView):
             return Response({'error': 'Message cannot be empty.'}, status=status.HTTP_400_BAD_REQUEST)
         if len(content) > 2000:
             return Response({'error': 'Message too long.'}, status=status.HTTP_400_BAD_REQUEST)
+        moderation_error = _moderation_error(content)
+        if moderation_error:
+            return Response({'error': moderation_error}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            moderation_error = _moderate_with_ai(content)
+        except Exception:
+            return Response({'error': AI_MODERATION_UNAVAILABLE_MESSAGE}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        if moderation_error:
+            return Response({'error': moderation_error}, status=status.HTTP_400_BAD_REQUEST)
 
         profile = _get_profile(request.user)
         if not profile.anonymous_name:
@@ -279,6 +344,15 @@ class PeerDMView(APIView):
             return Response({'error': 'Message cannot be empty.'}, status=status.HTTP_400_BAD_REQUEST)
         if len(content) > 2000:
             return Response({'error': 'Message too long.'}, status=status.HTTP_400_BAD_REQUEST)
+        moderation_error = _moderation_error(content)
+        if moderation_error:
+            return Response({'error': moderation_error}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            moderation_error = _moderate_with_ai(content)
+        except Exception:
+            return Response({'error': AI_MODERATION_UNAVAILABLE_MESSAGE}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        if moderation_error:
+            return Response({'error': moderation_error}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             recipient = User.objects.get(id=user_id)
