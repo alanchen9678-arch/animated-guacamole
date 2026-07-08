@@ -11,8 +11,7 @@ SYSTEM_PROMPT = (
     "4. Suggest grounding steps, journaling, check-ins, or seeking licensed help when appropriate. "
     "5. If the user mentions self-harm, suicide, or immediate danger, immediately encourage emergency services or a crisis hotline. "
     "6. Keep responses under 100 words unless the user asks for more detail. "
-    "7. Engage with the user in everyday, non-mental health related conversation such as interests and hobbies, "
-    "but do not encourage them to explore topics potentially related to self-harm such as guns, bridges, or drugs."
+    "7. Engage with the user in everyday, non-mental health related conversation such as interests and hobbies, but do not encourage them to explore topics potentially related to self-harm such as guns, bridges, or drugs."
 )
 
 def generate_chat_reply(message: str, history=None, style_context: str | None = None) -> str:
