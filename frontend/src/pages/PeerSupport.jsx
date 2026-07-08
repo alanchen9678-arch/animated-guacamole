@@ -80,6 +80,28 @@ function ts() {
   return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+function createPendingRoomMessage(text, profile) {
+  return {
+    id: `pending-room-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    user: profile.anonymousName,
+    color: profile.avatarColor,
+    text,
+    self: true,
+    timestamp: new Date().toISOString(),
+    pending: true,
+  }
+}
+
+function createPendingDMMessage(text) {
+  return {
+    id: `pending-dm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    role: 'me',
+    text,
+    timestamp: new Date().toISOString(),
+    pending: true,
+  }
+}
+
 function AnonAvatar({ name, color, size = 36 }) {
   return (
     <div style={{
@@ -338,17 +360,21 @@ function RoomView({ profile, room, onBack }) {
     const flag = moderate(text)
     if (flag?.blocked) { setModAlert(flag); setInput(''); return }
     if (flag) setModAlert(flag)
+    const pendingMessage = createPendingRoomMessage(text, profile)
     setSending(true)
     setInput('')
+    setMessages(prev => [...prev, pendingMessage])
     window.requestAnimationFrame(() => inputRef.current?.focus())
     try {
       const msg = await sendRoomMessage(room.id, text)
       setMessages(prev => {
-        if (prev.some(m => m.id === msg.id)) return prev
-        return [...prev, msg]
+        const withoutPending = prev.filter(m => m.id !== pendingMessage.id)
+        if (withoutPending.some(m => m.id === msg.id)) return withoutPending
+        return [...withoutPending, msg]
       })
       lastIdRef.current = msg.id
     } catch (e) {
+      setMessages(prev => prev.filter(m => m.id !== pendingMessage.id))
       setError(e.message)
     } finally {
       setSending(false)
@@ -389,10 +415,12 @@ function RoomView({ profile, room, onBack }) {
         {messages.map(m => (
           <div key={m.id} className={`ps-msg-row${m.self ? ' ps-msg-row--self' : ''}`}>
             {!m.self && <AnonAvatar name={m.user} color={m.color} size={28} />}
-            <div className={`ps-bubble${m.self ? ' ps-bubble--self' : ' ps-bubble--other'}`}>
+            <div className={`ps-bubble${m.self ? ' ps-bubble--self' : ' ps-bubble--other'}${m.pending ? ' ps-bubble--pending' : ''}`}>
               {!m.self && <span className="ps-bubble-name" style={{ color: m.color }}>{m.user}</span>}
               <p className="ps-bubble-text">{m.text}</p>
-              <span className="ps-bubble-time">{new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span className="ps-bubble-time">
+                {m.pending ? 'Sending...' : new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
             </div>
             {m.self && <div className="ps-self-dot" style={{ background: profile.avatarColor }}>{profile.anonymousName.slice(0, 2)}</div>}
           </div>
@@ -475,17 +503,21 @@ function DMView({ peer, profile, onBack, onLeave }) {
     const flag = moderate(text)
     if (flag?.blocked) { setModAlert(flag); setInput(''); return }
     if (flag) setModAlert(flag)
+    const pendingMessage = createPendingDMMessage(text)
     setSending(true)
     setInput('')
+    setMessages(prev => [...prev, pendingMessage])
     window.requestAnimationFrame(() => inputRef.current?.focus())
     try {
       const msg = await sendDM(peer.userId, text)
       setMessages(prev => {
-        if (prev.some(m => m.id === msg.id)) return prev
-        return [...prev, msg]
+        const withoutPending = prev.filter(m => m.id !== pendingMessage.id)
+        if (withoutPending.some(m => m.id === msg.id)) return withoutPending
+        return [...withoutPending, msg]
       })
       lastIdRef.current = msg.id
     } catch (e) {
+      setMessages(prev => prev.filter(m => m.id !== pendingMessage.id))
       setError(e.message)
     } finally {
       setSending(false)
@@ -530,9 +562,11 @@ function DMView({ peer, profile, onBack, onLeave }) {
           return (
             <div key={m.id} className={`ps-msg-row${isMe ? ' ps-msg-row--self' : ''}`}>
               {!isMe && <AnonAvatar name={peer.name} color={peer.color} size={28} />}
-              <div className={`ps-bubble${isMe ? ' ps-bubble--self' : ' ps-bubble--other'}`}>
+              <div className={`ps-bubble${isMe ? ' ps-bubble--self' : ' ps-bubble--other'}${m.pending ? ' ps-bubble--pending' : ''}`}>
                 <p className="ps-bubble-text">{m.text}</p>
-                <span className="ps-bubble-time">{new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="ps-bubble-time">
+                  {m.pending ? 'Sending...' : new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
               </div>
               {isMe && <div className="ps-self-dot" style={{ background: profile.avatarColor }}>{profile.anonymousName.slice(0, 2)}</div>}
             </div>
@@ -823,6 +857,8 @@ const PS_STYLES = `
   .ps-bubble--self .ps-bubble-text { color: #fff; }
   .ps-bubble-time  { font-size: 0.66rem; color: rgba(46,42,38,0.35); align-self: flex-end; }
   .ps-bubble--self .ps-bubble-time { color: rgba(255,255,255,0.6); }
+  .ps-bubble--pending { opacity: 0.6; filter: saturate(0.75); }
+  .ps-bubble--pending .ps-bubble-time { font-style: italic; }
   .ps-self-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.6rem; font-weight: 800; flex-shrink: 0; }
 
   /* moderation */
