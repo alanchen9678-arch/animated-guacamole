@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { completeLibraryQuiz, fetchLibraryProgress } from '../services/api.js'
 
 // ─── disorder data ─────────────────────────────────────────────────────────────
 
@@ -433,10 +434,10 @@ function DisorderCard({ d }) {
 function LibraryTab() {
   return (
     <div className="il-library">
-      {false && <div className="il-who-note">
+      <div className="il-who-note">
         <strong>8 common mental health conditions</strong> — Information sourced from Mayo Clinic and the World Health Organization (WHO).
         Click any condition to expand its entry.
-      </div>}
+      </div>
       <div className="il-disorders-list">
         {DISORDERS.map(d => <DisorderCard key={d.id} d={d} />)}
       </div>
@@ -446,7 +447,7 @@ function LibraryTab() {
 
 // ─── quiz tab ─────────────────────────────────────────────────────────────────
 
-function QuizTab() {
+function QuizTab({ onComplete }) {
   const [questions, setQuestions] = useState(() => buildQuizRound())
   const [idx, setIdx]             = useState(0)
   const [selected, setSelected]   = useState(null)
@@ -475,6 +476,7 @@ function QuizTab() {
   function next() {
     if (idx + 1 >= total) {
       setDone(true)
+      onComplete?.()
     } else {
       setIdx(i => i + 1)
       setSelected(null)
@@ -568,7 +570,7 @@ function QuizTab() {
 
       {selected && (
         <div className={`il-feedback${selected === q.correct ? ' il-feedback--correct' : ' il-feedback--wrong'}`}>
-          <strong>{selected === q.correct ? 'Correct!' : `Not quite — the answer is ${ID_LABEL[q.correct]}.`}</strong>
+          <strong>{selected === q.correct ? 'Correct!' : `Not quite — the answer is ${q.correct}.`}</strong>
           <p>{q.note}</p>
           <button className="il-next-btn" onClick={next}>
             {idx + 1 >= total ? 'See results' : 'Next question →'}
@@ -583,7 +585,30 @@ function QuizTab() {
 
 export default function InfoLibrary() {
   const [tab, setTab] = useState('library')
-  const streak = 0
+  const [streak, setStreak] = useState(0)
+  const [progressError, setProgressError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    fetchLibraryProgress()
+      .then((progress) => {
+        if (!cancelled) setStreak(progress.streak ?? 0)
+      })
+      .catch((error) => {
+        if (!cancelled) setProgressError(error.message)
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  async function recordQuizCompletion() {
+    try {
+      const progress = await completeLibraryQuiz()
+      setStreak(progress.streak ?? 0)
+      setProgressError('')
+    } catch (error) {
+      setProgressError(error.message)
+    }
+  }
 
   return (
     <section className="page">
@@ -620,8 +645,10 @@ export default function InfoLibrary() {
         </button>
       </div>
 
+      {progressError && <p className="il-progress-error" role="alert">{progressError}</p>}
+
       {tab === 'library' && <LibraryTab />}
-      {tab === 'quiz' && <QuizTab />}
+      {tab === 'quiz' && <QuizTab onComplete={recordQuizCompletion} />}
     </section>
   )
 }
@@ -640,10 +667,11 @@ const IL_STYLES = `
   .il-page-sub    { margin: 0; color: var(--muted); font-size: 0.95rem; }
 
   /* streak badge */
-  .il-streak-badge { display: none; }
+  .il-streak-badge { display: flex; align-items: center; gap: 10px; }
   .il-streak-flame { font-size: 1.4rem; color: #f59e0b; }
   .il-streak-num   { display: block; font-size: 1.6rem; font-weight: 900; color: #92400e; letter-spacing: -0.03em; line-height: 1; }
   .il-streak-label { display: block; font-size: 0.72rem; color: #b45309; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+  .il-progress-error { margin: 0; color: #9f1239; font-size: 0.86rem; }
 
   /* tabs */
   .il-tabs {

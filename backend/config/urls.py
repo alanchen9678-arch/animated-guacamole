@@ -3,7 +3,8 @@ from django.urls import path
 
 from api.routes.chat import ChatView
 from api.routes.checkins import CheckInCollectionView
-from api.routes.journal import JournalEntryCollectionView
+from api.routes.journal import JournalEntryCollectionView, JournalPrivacyView
+from api.routes.library import LibraryProgressView
 from api.routes.peer import (
     PeerConnectView,
     PeerDMView,
@@ -12,7 +13,12 @@ from api.routes.peer import (
     PeerRoomListView,
     PeerRoomMessageView,
 )
-from api.routes.therapist import TherapistMatchCollectionView, TherapistMatchMessageView
+from api.routes.therapist import (
+    TherapistAppointmentView,
+    TherapistBookingView,
+    TherapistMatchCollectionView,
+    TherapistMatchMessageView,
+)
 from app.views import LoginView, LogoutView, MeView, RegisterView
 
 urlpatterns = [
@@ -20,6 +26,8 @@ urlpatterns = [
     path('api/chat/', ChatView.as_view(), name='chat'),
     path('api/checkins/', CheckInCollectionView.as_view(), name='checkins'),
     path('api/journal/', JournalEntryCollectionView.as_view(), name='journal'),
+    path('api/journal/privacy/', JournalPrivacyView.as_view(), name='journal-privacy'),
+    path('api/library/progress/', LibraryProgressView.as_view(), name='library-progress'),
     path('api/auth/register/', RegisterView.as_view(), name='auth-register'),
     path('api/auth/login/', LoginView.as_view(), name='auth-login'),
     path('api/auth/logout/', LogoutView.as_view(), name='auth-logout'),
@@ -32,4 +40,6 @@ urlpatterns = [
     path('api/peer/dm/<int:user_id>/', PeerDMView.as_view(), name='peer-dm'),
     path('api/therapist/matches/', TherapistMatchCollectionView.as_view(), name='therapist-matches'),
     path('api/therapist/matches/<int:match_id>/messages/', TherapistMatchMessageView.as_view(), name='therapist-match-messages'),
+    path('api/therapist/matches/<int:match_id>/bookings/', TherapistBookingView.as_view(), name='therapist-bookings'),
+    path('api/therapist/matches/<int:match_id>/appointments/', TherapistAppointmentView.as_view(), name='therapist-appointments'),
 ]

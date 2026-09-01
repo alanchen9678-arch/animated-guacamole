@@ -790,13 +790,12 @@ class ChatAPITests(TestCase):
         first_history = mock_generate_chat_reply.call_args_list[0].kwargs['history']
         second_history = mock_generate_chat_reply.call_args_list[1].kwargs['history']
 
-        self.assertEqual(first_history, [{'role': 'user', 'content': 'I feel overwhelmed today.'}])
+        self.assertEqual(first_history, [])
         self.assertEqual(
             second_history,
             [
                 {'role': 'user', 'content': 'I feel overwhelmed today.'},
                 {'role': 'assistant', 'content': 'I am here with you.'},
-                {'role': 'user', 'content': 'Can you help me slow down?'},
             ],
         )
 

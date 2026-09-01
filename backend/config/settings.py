@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -28,6 +29,9 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-8hpsmmu!9^zwa1$s&#-vsy1#s9z-*@x$84s27!as8hyb5je284")
 
 DEBUG = os.getenv("DEBUG", "true").lower() == "true"
+
+if not DEBUG and (not SECRET_KEY or SECRET_KEY.startswith("django-insecure-")):
+    raise ImproperlyConfigured("Set a strong SECRET_KEY when DEBUG is false.")
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
@@ -66,6 +70,19 @@ _cors_origins = os.getenv(
 
 CORS_ALLOWED_ORIGINS = _cors_origins
 CSRF_TRUSTED_ORIGINS = _cors_origins
+
+
+def env_bool(name, default):
+    return os.getenv(name, str(default)).lower() in {"1", "true", "yes", "on"}
+
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = env_bool('SECURE_SSL_REDIRECT', not DEBUG)
+SESSION_COOKIE_SECURE = env_bool('SESSION_COOKIE_SECURE', not DEBUG)
+CSRF_COOKIE_SECURE = env_bool('CSRF_COOKIE_SECURE', not DEBUG)
+SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '0' if DEBUG else '31536000'))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', not DEBUG)
+SECURE_HSTS_PRELOAD = env_bool('SECURE_HSTS_PRELOAD', not DEBUG)
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',

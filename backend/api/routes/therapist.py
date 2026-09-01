@@ -1,13 +1,20 @@
 from random import choice
 
+from django.utils import timezone
+from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.serializers.chat import ChatRequestSerializer
 from api.serializers.therapist import TherapistMatchReadSerializer, TherapistMatchWriteSerializer
-from app.models import Conversation, Message, TherapistMatch
+from app.models import (
+    Conversation,
+    Message,
+    TherapistAppointment,
+    TherapistBooking,
+    TherapistMatch,
+)
 
 THERAPIST_AUTO_REPLIES = [
     "Hello. I've reviewed your Aurora profile and I'm glad you reached out. How have things been feeling for you lately?",
@@ -50,6 +57,49 @@ def serialize_therapist_message(message):
     }
 
 
+def get_user_match(request, match_id):
+    return TherapistMatch.objects.filter(id=match_id, user=request.user).first()
+
+
+def serialize_booking(booking):
+    return {
+        'id': booking.id,
+        'matchId': booking.match_id,
+        'therapistId': booking.therapist_id,
+        'insuranceProvider': booking.insurance_provider,
+        'memberId': booking.member_id,
+        'status': booking.status,
+        'createdAt': booking.created_at.isoformat(),
+    }
+
+
+def serialize_appointment(appointment):
+    return {
+        'id': appointment.id,
+        'matchId': appointment.match_id,
+        'title': appointment.title,
+        'scheduledFor': appointment.scheduled_for.isoformat(),
+        'description': appointment.description,
+        'createdAt': appointment.created_at.isoformat(),
+    }
+
+
+class TherapistBookingWriteSerializer(serializers.Serializer):
+    insuranceProvider = serializers.CharField(required=False, allow_blank=True, max_length=100)
+    memberId = serializers.CharField(required=False, allow_blank=True, max_length=100)
+
+
+class TherapistAppointmentWriteSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=150)
+    scheduledFor = serializers.DateTimeField()
+    description = serializers.CharField(required=False, allow_blank=True, max_length=2000)
+
+    def validate_scheduledFor(self, value):
+        if value <= timezone.now():
+            raise serializers.ValidationError('Appointment time must be in the future.')
+        return value
+
+
 class TherapistMatchCollectionView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -83,14 +133,65 @@ class TherapistMatchCollectionView(APIView):
         )
 
 
+class TherapistBookingView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, match_id):
+        match = get_user_match(request, match_id)
+        if not match:
+            return Response({'error': 'Therapist match not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'bookings': [serialize_booking(item) for item in match.bookings.all()]})
+
+    def post(self, request, match_id):
+        match = get_user_match(request, match_id)
+        if not match:
+            return Response({'error': 'Therapist match not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = TherapistBookingWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        booking = TherapistBooking.objects.create(
+            user=request.user,
+            match=match,
+            therapist_id=match.therapist_id,
+            insurance_provider=serializer.validated_data.get('insuranceProvider', ''),
+            member_id=serializer.validated_data.get('memberId', ''),
+        )
+        return Response(serialize_booking(booking), status=status.HTTP_201_CREATED)
+
+
+class TherapistAppointmentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, match_id):
+        match = get_user_match(request, match_id)
+        if not match:
+            return Response({'error': 'Therapist match not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {'appointments': [serialize_appointment(item) for item in match.appointments.all()]}
+        )
+
+    def post(self, request, match_id):
+        match = get_user_match(request, match_id)
+        if not match:
+            return Response({'error': 'Therapist match not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = TherapistAppointmentWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        appointment = TherapistAppointment.objects.create(
+            user=request.user,
+            match=match,
+            title=serializer.validated_data['title'],
+            scheduled_for=serializer.validated_data['scheduledFor'],
+            description=serializer.validated_data.get('description', ''),
+        )
+        return Response(serialize_appointment(appointment), status=status.HTTP_201_CREATED)
+
+
 class TherapistMatchMessageView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get_match(self, request, match_id):
-        try:
-            return TherapistMatch.objects.get(id=match_id, user=request.user)
-        except TherapistMatch.DoesNotExist:
-            return None
+        return get_user_match(request, match_id)
 
     def get(self, request, match_id):
         match = self.get_match(request, match_id)

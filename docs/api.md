@@ -1,41 +1,48 @@
-# Chatbot API Deployment
+# API reference
 
-The chatbot already posts from the frontend to `POST /api/chat/` on the Django backend. For the hosted version to work on Render with Supabase as the database, the backend service needs a valid OpenAI key and the frontend needs to point at the deployed backend URL.
+All feature routes require `Authorization: Token <token>`. Register and login are public. JSON request fields use the camelCase names shown below.
 
-## Required production wiring
+## Authentication
 
-Backend on Render:
+- `POST /api/auth/register/` — create an account and token.
+- `POST /api/auth/login/` — return a token and user payload.
+- `POST /api/auth/logout/` — delete the current token.
+- `GET|PATCH /api/auth/me/` — read or update the current profile.
 
-- `DATABASE_URL`: your Supabase Postgres connection string
-- `SECRET_KEY`: any strong Django secret
-- `DEBUG=false`
-- `ALLOWED_HOSTS=your-backend-service.onrender.com`
-- `CORS_ALLOWED_ORIGINS=https://your-frontend-service.onrender.com`
-- `OPENAI_API_KEY=sk-...`
-- `OPENAI_MODEL=gpt-4.1-mini`
+## Core wellness data
 
-Frontend on Render:
+- `GET|POST /api/checkins/` — list/submit initial and weekly assessments.
+- `GET|POST /api/journal/` — list or upsert a daily entry. Accepts `date`, `title`, `content`, `mood`, and `doodleData`.
+- `GET|PATCH /api/journal/privacy/` — read/update `allowAiAccess`, `allowJournalAccess`, and `allowChatAccess`.
+- `GET|POST /api/library/progress/` — read progress or record today's quiz completion.
 
-- `VITE_API_BASE_URL=https://your-backend-service.onrender.com`
+## Chat
 
-## Important behavior notes
+- `GET /api/chat/` — return the newest 100 saved messages in chronological order.
+- `POST /api/chat/` with `{ "message": "…" }` — generate and store a reply. Returns `429` at the rolling weekly limit, `502` when the provider fails, and never stores a partial exchange.
 
-- The chat endpoint is authenticated. Users must log in first so the frontend can send `Authorization: Token ...`.
-- The OpenAI key belongs on the Render backend service, not in the frontend and not in Supabase.
-- Supabase is only providing the hosted Postgres database in this setup unless you explicitly move auth or edge functions there too.
-- The backend now stores AI conversations in the `Conversation` and `Message` tables, so replies can use recent chat history instead of only the latest message.
+## Therapist demo
 
-## Quick verification checklist
+- `GET|POST /api/therapist/matches/` — list/save a therapist ID.
+- `GET|POST /api/therapist/matches/:id/messages/` — list/send demo therapist messages.
+- `GET|POST /api/therapist/matches/:id/bookings/` — list/create internal booking requests.
+- `GET|POST /api/therapist/matches/:id/appointments/` — list/create future appointments.
 
-1. Open the deployed frontend and create or log into an account.
-2. In Render, confirm the backend has `OPENAI_API_KEY` set and redeployed after saving it.
-3. Confirm the frontend `VITE_API_BASE_URL` matches the live backend origin exactly.
-4. Confirm `CORS_ALLOWED_ORIGINS` matches the live frontend origin exactly, including `https://`.
-5. Send a message in the chatbot. A successful response should return HTTP `200` from `POST /api/chat/`.
+Match IDs are checked against the authenticated user. These endpoints do not contact a real provider or payment processor.
 
-## Common failure cases
+## Peer support
 
-- `401 Unauthorized`: the user is not logged in or the token is missing from `localStorage`.
-- `500 OPENAI_API_KEY is not set`: the key is missing on the backend service.
-- `502 OpenAI request failed`: the backend reached the route but the OpenAI call failed.
-- Browser CORS error: the frontend or backend origin env vars do not match the deployed domains exactly.
+- `GET|POST /api/peer/profile/`
+- `GET /api/peer/rooms/`
+- `GET|POST /api/peer/rooms/:id/messages/`
+- `GET /api/peer/peers/`
+- `POST /api/peer/connect/:userId/`
+- `GET|POST /api/peer/dm/:userId/`
+
+Peer POSTs may return `400` for policy violations and `503` if required AI moderation is unavailable.
+
+## Production variables
+
+Backend: `DATABASE_URL`, `SECRET_KEY`, `DEBUG=false`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `OPENAI_API_KEY`, and optionally `OPENAI_MODEL`.
+
+Frontend: `VITE_API_BASE_URL` set to the backend origin. The OpenAI key must never be placed in frontend variables.

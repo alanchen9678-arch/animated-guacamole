@@ -5,6 +5,16 @@ function getAuthHeaders() {
   return token ? { Authorization: `Token ${token}` } : {}
 }
 
+function getErrorMessage(data) {
+  if (typeof data?.error === 'string') return data.error
+  if (typeof data?.detail === 'string') return data.detail
+  for (const value of Object.values(data ?? {})) {
+    if (typeof value === 'string') return value
+    if (Array.isArray(value) && value.length) return String(value[0])
+  }
+  return 'Request failed.'
+}
+
 async function apiFetch(path, opts = {}) {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...opts,
@@ -15,7 +25,7 @@ async function apiFetch(path, opts = {}) {
     },
   })
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.error || data.detail || 'Request failed.')
+  if (!res.ok) throw new Error(getErrorMessage(data))
   return data
 }
 
@@ -60,6 +70,30 @@ export async function saveJournalEntry(payload) {
   })
 }
 
+export async function fetchJournalPrivacy() {
+  return apiFetch('/api/journal/privacy/')
+}
+
+export async function updateJournalPrivacy(payload) {
+  return apiFetch('/api/journal/privacy/', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+// Library
+
+export async function fetchLibraryProgress() {
+  return apiFetch('/api/library/progress/')
+}
+
+export async function completeLibraryQuiz() {
+  return apiFetch('/api/library/progress/', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
+}
+
 // Therapist
 
 export async function fetchTherapistMatches() {
@@ -82,6 +116,30 @@ export async function sendTherapistMessage(matchId, message) {
   return apiFetch(`/api/therapist/matches/${matchId}/messages/`, {
     method: 'POST',
     body: JSON.stringify({ message }),
+  })
+}
+
+export async function fetchTherapistBookings(matchId) {
+  const data = await apiFetch(`/api/therapist/matches/${matchId}/bookings/`)
+  return data.bookings ?? []
+}
+
+export async function createTherapistBooking(matchId, payload) {
+  return apiFetch(`/api/therapist/matches/${matchId}/bookings/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function fetchTherapistAppointments(matchId) {
+  const data = await apiFetch(`/api/therapist/matches/${matchId}/appointments/`)
+  return data.appointments ?? []
+}
+
+export async function createTherapistAppointment(matchId, payload) {
+  return apiFetch(`/api/therapist/matches/${matchId}/appointments/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
   })
 }
 

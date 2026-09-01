@@ -1,11 +1,13 @@
+import { lazy } from 'react'
 import Home from '../pages/Home.jsx'
-import Chatbot from '../pages/Chatbot.jsx'
-import CheckIns from '../pages/CheckIns.jsx'
-import Journal from '../pages/Journal.jsx'
-import TherapistMatch from '../pages/TherapistMatch.jsx'
-import PeerSupport from '../pages/PeerSupport.jsx'
-import InfoLibrary from '../pages/InfoLibrary.jsx'
-import Settings from '../pages/Settings.jsx'
+
+const Chatbot = lazy(() => import('../pages/Chatbot.jsx'))
+const CheckIns = lazy(() => import('../pages/CheckIns.jsx'))
+const Journal = lazy(() => import('../pages/Journal.jsx'))
+const TherapistMatch = lazy(() => import('../pages/TherapistMatch.jsx'))
+const PeerSupport = lazy(() => import('../pages/PeerSupport.jsx'))
+const InfoLibrary = lazy(() => import('../pages/InfoLibrary.jsx'))
+const Settings = lazy(() => import('../pages/Settings.jsx'))
 
 export const pageConfig = [
   { id: 'home', label: 'Home', component: Home },

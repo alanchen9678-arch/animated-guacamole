@@ -42,3 +42,31 @@ test('get started free opens the auth dialog in signup mode', async ({ page }) =
   await expect(authCard.locator('input[name="username"]')).toBeVisible()
   await expect(authCard.locator('input[name="confirm"]')).toBeVisible()
 })
+
+test('restored sessions show a loading state instead of flashing logged-out content', async ({ page }) => {
+  let releaseProfile
+  const profileGate = new Promise((resolve) => { releaseProfile = resolve })
+  await page.addInitScript(() => {
+    window.localStorage.setItem('aurora_token', 'restored-test-token')
+  })
+  await page.route('**/api/auth/me/', async (route) => {
+    await profileGate
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        username: 'restored-user',
+        firstName: 'Avery',
+        hasInitialAssessment: true,
+        needsProfile: null,
+      }),
+    })
+  })
+
+  await page.goto('/')
+
+  await expect(page.getByText('Loading Aurora…', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Get started free' })).toBeHidden()
+  releaseProfile()
+  await expect(page.getByRole('heading', { name: /Avery\./ })).toBeVisible()
+})

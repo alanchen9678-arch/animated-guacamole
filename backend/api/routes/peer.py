@@ -1,3 +1,4 @@
+import hashlib
 import random
 import re
 
@@ -69,7 +70,8 @@ AI_MODERATION_UNAVAILABLE_MESSAGE = (
 
 
 def _color(name):
-    return AVATAR_COLORS[hash(name) % len(AVATAR_COLORS)]
+    digest = hashlib.sha256(name.encode('utf-8')).digest()
+    return AVATAR_COLORS[int.from_bytes(digest[:4], 'big') % len(AVATAR_COLORS)]
 
 
 def _get_profile(user):
@@ -234,7 +236,7 @@ class PeerRoomMessageView(APIView):
         return Response({
             'id': msg.id,
             'user': msg.anonymous_name,
-            'color': _color(msg.anonymous_name),
+            'color': profile.avatar_color,
             'text': msg.content,
             'self': True,
             'timestamp': msg.created_at.isoformat(),
@@ -278,7 +280,7 @@ class PeerListView(APIView):
             result.append({
                 'userId': uid,
                 'name': p.anonymous_name,
-                'color': _color(p.anonymous_name),
+                'color': p.avatar_color or _color(p.anonymous_name),
                 'status': conn_status,
                 'isRequester': is_requester,
             })

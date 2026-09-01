@@ -3,10 +3,15 @@ import { AuroraDropdown } from '../components/ui/heroui-dropdown.jsx'
 import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/chat-input.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import {
+  createTherapistAppointment,
+  createTherapistBooking,
+  fetchJournalPrivacy,
+  fetchTherapistAppointments,
   fetchTherapistMatches,
   fetchTherapistMessages,
   saveTherapistMatch,
   sendTherapistMessage,
+  updateJournalPrivacy,
 } from '../services/api.js'
 
 // ─── mock data ─────────────────────────────────────────────────────────────────
@@ -504,10 +509,23 @@ function ActiveTherapistChats({ chats, onOpen }) {
   )
 }
 
-function NeedsProfileView({ profile, activeChats, onOpenChat, onFind }) {
+function NeedsProfileView({ profile, activeChats, onOpenChat, onFind, onRefresh, privacy, onUpdatePrivacy }) {
   const [refreshed, setRefreshed] = useState(false)
-  const [shareChat, setShareChat] = useState(false)
-  const [shareJournal, setShareJournal] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshError, setRefreshError] = useState('')
+
+  async function refreshProfile() {
+    setRefreshing(true)
+    try {
+      await onRefresh?.()
+      setRefreshed(true)
+      setRefreshError('')
+    } catch (error) {
+      setRefreshError(error.message || 'Unable to refresh the profile right now.')
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   if (!profile?.concerns) {
     return (
@@ -551,9 +569,10 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind }) {
               {profile.basis === 'weekly_average' ? 'Average of last 5 weeklies' : 'Based on initial assessment'}
             </span>
           </div>
-          <button className="tm-regen-btn" onClick={() => setRefreshed(true)}>
-            {refreshed ? 'Profile up to date ✓' : 'Regenerate profile'}
+          <button className="tm-regen-btn" onClick={refreshProfile} disabled={refreshing}>
+            {refreshing ? 'Refreshing…' : refreshed ? 'Profile up to date ✓' : 'Regenerate profile'}
           </button>
+          {refreshError && <p className="tm-error" role="alert">{refreshError}</p>}
         </div>
 
         <div className="tm-top3-card">
@@ -567,9 +586,9 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind }) {
               <p>Share recent Aurora conversations with your therapist.</p>
             </div>
             <button
-              className={`tm-toggle${shareChat ? ' tm-toggle--on' : ''}`}
-              onClick={() => setShareChat((value) => !value)}
-              aria-pressed={shareChat}
+              className={`tm-toggle${privacy.allowChatAccess ? ' tm-toggle--on' : ''}`}
+              onClick={() => onUpdatePrivacy({ allowChatAccess: !privacy.allowChatAccess })}
+              aria-pressed={privacy.allowChatAccess}
             >
               <span className="tm-toggle-knob" />
             </button>
@@ -580,9 +599,9 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind }) {
               <p>Share past journal entries with your therapist.</p>
             </div>
             <button
-              className={`tm-toggle${shareJournal ? ' tm-toggle--on' : ''}`}
-              onClick={() => setShareJournal((value) => !value)}
-              aria-pressed={shareJournal}
+              className={`tm-toggle${privacy.allowJournalAccess ? ' tm-toggle--on' : ''}`}
+              onClick={() => onUpdatePrivacy({ allowJournalAccess: !privacy.allowJournalAccess })}
+              aria-pressed={privacy.allowJournalAccess}
             >
               <span className="tm-toggle-knob" />
             </button>
@@ -762,16 +781,28 @@ function ResultsView({ matches, prefs, onSelect, onBack }) {
 
 // ─── detail view ──────────────────────────────────────────────────────────────
 
-function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
-  const [shareChat,    setShareChat]    = useState(false)
-  const [shareJournal, setShareJournal] = useState(false)
+function DetailView({ therapist: t, prefs, onChat, onBook, onBack, privacy, onUpdatePrivacy }) {
   const [insurer, setInsurer]           = useState(prefs.insurance)
   const [memberId, setMemberId]         = useState('')
   const [booked, setBooked]             = useState(false)
+  const [booking, setBooking]           = useState(false)
+  const [bookingError, setBookingError] = useState('')
 
-  function handleBook() {
-    setBooked(true)
-    onBook?.(t)
+  async function handleBook() {
+    if (!insurer) {
+      setBookingError('Select an insurance provider before requesting a session.')
+      return
+    }
+    setBooking(true)
+    setBookingError('')
+    try {
+      await onBook(t, { insuranceProvider: insurer, memberId })
+      setBooked(true)
+    } catch (error) {
+      setBookingError(error.message || 'Unable to request this session right now.')
+    } finally {
+      setBooking(false)
+    }
   }
 
   return (
@@ -833,9 +864,9 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
                 <p>Last 7 days of AI conversations</p>
               </div>
               <button
-                className={`tm-toggle${shareChat ? ' tm-toggle--on' : ''}`}
-                onClick={() => setShareChat(v => !v)}
-                aria-pressed={shareChat}
+                className={`tm-toggle${privacy.allowChatAccess ? ' tm-toggle--on' : ''}`}
+                onClick={() => onUpdatePrivacy({ allowChatAccess: !privacy.allowChatAccess })}
+                aria-pressed={privacy.allowChatAccess}
               >
                 <span className="tm-toggle-knob" />
               </button>
@@ -846,9 +877,9 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
                 <p>Last month of thought journal</p>
               </div>
               <button
-                className={`tm-toggle${shareJournal ? ' tm-toggle--on' : ''}`}
-                onClick={() => setShareJournal(v => !v)}
-                aria-pressed={shareJournal}
+                className={`tm-toggle${privacy.allowJournalAccess ? ' tm-toggle--on' : ''}`}
+                onClick={() => onUpdatePrivacy({ allowJournalAccess: !privacy.allowJournalAccess })}
+                aria-pressed={privacy.allowJournalAccess}
               >
                 <span className="tm-toggle-knob" />
               </button>
@@ -895,20 +926,17 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
                     onChange={e => setMemberId(e.target.value)}
                   />
                 </div>
-                <div className="tm-stripe-mock">
-                  <p className="tm-stripe-label">Card details <span className="tm-stripe-badge">Test mode</span></p>
-                  <input className="tm-input" placeholder="4242 4242 4242 4242" readOnly />
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                    <input className="tm-input" placeholder="MM / YY" readOnly />
-                    <input className="tm-input" placeholder="CVC" readOnly />
-                  </div>
-                </div>
+                <p className="tm-privacy-always">
+                  Aurora sends a booking request only. No payment is collected in this demo.
+                </p>
+                {bookingError && <p className="tm-error" role="alert">{bookingError}</p>}
                 <button
                   className="tm-primary-btn"
                   style={{ width: '100%', marginTop: 4 }}
                   onClick={handleBook}
+                  disabled={booking}
                 >
-                  Confirm &amp; book session
+                  {booking ? 'Sending request…' : 'Request session'}
                 </button>
               </>
             )}
@@ -1231,7 +1259,10 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
       }
 
       try {
-        const history = await fetchTherapistMessages(t.matchId)
+        const [history, appointments] = await Promise.all([
+          fetchTherapistMessages(t.matchId),
+          fetchTherapistAppointments(t.matchId),
+        ])
         if (!isActive) return
         setMessages(
           history.map((message) => ({
@@ -1242,6 +1273,17 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
             type: 'text',
           })),
         )
+        const now = Date.now()
+        const nextAppointment = appointments.find((item) => (
+          new Date(item.scheduledFor).getTime() >= now
+        )) ?? appointments[0]
+        setActiveAppointment(nextAppointment ? {
+          id: nextAppointment.id,
+          title: nextAppointment.title,
+          date: nextAppointment.scheduledFor,
+          desc: nextAppointment.description,
+          therapist: t.name,
+        } : null)
         setChatError('')
       } catch (error) {
         if (!isActive) return
@@ -1321,14 +1363,30 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
     }
   }
 
-  function createAppointment() {
+  async function createAppointment() {
     if (!apptTitle || !apptDate) return
-    setActiveAppointment({ title: apptTitle, date: apptDate, desc: apptDesc, therapist: t.name })
-    setAppointmentExpanded(false)
-    setApptTitle('')
-    setApptDate('')
-    setApptDesc('')
-    setShowApptForm(false)
+    try {
+      const appointment = await createTherapistAppointment(t.matchId, {
+        title: apptTitle,
+        scheduledFor: new Date(apptDate).toISOString(),
+        description: apptDesc,
+      })
+      setActiveAppointment({
+        id: appointment.id,
+        title: appointment.title,
+        date: appointment.scheduledFor,
+        desc: appointment.description,
+        therapist: t.name,
+      })
+      setAppointmentExpanded(false)
+      setApptTitle('')
+      setApptDate('')
+      setApptDesc('')
+      setShowApptForm(false)
+      setChatError('')
+    } catch (error) {
+      setChatError(error.message || 'Unable to create the appointment right now.')
+    }
   }
 
   function cancelAppointmentForm() {
@@ -1494,13 +1552,32 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
 }
 
 export default function TherapistMatch() {
-  const { user } = useUser()
+  const { user, refreshUser } = useUser()
   const needsProfile = formatNeedsProfile(user?.needsProfile)
   const [view,     setView]     = useState('profile')   // profile | prefs | results | detail | chat
   const [prefs,    setPrefs]    = useState(null)
   const [matches,  setMatches]  = useState([])
   const [selected, setSelected] = useState(null)
   const [activeChats, setActiveChats] = useState([])
+  const [privacy, setPrivacy] = useState({
+    allowAiAccess: false,
+    allowChatAccess: false,
+    allowJournalAccess: false,
+  })
+  const [privacyError, setPrivacyError] = useState('')
+
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    fetchJournalPrivacy()
+      .then((settings) => {
+        if (!cancelled) setPrivacy(settings)
+      })
+      .catch((error) => {
+        if (!cancelled) setPrivacyError(error.message)
+      })
+    return () => { cancelled = true }
+  }, [user])
 
   useEffect(() => {
     let cancelled = false
@@ -1546,6 +1623,30 @@ export default function TherapistMatch() {
     setView('results')
   }
 
+  async function changePrivacy(patch) {
+    try {
+      const settings = await updateJournalPrivacy(patch)
+      setPrivacy(settings)
+      setPrivacyError('')
+    } catch (error) {
+      setPrivacyError(error.message)
+    }
+  }
+
+  async function requestBooking(therapist, payload) {
+    const matchData = await saveTherapistMatch(therapist.id)
+    const matchId = matchData.match?.id
+    if (!matchId) throw new Error('Unable to create a therapist match.')
+    const savedTherapist = { ...therapist, matchId }
+    setSelected(savedTherapist)
+    setActiveChats((previous) => (
+      previous.some((item) => item.id === therapist.id)
+        ? previous.map((item) => item.id === therapist.id ? savedTherapist : item)
+        : [...previous, savedTherapist]
+    ))
+    return createTherapistBooking(matchId, payload)
+  }
+
   async function openChat(therapist) {
     let selectedTherapist = therapist
 
@@ -1582,10 +1683,11 @@ export default function TherapistMatch() {
   return (
     <>
       <style>{TM_STYLES}</style>
-      {view === 'profile'  && <NeedsProfileView profile={needsProfile} activeChats={activeChats} onOpenChat={openChat} onFind={() => setView('prefs')} />}
+      {privacyError && <p className="tm-error" role="alert">{privacyError}</p>}
+      {view === 'profile'  && <NeedsProfileView profile={needsProfile} activeChats={activeChats} onOpenChat={openChat} onFind={() => setView('prefs')} onRefresh={refreshUser} privacy={privacy} onUpdatePrivacy={changePrivacy} />}
       {view === 'prefs'    && <PreferencesView onBack={() => setView('profile')} onMatch={handleMatch} />}
       {view === 'results'  && <ResultsView matches={matches} prefs={prefs} onSelect={t => { setSelected(t); setView('detail') }} onBack={() => setView('prefs')} />}
-      {view === 'detail'   && selected && <DetailView therapist={selected} prefs={prefs} onChat={() => openChat(selected)} onBook={openChat} onBack={() => setView('results')} />}
+      {view === 'detail'   && selected && <DetailView therapist={selected} prefs={prefs} onChat={() => openChat(selected)} onBook={requestBooking} onBack={() => setView('results')} privacy={privacy} onUpdatePrivacy={changePrivacy} />}
       {view === 'chat'     && selected && <PersistentTherapistChatView therapist={selected} onBack={() => setView('profile')} />}
     </>
   )

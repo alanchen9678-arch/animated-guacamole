@@ -26,6 +26,33 @@ class UserProfile(models.Model):
         return f"{self.user.username}'s profile"
 
 
+class LibraryProgress(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='library_progress',
+    )
+    streak = models.PositiveIntegerField(default=0)
+    last_completed_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def record_completion(self, completed_on=None):
+        completed_on = completed_on or timezone.localdate()
+        if self.last_completed_date == completed_on:
+            return False
+        if self.last_completed_date == completed_on - timezone.timedelta(days=1):
+            self.streak += 1
+        else:
+            self.streak = 1
+        self.last_completed_date = completed_on
+        self.save(update_fields=['streak', 'last_completed_date', 'updated_at'])
+        return True
+
+    def __str__(self):
+        return f'Library progress for {self.user.username}'
+
+
 class Conversation(models.Model):
     class ConversationType(models.TextChoices):
         AI = 'ai', 'AI'
@@ -86,6 +113,20 @@ class Message(models.Model):
         return f"{self.conversation_id} - {self.role}"
 
 
+class ChatUsage(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='chat_usage',
+    )
+    window_started_at = models.DateTimeField(default=timezone.now)
+    message_count = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'Chat usage for {self.user.username}: {self.message_count}'
+
+
 class JournalPrivacySettings(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -94,6 +135,7 @@ class JournalPrivacySettings(models.Model):
     )
     allow_ai_access = models.BooleanField(default=False)
     allow_therapist_access = models.BooleanField(default=False)
+    allow_chat_access = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -306,6 +348,62 @@ class TherapistMatch(models.Model):
 
     def __str__(self):
         return f'{self.user.username} - therapist {self.therapist_id}'
+
+
+class TherapistBooking(models.Model):
+    class Status(models.TextChoices):
+        REQUESTED = 'requested', 'Requested'
+        CONFIRMED = 'confirmed', 'Confirmed'
+        CANCELLED = 'cancelled', 'Cancelled'
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='therapist_bookings',
+    )
+    match = models.ForeignKey(
+        TherapistMatch,
+        on_delete=models.CASCADE,
+        related_name='bookings',
+    )
+    therapist_id = models.PositiveIntegerField()
+    insurance_provider = models.CharField(max_length=100, blank=True, default='')
+    member_id = models.CharField(max_length=100, blank=True, default='')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.REQUESTED)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at', '-id']
+        indexes = [models.Index(fields=['user', 'created_at'])]
+
+    def __str__(self):
+        return f'{self.user.username} - booking for therapist {self.therapist_id}'
+
+
+class TherapistAppointment(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='therapist_appointments',
+    )
+    match = models.ForeignKey(
+        TherapistMatch,
+        on_delete=models.CASCADE,
+        related_name='appointments',
+    )
+    title = models.CharField(max_length=150)
+    scheduled_for = models.DateTimeField()
+    description = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['scheduled_for', 'id']
+        indexes = [models.Index(fields=['user', 'scheduled_for'])]
+
+    def __str__(self):
+        return f'{self.user.username} - {self.title} at {self.scheduled_for}'
 
 
 def get_user_checkin_summary(user, today=None):

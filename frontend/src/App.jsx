@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { TextReveal } from './components/ui/cascade-text.jsx'
 import WhisperText from './components/ui/whisper-text.jsx'
 import { UserProvider, useUser } from './context/UserContext.jsx'
@@ -122,6 +122,18 @@ function AppShell() {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     contentRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [activeShellPage, isLoggedIn])
+
+  if (loading) {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: '#4d6b58' }}
+      >
+        Loading Aurora…
+      </div>
+    )
+  }
 
   return (
     <div className={`app-root${isLoggedIn ? ' app-root--dashboard' : ''}`}>
@@ -769,7 +781,9 @@ function AppShell() {
               </aside>
 
               <main ref={contentRef} className="content">
-                <ActiveComponent />
+                <Suspense fallback={<div role="status" className="page">Loading page…</div>}>
+                  <ActiveComponent />
+                </Suspense>
               </main>
             </div>
           </div>

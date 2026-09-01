@@ -69,6 +69,7 @@ function mergeJournalEntries(localEntries, backendEntries) {
     merged[entry.date] = {
       ...merged[entry.date],
       text: entry.text,
+      doodleData: entry.doodleData ?? null,
     }
   }
   return merged
@@ -135,6 +136,14 @@ const AI_RESPONSES = {
     "Every entry is a step toward understanding yourself better. Keep going, even on the quiet days.",
     "There's value in capturing a regular day. Patterns only become visible when you write them down.",
   ],
+}
+
+const TONE_STYLE = {
+  crisis: { bg: '#fff1f2', border: '#fda4af', ic: '#be123c', icon: '!' },
+  alert: { bg: '#fff7ed', border: '#fdba74', ic: '#c2410c', icon: '!' },
+  positive: { bg: '#ecfdf5', border: '#6ee7b7', ic: '#047857', icon: 'A' },
+  negative: { bg: '#eff6ff', border: '#93c5fd', ic: '#1d4ed8', icon: 'A' },
+  neutral: { bg: '#f8fafc', border: '#cbd5e1', ic: '#475569', icon: 'A' },
 }
 
 function analyzeEntry(text) {
@@ -523,6 +532,7 @@ export default function Journal() {
   const [selectedHistoryDate, setSelectedHistoryDate] = useState(todayKey)
   const [expandedEntryDate, setExpandedEntryDate] = useState(null)
   const [saveError, setSaveError] = useState('')
+  const [aiResponse, setAiResponse] = useState(null)
 
   const todayMood = moodData[todayKey]
   const marginColor = todayMood ? MOOD_MAP[todayMood]?.color : '#ffffff'
@@ -563,6 +573,7 @@ export default function Journal() {
         setMoodData(mergedMoods)
         const savedToday = mergedHistory[todayKey]
         setEntryText(savedToday?.text ?? '')
+        setDoodleData(savedToday?.doodleData ?? null)
         setSubmitted(Boolean(savedToday?.text || savedToday?.doodleData))
       })
       .catch((error) => {
@@ -590,6 +601,7 @@ export default function Journal() {
           date: todayKey,
           content: entryText,
           mood: todayMood ?? '',
+          doodleData,
         })
         const backendEntries = data.entries ?? []
         const mergedHistory = mergeJournalEntries(nextHistory, backendEntries)
@@ -606,10 +618,12 @@ export default function Journal() {
     }
 
     setSubmitted(true)
+    setAiResponse(pickResponse(tone))
   }
 
   function editEntry() {
     setSubmitted(false)
+    setAiResponse(null)
   }
 
   function setTodayMood(moodId) {
@@ -737,7 +751,7 @@ export default function Journal() {
       )}
 
       {/* ── AI response ── */}
-      {false && (
+      {aiResponse && (
         <div
           className="jn-ai-response"
           style={{

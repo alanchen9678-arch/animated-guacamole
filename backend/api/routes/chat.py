@@ -1,11 +1,12 @@
-from django.core.cache import cache
+from django.db import transaction
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from ai_engine.pipeline import generate_chat_reply
 from api.serializers.chat import ChatRequestSerializer
-from app.models import Conversation, Message, UserProfile
+from app.models import ChatUsage, Conversation, Message, UserProfile
 
 WEEKLY_MESSAGE_LIMIT = 200
 WEEK_IN_SECONDS = 60 * 60 * 24 * 7
@@ -45,7 +46,8 @@ def serialize_recent_history(conversation):
 
 
 def serialize_chat_messages(conversation):
-    messages = conversation.messages.order_by('timestamp', 'id')[:HISTORY_MESSAGE_LIMIT]
+    messages = list(conversation.messages.order_by('-timestamp', '-id')[:HISTORY_MESSAGE_LIMIT])
+    messages.reverse()
     return [
         {
             "id": message.id,
@@ -56,6 +58,30 @@ def serialize_chat_messages(conversation):
         for message in messages
         if message.role in {Message.MessageRole.USER, Message.MessageRole.ASSISTANT}
     ]
+
+
+def reserve_chat_message(user):
+    now = timezone.now()
+    with transaction.atomic():
+        user.__class__.objects.select_for_update().get(pk=user.pk)
+        usage, _ = ChatUsage.objects.select_for_update().get_or_create(user=user)
+        if (now - usage.window_started_at).total_seconds() >= WEEK_IN_SECONDS:
+            usage.window_started_at = now
+            usage.message_count = 0
+        if usage.message_count >= WEEKLY_MESSAGE_LIMIT:
+            return None
+        usage.message_count += 1
+        usage.save(update_fields=['window_started_at', 'message_count', 'updated_at'])
+        return usage.message_count
+
+
+def release_chat_message(user):
+    with transaction.atomic():
+        user.__class__.objects.select_for_update().get(pk=user.pk)
+        usage = ChatUsage.objects.select_for_update().filter(user=user).first()
+        if usage and usage.message_count:
+            usage.message_count -= 1
+            usage.save(update_fields=['message_count', 'updated_at'])
 
 
 def build_style_context(user):
@@ -111,51 +137,57 @@ class ChatView(APIView):
 
     def post(self, request):
         user = request.user
-        user_id = user.id
-        cache_key = f"chat_limit:{user_id}"
-
-        count = cache.get(cache_key, 0)
-        if count >= WEEKLY_MESSAGE_LIMIT:
+        serializer = ChatRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        message_text = serializer.validated_data['message']
+        reserved_count = reserve_chat_message(user)
+        if reserved_count is None:
             return Response(
-                {"detail": f"Weekly message limit of {WEEKLY_MESSAGE_LIMIT} reached. Resets in 7 days."},
+                {'detail': f'Weekly message limit of {WEEKLY_MESSAGE_LIMIT} reached. Resets 7 days after your first message in the current window.'},
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
-        serializer = ChatRequestSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        message_text = serializer.validated_data["message"]
         conversation = get_or_create_ai_conversation(user)
         style_context = build_style_context(user)
-
-        Message.objects.create(
-            conversation=conversation,
-            role=Message.MessageRole.USER,
-            content=message_text,
-        )
+        history = serialize_recent_history(conversation)
 
         try:
             reply = generate_chat_reply(
                 message_text,
-                history=serialize_recent_history(conversation),
+                history=history,
                 style_context=style_context,
             )
         except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except Exception as exc:
+            release_chat_message(user)
+            return Response({'detail': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception:
+            release_chat_message(user)
             return Response(
-                {"detail": "OpenAI request failed.", "error": str(exc)},
+                {'detail': 'OpenAI request failed.'},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
-        Message.objects.create(
-            conversation=conversation,
-            role=Message.MessageRole.ASSISTANT,
-            content=reply,
+        try:
+            with transaction.atomic():
+                Message.objects.create(
+                    conversation=conversation,
+                    role=Message.MessageRole.USER,
+                    content=message_text,
+                )
+                Message.objects.create(
+                    conversation=conversation,
+                    role=Message.MessageRole.ASSISTANT,
+                    content=reply,
+                )
+        except Exception:
+            release_chat_message(user)
+            raise
+
+        return Response(
+            {
+                'reply': reply,
+                'messages_used': reserved_count,
+                'messages_remaining': WEEKLY_MESSAGE_LIMIT - reserved_count,
+            },
+            status=status.HTTP_200_OK,
         )
-
-        if count == 0:
-            cache.set(cache_key, 1, timeout=WEEK_IN_SECONDS)
-        else:
-            cache.incr(cache_key)
-
-        return Response({"reply": reply, "messages_used": count + 1, "messages_remaining": WEEKLY_MESSAGE_LIMIT - count - 1}, status=status.HTTP_200_OK)
