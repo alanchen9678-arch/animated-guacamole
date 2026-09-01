@@ -602,6 +602,23 @@ class CheckInAPITests(TestCase):
         self.assertEqual(second_response.data['entry']['qIds'], [2, 3])
         self.assertEqual(second_response.data['entry']['scores'], {'stress': 65})
 
+    def test_post_weekly_checkin_accepts_legacy_null_personality(self):
+        response = self.client.post(
+            reverse('checkins'),
+            {
+                'type': CheckIn.CheckInType.WEEKLY,
+                'qIds': [1, 2],
+                'scores': {'stress': 35},
+                'personality': None,
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['entry']['type'], CheckIn.CheckInType.WEEKLY)
+        self.assertEqual(response.data['entry']['scores'], {'stress': 35})
+        self.assertEqual(self.user.checkins.filter(type=CheckIn.CheckInType.WEEKLY).count(), 1)
+
     def test_post_checkin_rejects_invalid_type(self):
         # Serializer validation should reject unsupported check-in types before any data is saved.
         response = self.client.post(

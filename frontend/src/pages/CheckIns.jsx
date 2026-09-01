@@ -1206,21 +1206,19 @@ export default function CheckIns() {
       }
     }
 
-    // save last completed date
-    localStorage.setItem('aurora.checkin.last-completed', formatDateKey(new Date()))
-
     if (token) {
       // save prev scores for insight before updating
       const prevEntry = getLatestWeeklyEntry(history)
       if (prevEntry) setLatestPrevScores(prevEntry.scores)
 
       try {
-        const data = await submitCheckIn({
+        const payload = {
           type: surveyType,
           qIds: questions.filter(q => q.cat).map(q => q.id),
           scores,
-          personality,
-        })
+        }
+        if (personality) payload.personality = personality
+        const data = await submitCheckIn(payload)
         setHistory(data.history?.length ? data.history : [])
         setServerSummary({
           streak: data.streak ?? 0,
@@ -1256,6 +1254,7 @@ export default function CheckIns() {
       setSaveError('')
     }
 
+    localStorage.setItem('aurora.checkin.last-completed', formatDateKey(new Date()))
     setView('results')
   }
 

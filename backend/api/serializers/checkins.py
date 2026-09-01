@@ -16,7 +16,7 @@ class CheckInWriteSerializer(serializers.Serializer):
         required=False,
         default=dict,
     )
-    personality = serializers.JSONField(required=False)
+    personality = serializers.JSONField(required=False, allow_null=True)
 
 
 class CheckInReadSerializer(serializers.ModelSerializer):
