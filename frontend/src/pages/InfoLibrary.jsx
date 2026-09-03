@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { completeLibraryQuiz, fetchLibraryProgress } from '../services/api.js'
+import { AsyncButton, FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
 
 // ─── disorder data ─────────────────────────────────────────────────────────────
 
@@ -454,6 +455,7 @@ function QuizTab({ onComplete }) {
   const [score, setScore]         = useState(0)
   const [done, setDone]           = useState(false)
   const [answers, setAnswers]     = useState([])
+  const [finishing, setFinishing] = useState(false)
 
   const q = questions[idx]
   const total = questions.length
@@ -473,10 +475,13 @@ function QuizTab({ onComplete }) {
     }])
   }
 
-  function next() {
+  async function next() {
     if (idx + 1 >= total) {
+      if (finishing) return
+      setFinishing(true)
+      await onComplete?.()
       setDone(true)
-      onComplete?.()
+      setFinishing(false)
     } else {
       setIdx(i => i + 1)
       setSelected(null)
@@ -572,9 +577,14 @@ function QuizTab({ onComplete }) {
         <div className={`il-feedback${selected === q.correct ? ' il-feedback--correct' : ' il-feedback--wrong'}`}>
           <strong>{selected === q.correct ? 'Correct!' : `Not quite — the answer is ${q.correct}.`}</strong>
           <p>{q.note}</p>
-          <button className="il-next-btn" onClick={next}>
+          <AsyncButton
+            className="il-next-btn"
+            onClick={next}
+            pending={finishing}
+            pendingLabel="Saving progress…"
+          >
             {idx + 1 >= total ? 'See results' : 'Next question →'}
-          </button>
+          </AsyncButton>
         </div>
       )}
     </div>
@@ -587,26 +597,44 @@ export default function InfoLibrary() {
   const [tab, setTab] = useState('library')
   const [streak, setStreak] = useState(0)
   const [progressError, setProgressError] = useState('')
+  const [progressLoading, setProgressLoading] = useState(true)
+  const [completionStatus, setCompletionStatus] = useState('')
+  const [errorContext, setErrorContext] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
+    setProgressLoading(true)
+    setProgressError('')
+    setErrorContext('')
     fetchLibraryProgress()
       .then((progress) => {
         if (!cancelled) setStreak(progress.streak ?? 0)
       })
       .catch((error) => {
-        if (!cancelled) setProgressError(error.message)
+        if (!cancelled) {
+          setProgressError(error.message)
+          setErrorContext('load')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setProgressLoading(false)
       })
     return () => { cancelled = true }
-  }, [])
+  }, [reloadKey])
 
   async function recordQuizCompletion() {
+    setCompletionStatus('')
+    setProgressError('')
+    setErrorContext('')
     try {
       const progress = await completeLibraryQuiz()
       setStreak(progress.streak ?? 0)
       setProgressError('')
+      setCompletionStatus('Quiz complete. Your learning progress was saved.')
     } catch (error) {
       setProgressError(error.message)
+      setErrorContext('completion')
     }
   }
 
@@ -645,7 +673,17 @@ export default function InfoLibrary() {
         </button>
       </div>
 
-      {progressError && <p className="il-progress-error" role="alert">{progressError}</p>}
+      {progressLoading && <LoadingState label="Loading learning progress…" compact />}
+      {progressError && (
+        <FeedbackNotice
+          variant="error"
+          title="Could not update learning progress"
+          message={progressError}
+          onRetry={errorContext === 'completion' ? recordQuizCompletion : () => setReloadKey((key) => key + 1)}
+          retryLabel={errorContext === 'completion' ? 'Retry saving progress' : 'Reload progress'}
+        />
+      )}
+      {completionStatus && <FeedbackNotice variant="success" message={completionStatus} compact />}
 
       {tab === 'library' && <LibraryTab />}
       {tab === 'quiz' && <QuizTab onComplete={recordQuizCompletion} />}

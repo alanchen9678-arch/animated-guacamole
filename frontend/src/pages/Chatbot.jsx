@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/chat-input.jsx'
 import { fetchChatHistory, sendChatMessage } from '../services/api.js'
+import { FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
 
 const CHATBOT_ONBOARDING_STORAGE_KEY = 'aurora.chatbot.onboarding'
 
@@ -120,6 +121,8 @@ function ChatbotChat() {
   const [input, setInput] = useState('')
   const [isLoadingHistory, setIsLoadingHistory] = useState(true)
   const [isTyping, setIsTyping] = useState(false)
+  const [chatError, setChatError] = useState(null)
+  const [reloadKey, setReloadKey] = useState(0)
   const messagesRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -127,6 +130,8 @@ function ChatbotChat() {
     let isActive = true
 
     async function loadHistory() {
+      setIsLoadingHistory(true)
+      setChatError(null)
       try {
         const history = await fetchChatHistory()
         if (!isActive) return
@@ -144,9 +149,13 @@ function ChatbotChat() {
             time: formatMessageTime(message.timestamp),
           })),
         )
-      } catch {
+      } catch (error) {
         if (!isActive) return
         setMessages([defaultGreeting()])
+        setChatError({
+          type: 'history',
+          message: error.message || 'Your previous conversation could not be loaded.',
+        })
       } finally {
         if (isActive) setIsLoadingHistory(false)
       }
@@ -157,7 +166,7 @@ function ChatbotChat() {
     return () => {
       isActive = false
     }
-  }, [])
+  }, [reloadKey])
 
   useEffect(() => {
     const messagesEl = messagesRef.current
@@ -178,7 +187,12 @@ function ChatbotChat() {
     const userMsg = { id: Date.now(), role: 'user', text, time: timestamp() }
     setMessages((prev) => [...prev, userMsg])
     setInput('')
+    await deliverMessage(text)
+  }
+
+  async function deliverMessage(text) {
     setIsTyping(true)
+    setChatError(null)
 
     try {
       const reply = await sendChatMessage(text)
@@ -187,15 +201,11 @@ function ChatbotChat() {
         { id: Date.now() + 1, role: 'ai', text: reply, time: timestamp() },
       ])
     } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          role: 'ai',
-          text: error.message || "I'm having trouble reaching the server right now. Please try again in a moment.",
-          time: timestamp(),
-        },
-      ])
+      setChatError({
+        type: 'send',
+        message: error.message || "I'm having trouble reaching the server right now.",
+        lastText: text,
+      })
     } finally {
       setIsTyping(false)
       inputRef.current?.focus()
@@ -208,13 +218,26 @@ function ChatbotChat() {
         <div className="chat-header-avatar">A</div>
         <div>
           <strong className="chat-header-name">Aurora</strong>
-          <span className="chat-header-status">Online · backend connected</span>
+          <span className="chat-header-status">{chatError ? 'Connection issue' : 'Online · backend connected'}</span>
         </div>
       </div>
 
       <div className="chat-messages" ref={messagesRef}>
+        {isLoadingHistory && <LoadingState label="Loading your conversation…" compact skeletonLines={3} />}
         {messages.map((message) => <Message key={message.id} msg={message} />)}
         {isTyping && <TypingIndicator />}
+        {chatError && (
+          <FeedbackNotice
+            variant="error"
+            title={chatError.type === 'history' ? 'Could not load your conversation' : 'Message not sent'}
+            message={chatError.message}
+            onRetry={chatError.type === 'history'
+              ? () => setReloadKey((key) => key + 1)
+              : () => deliverMessage(chatError.lastText)}
+            retryLabel={chatError.type === 'history' ? 'Reload conversation' : 'Retry message'}
+            compact
+          />
+        )}
       </div>
 
       <div className="chat-input-bar">

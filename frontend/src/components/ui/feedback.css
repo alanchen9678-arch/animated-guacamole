@@ -1,0 +1,149 @@
+.feedback-notice {
+  --feedback-accent: var(--accent, #4d6b58);
+  --feedback-bg: rgba(77, 107, 88, 0.09);
+  --feedback-border: rgba(77, 107, 88, 0.24);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--feedback-border);
+  border-radius: 0.75rem;
+  color: inherit;
+  background: var(--feedback-bg);
+  box-sizing: border-box;
+}
+
+.feedback-notice--success {
+  --feedback-accent: #15803d;
+  --feedback-bg: rgba(21, 128, 61, 0.09);
+  --feedback-border: rgba(21, 128, 61, 0.25);
+}
+
+.feedback-notice--warning {
+  --feedback-accent: #a16207;
+  --feedback-bg: rgba(202, 138, 4, 0.11);
+  --feedback-border: rgba(161, 98, 7, 0.28);
+}
+
+.feedback-notice--error {
+  --feedback-accent: #b91c1c;
+  --feedback-bg: rgba(185, 28, 28, 0.08);
+  --feedback-border: rgba(185, 28, 28, 0.24);
+}
+
+.feedback-notice--compact { padding: 0.65rem 0.75rem; }
+.feedback-notice__icon {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-top: 0.05rem;
+  border-radius: 50%;
+  color: white;
+  background: var(--feedback-accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.feedback-notice__content { flex: 1; min-width: 0; }
+.feedback-notice__title { display: block; margin-bottom: 0.15rem; }
+.feedback-notice__message { line-height: 1.45; }
+.feedback-notice__message:empty { display: none; }
+.feedback-notice__action,
+.feedback-empty__action {
+  margin-top: 0.55rem;
+  padding: 0;
+  border: 0;
+  color: var(--feedback-accent, #4f46e5);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.18rem;
+  cursor: pointer;
+}
+
+.feedback-notice__dismiss {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.65;
+}
+
+.feedback-notice__dismiss:hover { background: rgba(0, 0, 0, 0.07); opacity: 1; }
+.feedback-loading {
+  display: grid;
+  place-items: center;
+  gap: 1rem;
+  width: 100%;
+  min-height: 10rem;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.feedback-loading--compact { min-height: 0; padding: 0.75rem; }
+.feedback-loading.app-loading { min-height: 100vh; color: #4d6b58; }
+.feedback-loading__label { display: flex; align-items: center; justify-content: center; gap: 0.65rem; }
+.feedback-spinner {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: feedback-spin 0.75s linear infinite;
+}
+
+.feedback-spinner--button { width: 0.95rem; height: 0.95rem; }
+.feedback-skeleton { display: grid; gap: 0.6rem; width: min(34rem, 100%); }
+.feedback-skeleton__line {
+  display: block;
+  height: 0.8rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(127, 127, 127, 0.12), rgba(127, 127, 127, 0.25), rgba(127, 127, 127, 0.12));
+  background-size: 220% 100%;
+  animation: feedback-shimmer 1.4s ease-in-out infinite;
+}
+
+.feedback-skeleton__line:last-child { width: 68%; }
+.feedback-empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 2rem 1.25rem;
+  border: 1px dashed rgba(127, 127, 127, 0.35);
+  border-radius: 0.85rem;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.feedback-empty--compact { padding: 1rem; }
+.feedback-empty__mark { color: var(--accent, #4d6b58); font-size: 1.35rem; font-weight: 800; letter-spacing: 0.18rem; }
+.feedback-empty__title { font-size: 1rem; }
+.feedback-empty__description { max-width: 32rem; margin: 0; line-height: 1.5; opacity: 0.72; }
+.feedback-async-button { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
+.feedback-async-button:disabled { cursor: not-allowed; opacity: 0.62; }
+
+@keyframes feedback-spin { to { transform: rotate(360deg); } }
+@keyframes feedback-shimmer { to { background-position: -220% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .feedback-spinner,
+  .feedback-skeleton__line { animation: none; }
+}

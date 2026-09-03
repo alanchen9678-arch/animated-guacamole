@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/chat-input.jsx'
+import { AsyncButton, EmptyState, FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
 import {
   fetchPeerProfile,
   completePeerOnboarding,
@@ -146,7 +147,7 @@ function LeaveConfirmBubble({ label, onCancel, onConfirm }) {
 
 // Onboarding
 
-function OnboardingView({ onDone, loading }) {
+function OnboardingView({ onDone, loading, error }) {
   const [agreed, setAgreed] = useState(false)
   const [step, setStep]     = useState(1)
 
@@ -159,14 +160,15 @@ function OnboardingView({ onDone, loading }) {
           <p className="ps-sub">
             You will receive a unique anonymous name. No one will ever know your real identity.
           </p>
-          <button
+          {error && <FeedbackNotice variant="error" title="Could not enter the community" message={error} compact />}
+          <AsyncButton
             className="ps-primary-btn"
             onClick={onDone}
-            disabled={loading}
-            style={{ opacity: loading ? 0.6 : 1 }}
+            pending={loading}
+            pendingLabel="Setting up…"
           >
-            {loading ? 'Setting up...' : 'Enter the community'}
-          </button>
+            Enter the community
+          </AsyncButton>
         </div>
       </section>
     )
@@ -212,14 +214,20 @@ function HubView({ profile, rooms, peers, setPeers, onRoom, onDM, loadingPeers }
   const activeChats  = peers.filter(p => p.status === 'connected')
   const recommended  = peers.filter(p => p.status !== 'connected' && p.status !== 'declined').slice(0, 8)
   const room         = rooms[0]
+  const [connectError, setConnectError] = useState('')
+  const [failedConnection, setFailedConnection] = useState(null)
 
   async function handleConnect(userId) {
+    setConnectError('')
+    setFailedConnection(null)
     setPeers(prev => prev.map(p => p.userId === userId ? { ...p, status: 'pending' } : p))
     try {
       const res = await connectPeer(userId)
       setPeers(prev => prev.map(p => p.userId === userId ? { ...p, status: res.status } : p))
-    } catch {
+    } catch (error) {
       setPeers(prev => prev.map(p => p.userId === userId ? { ...p, status: 'none' } : p))
+      setConnectError(error.message || 'Unable to update this peer connection.')
+      setFailedConnection(userId)
     }
   }
 
@@ -277,9 +285,22 @@ function HubView({ profile, rooms, peers, setPeers, onRoom, onDM, loadingPeers }
           <strong>{recommended.length}</strong>
         </div>
         <div className="ps-peers-list">
-          {loadingPeers && <div className="ps-active-empty">Loading peers...</div>}
+          {connectError && (
+            <FeedbackNotice
+              variant="error"
+              title="Could not update connection"
+              message={connectError}
+              onRetry={() => handleConnect(failedConnection)}
+              compact
+            />
+          )}
+          {loadingPeers && <LoadingState label="Loading peer matches…" compact skeletonLines={2} />}
           {!loadingPeers && recommended.length === 0 && (
-            <div className="ps-active-empty">No other members yet. Invite others to join Aurora.</div>
+            <EmptyState
+              title="No peer matches yet"
+              description="Other members will appear here as the community grows."
+              compact
+            />
           )}
           {recommended.map(p => (
             <div key={p.userId} className="ps-peer-card">
@@ -315,6 +336,9 @@ function RoomView({ profile, room, onBack }) {
   const [confirmLeave, setConfirmLeave] = useState(false)
   const [sending, setSending]       = useState(false)
   const [error, setError]           = useState(null)
+  const [errorContext, setErrorContext] = useState('')
+  const [failedMessage, setFailedMessage] = useState('')
+  const [initialLoading, setInitialLoading] = useState(true)
   const messagesRef                 = useRef(null)
   const inputRef                    = useRef(null)
   const lastIdRef                   = useRef(null)
@@ -335,8 +359,11 @@ function RoomView({ profile, room, onBack }) {
         return [...prev, ...fresh]
       })
       lastIdRef.current = data[data.length - 1].id
-    } catch {
-      // silently ignore poll errors
+    } catch (loadError) {
+      if (initial) {
+        setError(loadError.message || 'Unable to load room messages.')
+        setErrorContext('load')
+      }
     }
   }, [room.id])
 
@@ -345,7 +372,7 @@ function RoomView({ profile, room, onBack }) {
       scrollToBottom('auto')
       inputRef.current?.focus()
       initialLoad.current = false
-    })
+    }).finally(() => setInitialLoading(false))
     const interval = setInterval(() => loadMessages(false), 5000)
     return () => clearInterval(interval)
   }, [loadMessages, scrollToBottom])
@@ -362,6 +389,8 @@ function RoomView({ profile, room, onBack }) {
     if (flag) setModAlert(flag)
     const pendingMessage = createPendingRoomMessage(text, profile)
     setSending(true)
+    setError(null)
+    setErrorContext('')
     setInput('')
     setMessages(prev => [...prev, pendingMessage])
     window.requestAnimationFrame(() => inputRef.current?.focus())
@@ -376,6 +405,8 @@ function RoomView({ profile, room, onBack }) {
     } catch (e) {
       setMessages(prev => prev.filter(m => m.id !== pendingMessage.id))
       setError(e.message)
+      setErrorContext('send')
+      setFailedMessage(text)
     } finally {
       setSending(false)
       inputRef.current?.focus()
@@ -406,11 +437,37 @@ function RoomView({ profile, room, onBack }) {
       </div>
 
       {modAlert && <ModAlert rule={modAlert} onDismiss={() => setModAlert(null)} />}
-      {error && <div className="ps-error-bar">{error} <button onClick={() => setError(null)}>✕</button></div>}
+      {error && (
+        <FeedbackNotice
+          variant="error"
+          title={errorContext === 'load' ? 'Could not load room messages' : 'Message not sent'}
+          message={error}
+          onRetry={errorContext === 'load'
+            ? async () => {
+                setInitialLoading(true)
+                setError(null)
+                await loadMessages(true)
+                setInitialLoading(false)
+              }
+            : () => {
+                setInput(failedMessage)
+                setError(null)
+                inputRef.current?.focus()
+              }}
+          retryLabel={errorContext === 'load' ? 'Reload messages' : 'Restore message'}
+          onDismiss={() => setError(null)}
+          compact
+        />
+      )}
 
       <div className="ps-messages" ref={messagesRef}>
-        {messages.length === 0 && (
-          <div className="ps-empty-chat">No messages yet. Be the first to say something.</div>
+        {initialLoading && <LoadingState label="Loading room messages…" compact skeletonLines={3} />}
+        {!initialLoading && messages.length === 0 && !error && (
+          <EmptyState
+            title="No messages yet"
+            description="Be the first to say something."
+            compact
+          />
         )}
         {messages.map(m => (
           <div key={m.id} className={`ps-msg-row${m.self ? ' ps-msg-row--self' : ''}`}>
@@ -439,8 +496,9 @@ function RoomView({ profile, room, onBack }) {
             ref={inputRef}
             className="chat-textarea"
             placeholder="Send a message to the room"
+            disabled={sending || initialLoading}
           />
-          <ChatInputSubmit className="send-btn">
+          <ChatInputSubmit className="send-btn" disabled={initialLoading}>
             <SendIcon />
           </ChatInputSubmit>
         </ChatInput>
@@ -458,6 +516,9 @@ function DMView({ peer, profile, onBack, onLeave }) {
   const [sending, setSending]   = useState(false)
   const [confirmLeave, setConfirmLeave] = useState(false)
   const [error, setError]       = useState(null)
+  const [errorContext, setErrorContext] = useState('')
+  const [failedMessage, setFailedMessage] = useState('')
+  const [initialLoading, setInitialLoading] = useState(true)
   const messagesRef             = useRef(null)
   const inputRef                = useRef(null)
   const lastIdRef               = useRef(null)
@@ -478,8 +539,11 @@ function DMView({ peer, profile, onBack, onLeave }) {
         return [...prev, ...fresh]
       })
       lastIdRef.current = data[data.length - 1].id
-    } catch {
-      // silently ignore
+    } catch (loadError) {
+      if (initial) {
+        setError(loadError.message || 'Unable to load direct messages.')
+        setErrorContext('load')
+      }
     }
   }, [peer.userId])
 
@@ -488,7 +552,7 @@ function DMView({ peer, profile, onBack, onLeave }) {
       scrollToBottom('auto')
       inputRef.current?.focus()
       initialLoad.current = false
-    })
+    }).finally(() => setInitialLoading(false))
     const interval = setInterval(() => loadMessages(false), 5000)
     return () => clearInterval(interval)
   }, [loadMessages, scrollToBottom])
@@ -505,6 +569,8 @@ function DMView({ peer, profile, onBack, onLeave }) {
     if (flag) setModAlert(flag)
     const pendingMessage = createPendingDMMessage(text)
     setSending(true)
+    setError(null)
+    setErrorContext('')
     setInput('')
     setMessages(prev => [...prev, pendingMessage])
     window.requestAnimationFrame(() => inputRef.current?.focus())
@@ -519,6 +585,8 @@ function DMView({ peer, profile, onBack, onLeave }) {
     } catch (e) {
       setMessages(prev => prev.filter(m => m.id !== pendingMessage.id))
       setError(e.message)
+      setErrorContext('send')
+      setFailedMessage(text)
     } finally {
       setSending(false)
       inputRef.current?.focus()
@@ -551,11 +619,37 @@ function DMView({ peer, profile, onBack, onLeave }) {
       </div>
 
       {modAlert && <ModAlert rule={modAlert} onDismiss={() => setModAlert(null)} />}
-      {error && <div className="ps-error-bar">{error} <button onClick={() => setError(null)}>✕</button></div>}
+      {error && (
+        <FeedbackNotice
+          variant="error"
+          title={errorContext === 'load' ? 'Could not load direct messages' : 'Message not sent'}
+          message={error}
+          onRetry={errorContext === 'load'
+            ? async () => {
+                setInitialLoading(true)
+                setError(null)
+                await loadMessages(true)
+                setInitialLoading(false)
+              }
+            : () => {
+                setInput(failedMessage)
+                setError(null)
+                inputRef.current?.focus()
+              }}
+          retryLabel={errorContext === 'load' ? 'Reload messages' : 'Restore message'}
+          onDismiss={() => setError(null)}
+          compact
+        />
+      )}
 
       <div className="ps-messages" ref={messagesRef}>
-        {messages.length === 0 && (
-          <div className="ps-empty-chat">Start the conversation.</div>
+        {initialLoading && <LoadingState label="Loading direct messages…" compact skeletonLines={3} />}
+        {!initialLoading && messages.length === 0 && !error && (
+          <EmptyState
+            title="No messages yet"
+            description="Start the conversation when you're ready."
+            compact
+          />
         )}
         {messages.map(m => {
           const isMe = m.role === 'me'
@@ -586,8 +680,9 @@ function DMView({ peer, profile, onBack, onLeave }) {
             ref={inputRef}
             className="chat-textarea"
             placeholder="Message"
+            disabled={sending || initialLoading}
           />
-          <ChatInputSubmit className="send-btn">
+          <ChatInputSubmit className="send-btn" disabled={initialLoading}>
             <SendIcon />
           </ChatInputSubmit>
         </ChatInput>
@@ -607,31 +702,43 @@ export default function PeerSupport() {
   const [activeRoom, setActiveRoom] = useState(null)
   const [activePeer, setActivePeer] = useState(null)
   const [onboardingLoading, setOnboardingLoading] = useState(false)
+  const [onboardingError, setOnboardingError] = useState('')
+  const [initialError, setInitialError] = useState('')
+  const [profileReloadKey, setProfileReloadKey] = useState(0)
+  const [hubError, setHubError] = useState('')
+  const [hubReloadKey, setHubReloadKey] = useState(0)
 
   useEffect(() => {
+    setView('loading')
+    setInitialError('')
     fetchPeerProfile()
       .then(data => {
         setProfile(data)
         setView(data.isOnboarded ? 'hub' : 'onboarding')
       })
-      .catch(() => setView('onboarding'))
-  }, [])
+      .catch((error) => {
+        setInitialError(error.message || 'Unable to load Peer Support.')
+        setView('error')
+      })
+  }, [profileReloadKey])
 
   useEffect(() => {
     if (view !== 'hub') return
-    fetchPeerRooms().then(setRooms).catch(() => {})
+    setHubError('')
+    fetchPeerRooms().then(setRooms).catch((error) => setHubError(error.message || 'Unable to load support rooms.'))
     setLoadingPeers(true)
-    fetchPeers().then(setPeers).catch(() => {}).finally(() => setLoadingPeers(false))
-  }, [view])
+    fetchPeers().then(setPeers).catch((error) => setHubError(error.message || 'Unable to load peer matches.')).finally(() => setLoadingPeers(false))
+  }, [view, hubReloadKey])
 
   async function finishOnboarding() {
     setOnboardingLoading(true)
+    setOnboardingError('')
     try {
       const data = await completePeerOnboarding()
       setProfile(data)
       setView('hub')
-    } catch {
-      // stay on onboarding
+    } catch (error) {
+      setOnboardingError(error.message || 'Unable to finish setup right now.')
     } finally {
       setOnboardingLoading(false)
     }
@@ -644,7 +751,23 @@ export default function PeerSupport() {
     return (
       <>
         <style>{PS_STYLES}</style>
-        <section className="page"><p style={{ color: 'var(--muted)' }}>Loading...</p></section>
+        <section className="page"><LoadingState label="Loading Peer Support…" skeletonLines={3} /></section>
+      </>
+    )
+  }
+
+  if (view === 'error') {
+    return (
+      <>
+        <style>{PS_STYLES}</style>
+        <section className="page">
+          <FeedbackNotice
+            variant="error"
+            title="Could not load Peer Support"
+            message={initialError}
+            onRetry={() => setProfileReloadKey((key) => key + 1)}
+          />
+        </section>
       </>
     )
   }
@@ -653,18 +776,29 @@ export default function PeerSupport() {
     <>
       <style>{PS_STYLES}</style>
       {view === 'onboarding' && (
-        <OnboardingView onDone={finishOnboarding} loading={onboardingLoading} />
+        <OnboardingView onDone={finishOnboarding} loading={onboardingLoading} error={onboardingError} />
       )}
       {view === 'hub' && profile && (
-        <HubView
-          profile={profile}
-          rooms={rooms}
-          peers={peers}
-          setPeers={setPeers}
-          onRoom={openRoom}
-          onDM={openDM}
-          loadingPeers={loadingPeers}
-        />
+        <>
+          {hubError && (
+            <FeedbackNotice
+              variant="error"
+              title="Some community information could not be loaded"
+              message={hubError}
+              onRetry={() => setHubReloadKey((key) => key + 1)}
+              compact
+            />
+          )}
+          <HubView
+            profile={profile}
+            rooms={rooms}
+            peers={peers}
+            setPeers={setPeers}
+            onRoom={openRoom}
+            onDM={openDM}
+            loadingPeers={loadingPeers}
+          />
+        </>
       )}
       {view === 'room' && profile && activeRoom && (
         <RoomView

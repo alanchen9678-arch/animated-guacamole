@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useUser } from '../context/UserContext.jsx'
+import { AsyncButton, FeedbackNotice } from '../components/ui/feedback.jsx'
 
 const MOODS = ['calm', 'anxious', 'sad', 'happy', 'stressed', 'grateful', 'tired', 'hopeful']
 const AVATAR_COLORS = ['#4d6b58', '#3a6898', '#b45309', '#15803d', '#be185d', '#0891b2', '#9333ea', '#c2410c']
@@ -16,11 +17,13 @@ export default function Settings() {
   const [saving, setSaving]   = useState(false)
   const [saved, setSaved]     = useState(false)
   const [error, setError]     = useState(null)
+  const [feedbackContext, setFeedbackContext] = useState('')
 
-  async function save(fields) {
+  async function save(fields, context) {
     setSaving(true)
     setSaved(false)
     setError(null)
+    setFeedbackContext(context)
     try {
       await updateProfile(fields)
       setSaved(true)
@@ -33,13 +36,13 @@ export default function Settings() {
   }
 
   async function saveProfile(e) {
-    e.preventDefault()
-    await save({ displayName, bio, email, avatarColor })
+    e?.preventDefault()
+    await save({ displayName, bio, email, avatarColor }, 'profile')
   }
 
   async function saveMood(selected) {
     setMood(selected)
-    await save({ mood: selected })
+    await save({ mood: selected }, 'mood')
   }
 
   const initials = (user?.displayName || user?.firstName || user?.username || '?').slice(0, 2).toUpperCase()
@@ -201,12 +204,26 @@ export default function Settings() {
               />
             </div>
             <div className="save-row">
-              <button className="save-btn" type="submit" disabled={saving}>
-                {saving ? 'Saving...' : 'Save profile'}
-              </button>
-              {saved  && <span className="save-status">Saved ✓</span>}
-              {error  && <span className="save-error">{error}</span>}
+              <AsyncButton
+                className="save-btn"
+                type="submit"
+                pending={saving && feedbackContext === 'profile'}
+                pendingLabel="Saving…"
+                disabled={saving}
+              >
+                Save profile
+              </AsyncButton>
             </div>
+            {saved && feedbackContext === 'profile' && <FeedbackNotice variant="success" message="Your changes were saved." compact />}
+            {error && feedbackContext === 'profile' && (
+              <FeedbackNotice
+                variant="error"
+                title="Could not save changes"
+                message={error}
+                onRetry={saveProfile}
+                compact
+              />
+            )}
           </form>
         </article>
 
@@ -255,7 +272,17 @@ export default function Settings() {
               </button>
             ))}
           </div>
-          {saved && <div className="save-status" style={{ marginTop: 10 }}>Saved ✓</div>}
+          {saving && feedbackContext === 'mood' && <FeedbackNotice message="Saving your mood…" compact />}
+          {saved && feedbackContext === 'mood' && <FeedbackNotice variant="success" message="Your mood was saved." compact />}
+          {error && feedbackContext === 'mood' && (
+            <FeedbackNotice
+              variant="error"
+              title="Could not save your mood"
+              message={error}
+              onRetry={() => saveMood(mood)}
+              compact
+            />
+          )}
         </article>
 
         {/* Sign out */}

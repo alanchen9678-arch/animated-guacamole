@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { TextReveal } from './components/ui/cascade-text.jsx'
 import WhisperText from './components/ui/whisper-text.jsx'
+import { LoadingState } from './components/ui/feedback.jsx'
 import { UserProvider, useUser } from './context/UserContext.jsx'
 import { NavigationProvider, useNavigation } from './context/NavigationContext.jsx'
 import { pageConfig } from './routes/AppRoutes.jsx'
@@ -124,15 +125,7 @@ function AppShell() {
   }, [activeShellPage, isLoggedIn])
 
   if (loading) {
-    return (
-      <div
-        role="status"
-        aria-live="polite"
-        style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: '#4d6b58' }}
-      >
-        Loading Aurora…
-      </div>
-    )
+    return <LoadingState label="Loading Aurora…" skeletonLines={3} className="app-loading" />
   }
 
   return (
@@ -781,7 +774,7 @@ function AppShell() {
               </aside>
 
               <main ref={contentRef} className="content">
-                <Suspense fallback={<div role="status" className="page">Loading page…</div>}>
+                <Suspense fallback={<LoadingState label="Loading page…" skeletonLines={3} />}>
                   <ActiveComponent />
                 </Suspense>
               </main>

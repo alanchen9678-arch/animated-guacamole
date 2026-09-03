@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useUser } from '../context/UserContext'
 import { fetchCheckIns, submitCheckIn } from '../services/api'
+import { AsyncButton, FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
 
 // ─── personality questions (30 questions, 5 dimensions) ───────────────────────
 
@@ -978,7 +979,7 @@ function IntroView({ type, onStart, onBack }) {
 
 const SCALE_LABELS = ['Strongly Disagree', 'Disagree', 'Slightly Disagree', 'Neutral', 'Slightly Agree', 'Agree', 'Strongly Agree']
 
-function SurveyView({ questions, answers, setAnswers, initialIndex = 0, onIndexChange, onDone, onBack }) {
+function SurveyView({ questions, answers, setAnswers, initialIndex = 0, onIndexChange, onDone, onBack, submitting }) {
   const [idx, setIdx] = useState(() => Math.min(Math.max(initialIndex, 0), questions.length - 1))
   const [flashChoice, setFlashChoice] = useState(null)
   const advanceTimerRef = useRef(null)
@@ -997,6 +998,7 @@ function SurveyView({ questions, answers, setAnswers, initialIndex = 0, onIndexC
   }, [idx, onIndexChange])
 
   function pickAndAdvance(val) {
+    if (submitting) return
     const isNewAnswer = selected == null
     const nextAnswers = { ...answers, [q.id]: val }
     setAnswers(nextAnswers)
@@ -1052,6 +1054,7 @@ function SurveyView({ questions, answers, setAnswers, initialIndex = 0, onIndexC
               key={i}
               className={`ci-choice-btn${selected === i ? ' ci-choice-btn--on' : ''}${flashChoice === i ? ' ci-choice-btn--flash' : ''}`}
               onClick={() => pickAndAdvance(i)}
+              disabled={submitting}
             >
               {opt.text}
             </button>
@@ -1066,6 +1069,7 @@ function SurveyView({ questions, answers, setAnswers, initialIndex = 0, onIndexC
                 className={`ci-scale-btn${selected === v ? ' ci-scale-btn--on' : ''}${flashChoice === v ? ' ci-scale-btn--flash' : ''}`}
                 style={selected === v ? { background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff' } : {}}
                 onClick={() => pickAndAdvance(v)}
+                disabled={submitting}
                 title={SCALE_LABELS[v - 1]}
               >
                 {v}
@@ -1082,15 +1086,17 @@ function SurveyView({ questions, answers, setAnswers, initialIndex = 0, onIndexC
 
       {/* nav */}
       <div className="ci-survey-nav">
-        <button className="ci-back-btn" onClick={back}>← Back</button>
-        <button
+        <button className="ci-back-btn" onClick={back} disabled={submitting}>← Back</button>
+        <AsyncButton
           className="ci-next-btn"
           onClick={next}
-          disabled={selected == null}
+          disabled={selected == null || submitting}
+          pending={submitting && idx === total - 1}
+          pendingLabel="Submitting…"
           style={{ opacity: selected != null ? 1 : 0.4, cursor: selected != null ? 'pointer' : 'not-allowed' }}
         >
           {idx === total - 1 ? 'Submit' : 'Next →'}
-        </button>
+        </AsyncButton>
       </div>
     </div>
   )
@@ -1201,6 +1207,10 @@ export default function CheckIns() {
   const [loadingState, setLoadingState] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [errorContext, setErrorContext] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
+  const [submitting, setSubmitting] = useState(false)
+  const submittingRef = useRef(false)
   const draftRestoreAttemptRef = useRef(null)
   const draftStorageKey = useMemo(() => getCheckInDraftStorageKey(user), [user])
 
@@ -1222,6 +1232,7 @@ export default function CheckIns() {
     let cancelled = false
     setLoadingState(true)
     setSaveError('')
+    setErrorContext('')
 
     fetchCheckIns()
       .then((data) => {
@@ -1235,7 +1246,10 @@ export default function CheckIns() {
         })
       })
       .catch((error) => {
-        if (!cancelled) setSaveError(error.message)
+        if (!cancelled) {
+          setSaveError(error.message)
+          setErrorContext('load')
+        }
       })
       .finally(() => {
         if (!cancelled) {
@@ -1247,7 +1261,7 @@ export default function CheckIns() {
     return () => {
       cancelled = true
     }
-  }, [token, userLoading])
+  }, [token, userLoading, reloadKey])
 
   useEffect(() => {
     if (!historyLoaded || draftRestoreAttemptRef.current === draftStorageKey) return
@@ -1300,6 +1314,11 @@ export default function CheckIns() {
   function beginAnswering() { setView('survey') }
 
   async function onSurveyDone(completedAnswers = answers) {
+    if (submittingRef.current) return
+    submittingRef.current = true
+    setSubmitting(true)
+    setSaveError('')
+    setErrorContext('')
     const scores = computeDisorderScores(completedAnswers, questions)
     setLatestScores(scores)
 
@@ -1346,10 +1365,15 @@ export default function CheckIns() {
           lastCheckInDate: data.lastCheckInDate ?? null,
           hasInitialAssessment: Boolean(data.hasInitialAssessment),
         })
-        await refreshUser()
+        // The check-in is already committed once this response arrives. A
+        // profile refresh failure must not invite a duplicate submission.
+        await refreshUser().catch(() => {})
         setSaveError('')
       } catch (error) {
         setSaveError(error.message)
+        setErrorContext('submit')
+        submittingRef.current = false
+        setSubmitting(false)
         return
       }
     } else {
@@ -1377,6 +1401,8 @@ export default function CheckIns() {
     }
 
     localStorage.setItem('aurora.checkin.last-completed', formatDateKey(new Date()))
+    submittingRef.current = false
+    setSubmitting(false)
     setView('results')
   }
 
@@ -1413,10 +1439,18 @@ export default function CheckIns() {
         <p>Short, regular surveys that track your well-being across six dimensions so Aurora can support you proactively.</p>
       </header>
 
-      {saveError && <p className="ci-error">{saveError}</p>}
-      {loadingState && view === 'hub' && <p className="ci-loading">Loading your check-ins...</p>}
+      {saveError && (
+        <FeedbackNotice
+          variant="error"
+          title={errorContext === 'load' ? 'Could not load your check-ins' : 'Could not submit your check-in'}
+          message={saveError}
+          onRetry={errorContext === 'load' ? () => setReloadKey((key) => key + 1) : () => onSurveyDone()}
+          retryLabel={errorContext === 'load' ? 'Reload check-ins' : 'Retry submission'}
+        />
+      )}
+      {loadingState && view === 'hub' && <LoadingState label="Loading your check-ins…" skeletonLines={3} />}
       {draftRestored && view === 'survey' && (
-        <p className="ci-draft-restored" role="status">Your unfinished check-in was restored.</p>
+        <FeedbackNotice variant="info" message="Your unfinished check-in was restored." compact />
       )}
 
       {view === 'hub' && (
@@ -1447,6 +1481,7 @@ export default function CheckIns() {
           onIndexChange={setDraftIndex}
           onDone={onSurveyDone}
           onBack={() => setView('intro')}
+          submitting={submitting}
         />
       )}
 

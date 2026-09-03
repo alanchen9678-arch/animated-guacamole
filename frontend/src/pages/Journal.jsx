@@ -4,6 +4,7 @@ import { ColorSwatchPicker } from '../components/ui/heroui-color-swatch-picker.j
 import ColorPickerMenu from '../components/ui/color-picker-menu.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { fetchJournalEntries, saveJournalEntry } from '../services/api.js'
+import { AsyncButton, EmptyState, FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
 
 // ─── mood config ───────────────────────────────────────────────────────────────
 
@@ -321,7 +322,11 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
               )}
             </button>
           ) : (
-            <p>No journal entry saved for this day.</p>
+            <EmptyState
+              title="No journal entry yet"
+              description="Nothing has been saved for this day."
+              compact
+            />
           )}
         </div>
       )}
@@ -532,6 +537,12 @@ export default function Journal() {
   const [selectedHistoryDate, setSelectedHistoryDate] = useState(todayKey)
   const [expandedEntryDate, setExpandedEntryDate] = useState(null)
   const [saveError, setSaveError] = useState('')
+  const [feedbackContext, setFeedbackContext] = useState('')
+  const [loadingEntries, setLoadingEntries] = useState(false)
+  const [savingEntry, setSavingEntry] = useState(false)
+  const [savingMood, setSavingMood] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
   const [aiResponse, setAiResponse] = useState(null)
 
   const todayMood = moodData[todayKey]
@@ -561,7 +572,9 @@ export default function Journal() {
     if (userLoading || !token) return
 
     let cancelled = false
+    setLoadingEntries(true)
     setSaveError('')
+    setSaveSuccess('')
 
     fetchJournalEntries()
       .then((data) => {
@@ -577,20 +590,30 @@ export default function Journal() {
         setSubmitted(Boolean(savedToday?.text || savedToday?.doodleData))
       })
       .catch((error) => {
-        if (!cancelled) setSaveError(error.message)
+        if (!cancelled) {
+          setSaveError(error.message)
+          setFeedbackContext('load')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingEntries(false)
       })
 
     return () => {
       cancelled = true
     }
-  }, [token, todayKey, userLoading])
+  }, [token, todayKey, userLoading, reloadKey])
 
   useEffect(() => {
     saveJournalMoods(moodData)
   }, [moodData])
 
   async function submit() {
-    if (!hasEntryContent) return
+    if (!hasEntryContent || savingEntry) return
+    setSavingEntry(true)
+    setSaveError('')
+    setSaveSuccess('')
+    setFeedbackContext('entry')
     const tone = entryText.trim() ? analyzeEntry(entryText) : 'neutral'
     const nextEntry = { text: entryText, doodleData, tone }
     const nextHistory = { ...entryHistory, [todayKey]: nextEntry }
@@ -611,6 +634,7 @@ export default function Journal() {
         setSaveError('')
       } catch (error) {
         setSaveError(error.message)
+        setSavingEntry(false)
         return
       }
     } else {
@@ -619,19 +643,31 @@ export default function Journal() {
 
     setSubmitted(true)
     setAiResponse(pickResponse(tone))
+    setSaveSuccess('Your journal entry was saved.')
+    setSavingEntry(false)
   }
 
   function editEntry() {
     setSubmitted(false)
     setAiResponse(null)
+    setSaveSuccess('')
+    setSaveError('')
   }
 
   function setTodayMood(moodId) {
+    if (savingMood) return
     const nextMoods = { ...moodData, [todayKey]: moodId }
     setMoodData(nextMoods)
+    setSaveError('')
+    setSaveSuccess('')
+    setFeedbackContext('mood')
 
-    if (!token) return
+    if (!token) {
+      setSaveSuccess('Your mood was saved.')
+      return
+    }
 
+    setSavingMood(true)
     saveJournalEntry({
       date: todayKey,
       mood: moodId,
@@ -641,10 +677,12 @@ export default function Journal() {
         setEntryHistory((currentHistory) => mergeJournalEntries(currentHistory, backendEntries))
         setMoodData((currentMoods) => mergeJournalMoods(currentMoods, backendEntries))
         setSaveError('')
+        setSaveSuccess('Your mood was saved.')
       })
       .catch((error) => {
         setSaveError(error.message)
       })
+      .finally(() => setSavingMood(false))
   }
 
   return (
@@ -661,7 +699,17 @@ export default function Journal() {
         </button>
       </header>
 
-      {saveError && <p className="jn-error">{saveError}</p>}
+      {loadingEntries && <LoadingState label="Syncing your journal…" compact skeletonLines={2} />}
+      {saveError && (
+        <FeedbackNotice
+          variant="error"
+          title={feedbackContext === 'load' ? 'Could not load your journal' : feedbackContext === 'mood' ? 'Could not save your mood' : 'Could not save your entry'}
+          message={saveError}
+          onRetry={feedbackContext === 'load' ? () => setReloadKey((key) => key + 1) : feedbackContext === 'mood' ? () => setTodayMood(todayMood) : submit}
+        />
+      )}
+      {savingMood && <FeedbackNotice message="Saving your mood…" compact />}
+      {saveSuccess && <FeedbackNotice variant="success" message={saveSuccess} compact />}
 
       {/* main journal editor */}
       <section className="jn-entry-focus">
@@ -738,14 +786,16 @@ export default function Journal() {
       )}
 
       {!submitted ? (
-        <button
+        <AsyncButton
           className="jn-submit-btn"
           onClick={submit}
-          disabled={!hasEntryContent}
+          disabled={!hasEntryContent || savingEntry}
+          pending={savingEntry}
+          pendingLabel="Saving entry…"
           style={{ opacity: hasEntryContent ? 1 : 0.45, cursor: hasEntryContent ? 'pointer' : 'not-allowed' }}
         >
           Submit entry →
-        </button>
+        </AsyncButton>
       ) : (
         <button className="jn-new-btn" onClick={editEntry}>Edit entry</button>
       )}

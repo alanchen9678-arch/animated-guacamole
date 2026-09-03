@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { TextReveal } from '../components/ui/cascade-text.jsx'
+import { AsyncButton, FeedbackNotice } from '../components/ui/feedback.jsx'
 import { useNavigation } from '../context/NavigationContext.jsx'
 import { useUser } from '../context/UserContext.jsx'
 
@@ -330,11 +331,23 @@ export default function Login({ initialMode = 'login', onClose }) {
                 </div>
               )}
 
-              {error && <div className="auth-error">{error}</div>}
+              {error && (
+                <FeedbackNotice
+                  variant="error"
+                  title={mode === 'login' ? 'Unable to log in' : 'Unable to create account'}
+                  message={error}
+                  compact
+                />
+              )}
 
-              <button className="auth-submit" type="submit" disabled={busy}>
-                {busy ? 'Please wait...' : mode === 'login' ? 'Log in' : 'Create account'}
-              </button>
+              <AsyncButton
+                className="auth-submit"
+                type="submit"
+                pending={busy}
+                pendingLabel={mode === 'login' ? 'Logging in…' : 'Creating account…'}
+              >
+                {mode === 'login' ? 'Log in' : 'Create account'}
+              </AsyncButton>
             </form>
 
             <p className="auth-hint">
