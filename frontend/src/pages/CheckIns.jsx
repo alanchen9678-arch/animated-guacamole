@@ -636,6 +636,73 @@ const MOCK_HISTORY = [
 // ─── storage key ──────────────────────────────────────────────────────────────
 
 const PERSONALITY_STORAGE_KEY = 'aurora.personality'
+const CHECKIN_DRAFT_VERSION = 1
+const CHECKIN_QUESTION_BY_ID = new Map(
+  [...INITIAL_DISORDER_QUESTIONS, ...PERSONALITY_QUESTIONS, ...WEEKLY_QUESTION_BANK]
+    .map((question) => [String(question.id), question]),
+)
+
+function getCheckInDraftStorageKey(user) {
+  return `aurora.checkin.draft.v${CHECKIN_DRAFT_VERSION}:${user?.id ?? 'guest'}`
+}
+
+function loadCheckInDraft(storageKey) {
+  try {
+    const raw = localStorage.getItem(storageKey)
+    if (!raw) return null
+    const draft = JSON.parse(raw)
+    if (
+      draft?.version !== CHECKIN_DRAFT_VERSION
+      || !['initial', 'weekly'].includes(draft.surveyType)
+      || !Array.isArray(draft.questionIds)
+      || !draft.questionIds.length
+    ) return null
+
+    const questions = draft.questionIds.map((id) => CHECKIN_QUESTION_BY_ID.get(String(id)))
+    if (questions.some((question) => !question)) return null
+
+    const answers = {}
+    for (const question of questions) {
+      const answer = draft.answers?.[question.id]
+      if (Number.isInteger(answer)) answers[question.id] = answer
+    }
+
+    return {
+      surveyType: draft.surveyType,
+      questions,
+      answers,
+      currentIndex: Math.min(
+        Math.max(Number.isInteger(draft.currentIndex) ? draft.currentIndex : 0, 0),
+        questions.length - 1,
+      ),
+    }
+  } catch {
+    return null
+  }
+}
+
+function saveCheckInDraft(storageKey, { surveyType, questions, answers, currentIndex }) {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify({
+      version: CHECKIN_DRAFT_VERSION,
+      surveyType,
+      questionIds: questions.map((question) => question.id),
+      answers,
+      currentIndex,
+      updatedAt: new Date().toISOString(),
+    }))
+  } catch {
+    // Draft saving is best-effort when browser storage is unavailable.
+  }
+}
+
+function clearCheckInDraft(storageKey) {
+  try {
+    localStorage.removeItem(storageKey)
+  } catch {
+    // Browser storage can be unavailable in private browsing modes.
+  }
+}
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -911,8 +978,8 @@ function IntroView({ type, onStart, onBack }) {
 
 const SCALE_LABELS = ['Strongly Disagree', 'Disagree', 'Slightly Disagree', 'Neutral', 'Slightly Agree', 'Agree', 'Strongly Agree']
 
-function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
-  const [idx, setIdx] = useState(0)
+function SurveyView({ questions, answers, setAnswers, initialIndex = 0, onIndexChange, onDone, onBack }) {
+  const [idx, setIdx] = useState(() => Math.min(Math.max(initialIndex, 0), questions.length - 1))
   const [flashChoice, setFlashChoice] = useState(null)
   const advanceTimerRef = useRef(null)
   const q          = questions[idx]
@@ -925,11 +992,14 @@ function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
     if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
   }, [])
 
-  function pick(val) { setAnswers(prev => ({ ...prev, [q.id]: val })) }
+  useEffect(() => {
+    onIndexChange?.(idx)
+  }, [idx, onIndexChange])
 
   function pickAndAdvance(val) {
     const isNewAnswer = selected == null
-    pick(val)
+    const nextAnswers = { ...answers, [q.id]: val }
+    setAnswers(nextAnswers)
 
     if (!isNewAnswer) return
 
@@ -938,7 +1008,7 @@ function SurveyView({ questions, answers, setAnswers, onDone, onBack }) {
     advanceTimerRef.current = setTimeout(() => {
       setFlashChoice(null)
       if (idx < total - 1) setIdx((current) => current + 1)
-      else onDone()
+      else onDone(nextAnswers)
     }, 180)
   }
 
@@ -1116,6 +1186,8 @@ export default function CheckIns() {
   const [surveyType, setSurveyType] = useState('weekly')
   const [questions,  setQuestions]  = useState([])
   const [answers,    setAnswers]    = useState({})
+  const [draftIndex, setDraftIndex] = useState(0)
+  const [draftRestored, setDraftRestored] = useState(false)
   const [latestScores, setLatestScores] = useState(null)
   const [latestPrevScores, setLatestPrevScores] = useState(null)
   const [latestPersonality, setLatestPersonality] = useState(null)
@@ -1127,10 +1199,14 @@ export default function CheckIns() {
     hasInitialAssessment: MOCK_HISTORY.some((entry) => entry.type === 'initial'),
   })
   const [loadingState, setLoadingState] = useState(false)
+  const [historyLoaded, setHistoryLoaded] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const draftRestoreAttemptRef = useRef(null)
+  const draftStorageKey = useMemo(() => getCheckInDraftStorageKey(user), [user])
 
   useEffect(() => {
     if (userLoading) return
+    setHistoryLoaded(false)
     if (!token) {
       setHistory(MOCK_HISTORY)
       setServerSummary({
@@ -1139,6 +1215,7 @@ export default function CheckIns() {
         lastCheckInDate: getLatestEntry(MOCK_HISTORY)?.date ?? null,
         hasInitialAssessment: MOCK_HISTORY.some((entry) => entry.type === 'initial'),
       })
+      setHistoryLoaded(true)
       return
     }
 
@@ -1161,13 +1238,51 @@ export default function CheckIns() {
         if (!cancelled) setSaveError(error.message)
       })
       .finally(() => {
-        if (!cancelled) setLoadingState(false)
+        if (!cancelled) {
+          setLoadingState(false)
+          setHistoryLoaded(true)
+        }
       })
 
     return () => {
       cancelled = true
     }
   }, [token, userLoading])
+
+  useEffect(() => {
+    if (!historyLoaded || draftRestoreAttemptRef.current === draftStorageKey) return
+    draftRestoreAttemptRef.current = draftStorageKey
+    const draft = loadCheckInDraft(draftStorageKey)
+    if (!draft) return
+
+    const isNoLongerValid = (
+      draft.surveyType === 'initial' && serverSummary.hasInitialAssessment
+    ) || (
+      draft.surveyType === 'weekly'
+      && (!serverSummary.hasInitialAssessment || !serverSummary.dueToday)
+    )
+    if (isNoLongerValid) {
+      clearCheckInDraft(draftStorageKey)
+      return
+    }
+
+    setSurveyType(draft.surveyType)
+    setQuestions(draft.questions)
+    setAnswers(draft.answers)
+    setDraftIndex(draft.currentIndex)
+    setDraftRestored(true)
+    setView('survey')
+  }, [draftStorageKey, historyLoaded, serverSummary])
+
+  useEffect(() => {
+    if (view !== 'survey' || !questions.length) return
+    saveCheckInDraft(draftStorageKey, {
+      surveyType,
+      questions,
+      answers,
+      currentIndex: draftIndex,
+    })
+  }, [answers, draftIndex, draftStorageKey, questions, surveyType, view])
 
   function startSurvey(type) {
     const lastEntry = history[history.length - 1]
@@ -1176,20 +1291,23 @@ export default function CheckIns() {
     setSurveyType(type)
     setQuestions(qs)
     setAnswers({})
+    setDraftIndex(0)
+    setDraftRestored(false)
+    clearCheckInDraft(draftStorageKey)
     setView('intro')
   }
 
   function beginAnswering() { setView('survey') }
 
-  async function onSurveyDone() {
-    const scores = computeDisorderScores(answers, questions)
+  async function onSurveyDone(completedAnswers = answers) {
+    const scores = computeDisorderScores(completedAnswers, questions)
     setLatestScores(scores)
 
     // compute personality if there were personality questions
     let personality = null
     const hasPersonalityQs = questions.some(q => q.dim != null)
     if (hasPersonalityQs) {
-      const profile = computePersonalityProfile(answers, questions)
+      const profile = computePersonalityProfile(completedAnswers, questions)
       personality = findPersonality(profile)
       setLatestPersonality(personality)
 
@@ -1219,6 +1337,8 @@ export default function CheckIns() {
         }
         if (personality) payload.personality = personality
         const data = await submitCheckIn(payload)
+        clearCheckInDraft(draftStorageKey)
+        setDraftRestored(false)
         setHistory(data.history?.length ? data.history : [])
         setServerSummary({
           streak: data.streak ?? 0,
@@ -1244,6 +1364,8 @@ export default function CheckIns() {
         scores,
       }
       const nextHistory = [...history, newEntry]
+      clearCheckInDraft(draftStorageKey)
+      setDraftRestored(false)
       setHistory(nextHistory)
       setServerSummary({
         streak: getWeeklyStreak(nextHistory),
@@ -1293,6 +1415,9 @@ export default function CheckIns() {
 
       {saveError && <p className="ci-error">{saveError}</p>}
       {loadingState && view === 'hub' && <p className="ci-loading">Loading your check-ins...</p>}
+      {draftRestored && view === 'survey' && (
+        <p className="ci-draft-restored" role="status">Your unfinished check-in was restored.</p>
+      )}
 
       {view === 'hub' && (
         <HubView
@@ -1318,6 +1443,8 @@ export default function CheckIns() {
           questions={questions}
           answers={answers}
           setAnswers={setAnswers}
+          initialIndex={draftIndex}
+          onIndexChange={setDraftIndex}
           onDone={onSurveyDone}
           onBack={() => setView('intro')}
         />
@@ -1358,6 +1485,16 @@ const CI_STYLES = `
     color: #b91c1c;
     font-size: 0.84rem;
     font-weight: 600;
+  }
+  .ci-draft-restored {
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    border: 1px solid rgba(77,107,88,0.25);
+    border-radius: 14px;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-size: 0.88rem;
+    font-weight: 700;
   }
   .ci-loading {
     margin: 0 0 14px;
