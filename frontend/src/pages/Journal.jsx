@@ -198,6 +198,7 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
   const now     = new Date()
   const [year, setYear]   = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())
+  const [monthMotion, setMonthMotion] = useState('forward')
   const dataYears = [
     ...Object.keys(moodData).map((key) => Number(key.split('-')[0])),
     ...Object.keys(entryHistory).map((key) => Number(key.split('-')[0])),
@@ -220,17 +221,23 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
   const isCurrent   = year === now.getFullYear() && month === now.getMonth()
 
   function prevMonth() {
+    setMonthMotion('backward')
     if (month === 0) { setMonth(11); setYear(y => y - 1) }
     else setMonth(m => m - 1)
   }
   function nextMonth() {
+    setMonthMotion('forward')
     if (month === 11) { setMonth(0); setYear(y => y + 1) }
     else setMonth(m => m + 1)
   }
 
-  const cells = [
+  const visibleDays = [
     ...Array(startDay).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ]
+  const cells = [
+    ...visibleDays,
+    ...Array(42 - visibleDays.length).fill(null),
   ]
 
   const selectedMood = selectedDate && moodData[selectedDate]
@@ -248,7 +255,10 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
               itemClassName="aurora-dropdown-item--calendar"
               items={monthOptions}
               menuClassName="aurora-dropdown-menu--calendar"
-              onSelectionChange={(value) => setMonth(Number(value))}
+              onSelectionChange={(value) => {
+                setMonthMotion('fade')
+                setMonth(Number(value))
+              }}
               placement="bottom"
               popoverClassName="aurora-dropdown-popover--calendar"
               selectedKey={String(month)}
@@ -261,7 +271,10 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
               itemClassName="aurora-dropdown-item--calendar"
               items={yearDropdownOptions}
               menuClassName="aurora-dropdown-menu--calendar"
-              onSelectionChange={(value) => setYear(Number(value))}
+              onSelectionChange={(value) => {
+                setMonthMotion('fade')
+                setYear(Number(value))
+              }}
               placement="bottom"
               popoverClassName="aurora-dropdown-popover--calendar"
               selectedKey={String(year)}
@@ -275,9 +288,12 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
         {DAY_NAMES.map(d => <div key={d} className="jn-cal-dn">{d}</div>)}
       </div>
 
-      <div className="jn-cal-grid">
+      <div
+        key={`${year}-${month}`}
+        className={`jn-cal-grid jn-cal-grid--${monthMotion}`}
+      >
         {cells.map((day, i) => {
-          if (!day) return <div key={`e-${i}`} />
+          if (!day) return <div className="jn-cal-cell jn-cal-cell--empty" key={`e-${i}`} aria-hidden="true" />
           const k = makeDayKey(year, month, day)
           const mood = moodData[k]
           const isToday = isCurrent && day === now.getDate()
@@ -309,7 +325,7 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
       </div>
 
       {selectedDate && (
-        <div className="jn-history-preview">
+        <div className="jn-history-preview" key={selectedDate}>
           <div className="jn-history-meta">
             <span>{formatDateKey(selectedDate)}</span>
             <strong>{selectedMood ? MOOD_MAP[selectedMood]?.gentleLabel : 'No mood logged'}</strong>
@@ -951,11 +967,13 @@ const JN_STYLES = `
     box-shadow: var(--shadow);
   }
   .jn-cal-nav {
-    display: flex; align-items: center; justify-content: space-between;
+    display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px;
+    align-items: center; gap: 12px;
     margin-bottom: 16px;
   }
   .jn-cal-selects {
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-width: 0;
   }
   .jn-cal-picker { position: relative; }
   .jn-cal-nav-btn {
@@ -964,7 +982,10 @@ const JN_STYLES = `
     font-size: 1.1rem; color: var(--ink);
     display: flex; align-items: center; justify-content: center;
     transition: background 140ms, border-color 140ms;
+    flex: none;
   }
+  .jn-cal-nav-btn:first-child { justify-self: start; }
+  .jn-cal-nav-btn:last-child { justify-self: end; }
   .jn-cal-nav-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
   .jn-cal-picker-btn {
     padding: 4px 2px;
@@ -991,7 +1012,12 @@ const JN_STYLES = `
 
   .jn-cal-grid {
     display: grid; grid-template-columns: repeat(7,1fr); gap: 4px;
+    overflow: hidden;
   }
+  .jn-cal-grid--forward { animation: jn-cal-forward 190ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+  .jn-cal-grid--backward { animation: jn-cal-backward 190ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+  .jn-cal-grid--fade { animation: jn-cal-fade 170ms ease-out; }
+  .jn-cal-cell { aspect-ratio: 1; }
   .jn-cal-day {
     aspect-ratio: 1; border-radius: 10px;
     border: 1.5px solid var(--line); background: rgba(255,255,255,0.6);
@@ -1040,6 +1066,7 @@ const JN_STYLES = `
   .jn-history-preview {
     margin-top: 14px; padding: 16px; border-radius: 14px;
     background: rgba(255,255,255,0.78); border: 1px solid var(--line);
+    animation: jn-cal-fade 160ms ease-out;
   }
   .jn-history-meta {
     display: flex; align-items: center; justify-content: space-between;
@@ -1066,12 +1093,14 @@ const JN_STYLES = `
     position: fixed; inset: 0; z-index: 50;
     display: flex; align-items: center; justify-content: center;
     padding: 18px; background: rgba(46,42,38,0.42);
+    animation: jn-calendar-backdrop-in 150ms ease-out;
   }
   .jn-calendar-modal {
     width: min(540px, 100%); max-height: calc(100vh - 36px);
     overflow: hidden; border-radius: 18px;
     background: var(--panel); border: 1px solid var(--line);
     box-shadow: 0 24px 80px rgba(46,42,38,0.28);
+    animation: jn-calendar-modal-in 210ms cubic-bezier(0.22, 0.61, 0.36, 1);
   }
   .jn-modal-header {
     display: flex; align-items: flex-start; justify-content: space-between;
@@ -1090,6 +1119,27 @@ const JN_STYLES = `
     box-shadow: none;
   }
   .jn-calendar-modal .jn-cal-nav { margin-bottom: 10px; }
+
+  @keyframes jn-cal-forward {
+    from { opacity: 0.45; transform: translateX(7px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes jn-cal-backward {
+    from { opacity: 0.45; transform: translateX(-7px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes jn-cal-fade {
+    from { opacity: 0.45; transform: translateY(2px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes jn-calendar-backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes jn-calendar-modal-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
   .jn-calendar-modal .jn-cal-nav-btn { width: 28px; height: 28px; font-size: 0.92rem; }
   .jn-calendar-modal .jn-cal-selects { gap: 6px; }
   .jn-calendar-modal .jn-cal-picker-btn { font-size: 0.9rem; }
@@ -1338,6 +1388,17 @@ const JN_STYLES = `
   .jn-ai-text  { margin: 0 0 6px; font-size: 0.86rem; line-height: 1.45; color: var(--ink); }
   .jn-ai-links { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 0.82rem; color: var(--muted); }
   .jn-ai-sep   { opacity: 0.4; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .jn-cal-grid--forward,
+    .jn-cal-grid--backward,
+    .jn-cal-grid--fade,
+    .jn-history-preview,
+    .jn-modal-backdrop,
+    .jn-calendar-modal {
+      animation: none;
+    }
+  }
 
   @media (max-width: 640px) {
     .jn-page-header { flex-direction: column; }
