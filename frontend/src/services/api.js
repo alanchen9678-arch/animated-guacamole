@@ -25,7 +25,12 @@ async function apiFetch(path, opts = {}) {
     },
   })
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(getErrorMessage(data))
+  if (!res.ok) {
+    const error = new Error(getErrorMessage(data))
+    error.status = res.status
+    error.data = data
+    throw error
+  }
   return data
 }
 
@@ -131,6 +136,13 @@ export async function createTherapistBooking(matchId, payload) {
   })
 }
 
+export async function cancelTherapistBooking(matchId, bookingId) {
+  return apiFetch(`/api/therapist/matches/${matchId}/bookings/${bookingId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: 'cancelled' }),
+  })
+}
+
 export async function fetchTherapistAppointments(matchId) {
   const data = await apiFetch(`/api/therapist/matches/${matchId}/appointments/`)
   return data.appointments ?? []
@@ -141,6 +153,21 @@ export async function createTherapistAppointment(matchId, payload) {
     method: 'POST',
     body: JSON.stringify(payload),
   })
+}
+
+export async function updateTherapistAppointment(matchId, appointmentId, payload) {
+  return apiFetch(`/api/therapist/matches/${matchId}/appointments/${appointmentId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function cancelTherapistAppointment(matchId, appointmentId) {
+  return updateTherapistAppointment(matchId, appointmentId, { status: 'cancelled' })
+}
+
+export async function fetchTherapistSharingPreview() {
+  return apiFetch('/api/therapist/sharing-preview/')
 }
 
 // Peer

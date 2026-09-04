@@ -14,10 +14,13 @@ from api.routes.peer import (
     PeerRoomMessageView,
 )
 from api.routes.therapist import (
+    TherapistAppointmentDetailView,
     TherapistAppointmentView,
+    TherapistBookingDetailView,
     TherapistBookingView,
     TherapistMatchCollectionView,
     TherapistMatchMessageView,
+    TherapistSharingPreviewView,
 )
 from app.views import LoginView, LogoutView, MeView, RegisterView
 
@@ -41,5 +44,8 @@ urlpatterns = [
     path('api/therapist/matches/', TherapistMatchCollectionView.as_view(), name='therapist-matches'),
     path('api/therapist/matches/<int:match_id>/messages/', TherapistMatchMessageView.as_view(), name='therapist-match-messages'),
     path('api/therapist/matches/<int:match_id>/bookings/', TherapistBookingView.as_view(), name='therapist-bookings'),
+    path('api/therapist/matches/<int:match_id>/bookings/<int:booking_id>/', TherapistBookingDetailView.as_view(), name='therapist-booking-detail'),
     path('api/therapist/matches/<int:match_id>/appointments/', TherapistAppointmentView.as_view(), name='therapist-appointments'),
+    path('api/therapist/matches/<int:match_id>/appointments/<int:appointment_id>/', TherapistAppointmentDetailView.as_view(), name='therapist-appointment-detail'),
+    path('api/therapist/sharing-preview/', TherapistSharingPreviewView.as_view(), name='therapist-sharing-preview'),
 ]

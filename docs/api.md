@@ -26,7 +26,10 @@ All feature routes require `Authorization: Token <token>`. Register and login ar
 - `GET|POST /api/therapist/matches/` — list/save a therapist ID.
 - `GET|POST /api/therapist/matches/:id/messages/` — list/send demo therapist messages.
 - `GET|POST /api/therapist/matches/:id/bookings/` — list/create internal booking requests.
-- `GET|POST /api/therapist/matches/:id/appointments/` — list/create future appointments.
+- `PATCH /api/therapist/matches/:id/bookings/:bookingId/` — cancel an outstanding booking request while preserving its history.
+- `GET|POST /api/therapist/matches/:id/appointments/` — list/create timezone-aware future appointments with overlap validation.
+- `PATCH /api/therapist/matches/:id/appointments/:appointmentId/` — edit or cancel an upcoming appointment.
+- `GET /api/therapist/sharing-preview/` — show the exact needs-profile, check-in, journal, and AI-chat records available to a therapist under current privacy settings.
 
 Match IDs are checked against the authenticated user. These endpoints do not contact a real provider or payment processor.
 

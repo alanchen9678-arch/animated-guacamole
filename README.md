@@ -53,7 +53,7 @@ npm audit
 
 - Chat messages and a rolling seven-day usage allowance are stored in the database.
 - Journal entries, doodles, moods, and therapist-sharing preferences are persisted per user.
-- Therapist matches, booking requests, chat messages, and appointments are persisted. The bundled therapist directory and therapist replies are demo data; Aurora does not contact a real provider or collect payment.
+- Therapist matches, booking-request history, chat messages, and timezone-aware appointments are persisted. Users can review sharing details and edit or cancel eligible requests and appointments; overlapping appointments are blocked. The bundled therapist directory and therapist replies are demo data; Aurora does not contact a real provider or collect payment.
 - Peer identities are anonymous. Messages pass local policy checks and, when configured, AI moderation before storage.
 - Educational quiz completion records a daily learning streak.
 

@@ -6,12 +6,17 @@ import { AsyncButton, EmptyState, FeedbackNotice, LoadingState } from '../compon
 import {
   createTherapistAppointment,
   createTherapistBooking,
+  cancelTherapistAppointment,
+  cancelTherapistBooking,
   fetchJournalPrivacy,
   fetchTherapistAppointments,
+  fetchTherapistBookings,
   fetchTherapistMatches,
   fetchTherapistMessages,
+  fetchTherapistSharingPreview,
   saveTherapistMatch,
   sendTherapistMessage,
+  updateTherapistAppointment,
   updateJournalPrivacy,
 } from '../services/api.js'
 
@@ -512,6 +517,118 @@ function ActiveTherapistChats({ chats, onOpen }) {
   )
 }
 
+function SharingPreview({ refreshKey }) {
+  const [preview, setPreview] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
+
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    setError('')
+    fetchTherapistSharingPreview()
+      .then((data) => {
+        if (active) setPreview(data)
+      })
+      .catch((requestError) => {
+        if (active) setError(requestError.message || 'Unable to load sharing details.')
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => { active = false }
+  }, [refreshKey, reloadKey])
+
+  return (
+    <details className="tm-sharing-preview">
+      <summary>
+        <span>
+          <strong>Exactly what your therapist can see</strong>
+          <small>Review every included check-in, journal entry, and AI chat message.</small>
+        </span>
+        <span className="tm-sharing-summary-action">Review sharing</span>
+      </summary>
+
+      {loading && <LoadingState label="Loading sharing details…" compact skeletonLines={3} />}
+      {error && (
+        <FeedbackNotice
+          variant="error"
+          title="Could not load sharing details"
+          message={error}
+          onRetry={() => setReloadKey((key) => key + 1)}
+          compact
+        />
+      )}
+
+      {!loading && preview && (
+        <div className="tm-sharing-groups">
+          <section className="tm-sharing-group">
+            <div className="tm-sharing-group-head">
+              <strong>Needs profile and check-ins</strong>
+              <span className="tm-status tm-status--confirmed">Always shared</span>
+            </div>
+            <p>
+              Profile score: <strong>{preview.needsProfile?.overall ?? 'Not available'}</strong>
+              {preview.needsProfile?.basis && <> · Basis: {preview.needsProfile.basis.replaceAll('_', ' ')}</>}
+            </p>
+            {preview.checkIns.length === 0 ? (
+              <EmptyState title="No check-ins included" description="Complete an initial assessment to build your needs profile." compact />
+            ) : preview.checkIns.map((entry) => (
+              <details className="tm-shared-record" key={entry.id}>
+                <summary>{entry.type === 'initial' ? 'Initial assessment' : 'Weekly check-in'} · {entry.date}</summary>
+                <dl>
+                  {Object.entries(entry.scores).map(([name, score]) => (
+                    <div key={name}><dt>{CONCERN_LABEL[name] ?? name}</dt><dd>{score}</dd></div>
+                  ))}
+                </dl>
+              </details>
+            ))}
+          </section>
+
+          <section className="tm-sharing-group">
+            <div className="tm-sharing-group-head">
+              <strong>Journal · last {preview.journal.rangeDays} days</strong>
+              <span className={`tm-status tm-status--${preview.journal.allowed ? 'confirmed' : 'cancelled'}`}>
+                {preview.journal.allowed ? 'Shared' : 'Not shared'}
+              </span>
+            </div>
+            {preview.journal.allowed && preview.journal.entries.length === 0 && (
+              <EmptyState title="No journal entries included" description="There are no entries in the sharing window." compact />
+            )}
+            {preview.journal.entries.map((entry) => (
+              <details className="tm-shared-record" key={entry.id}>
+                <summary>{entry.date}{entry.mood ? ` · ${entry.mood}` : ''}</summary>
+                <p>{entry.content || 'Text is empty; this entry may contain only a doodle.'}</p>
+                {entry.hasDoodle && <p><strong>Includes a saved doodle.</strong></p>}
+              </details>
+            ))}
+          </section>
+
+          <section className="tm-sharing-group">
+            <div className="tm-sharing-group-head">
+              <strong>AI chat · last {preview.chat.rangeDays} days</strong>
+              <span className={`tm-status tm-status--${preview.chat.allowed ? 'confirmed' : 'cancelled'}`}>
+                {preview.chat.allowed ? 'Shared' : 'Not shared'}
+              </span>
+            </div>
+            {preview.chat.allowed && preview.chat.messages.length === 0 && (
+              <EmptyState title="No AI messages included" description="There are no messages in the sharing window." compact />
+            )}
+            {preview.chat.messages.map((message) => (
+              <div className="tm-shared-message" key={message.id}>
+                <strong>{message.role === 'user' ? 'You' : 'Aurora'}</strong>
+                <span>{new Date(message.timestamp).toLocaleString()}</span>
+                <p>{message.content}</p>
+              </div>
+            ))}
+          </section>
+        </div>
+      )}
+    </details>
+  )
+}
+
 function NeedsProfileView({ profile, activeChats, onOpenChat, onFind, onRefresh, privacy, onUpdatePrivacy, privacySaving }) {
   const [refreshed, setRefreshed] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
@@ -626,6 +743,8 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind, onRefresh,
           </div>
         </div>
       </div>
+
+      <SharingPreview refreshKey={`${privacy.allowChatAccess}-${privacy.allowJournalAccess}`} />
 
       <button className="tm-primary-btn" onClick={onFind}>
         Find a Therapist →
@@ -803,7 +922,7 @@ function ResultsView({ matches, prefs, onSelect, onBack }) {
 function DetailView({ therapist: t, prefs, onChat, onBook, onBack, privacy, onUpdatePrivacy, privacySaving }) {
   const [insurer, setInsurer]           = useState(prefs.insurance)
   const [memberId, setMemberId]         = useState('')
-  const [booked, setBooked]             = useState(false)
+  const [booked, setBooked]             = useState(null)
   const [booking, setBooking]           = useState(false)
   const [bookingError, setBookingError] = useState('')
 
@@ -815,8 +934,8 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack, privacy, onUp
     setBooking(true)
     setBookingError('')
     try {
-      await onBook(t, { insuranceProvider: insurer, memberId })
-      setBooked(true)
+      const bookingRequest = await onBook(t, { insuranceProvider: insurer, memberId })
+      setBooked(bookingRequest)
     } catch (error) {
       setBookingError(error.message || 'Unable to request this session right now.')
     } finally {
@@ -922,6 +1041,7 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack, privacy, onUp
                   title="Session requested"
                   message={`You'll receive a confirmation from ${t.name} within 24 hours.`}
                 />
+                <span className="tm-status tm-status--requested">{booked.status}</span>
                 <button className="tm-primary-btn" style={{ marginTop: 12, width: '100%' }} onClick={onChat}>
                   Open chat →
                 </button>
@@ -986,7 +1106,13 @@ function timestamp() {
   return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-function formatAppointmentDate(value) {
+const BROWSER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+
+function formatTimezone(value = BROWSER_TIMEZONE) {
+  return value.replaceAll('_', ' ')
+}
+
+function formatAppointmentDate(value, timeZone = BROWSER_TIMEZONE) {
   if (!value) return ''
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
@@ -997,7 +1123,24 @@ function formatAppointmentDate(value) {
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    timeZone,
+    timeZoneName: 'short',
   })
+}
+
+function toLocalDateTimeInput(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const offset = date.getTimezoneOffset() * 60_000
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
+}
+
+function StatusBadge({ status }) {
+  return (
+    <span className={`tm-status tm-status--${status}`}>
+      {status}
+    </span>
+  )
 }
 
 function AppointmentBanner({ appt, expanded, onToggle }) {
@@ -1019,10 +1162,12 @@ function ActiveAppointmentBanner({ appt, expanded, onToggle }) {
       <div className="tm-appt-icon">Cal</div>
       <div className="tm-appt-banner-body">
         <strong>{appt.title}</strong>
-        <p>{formatAppointmentDate(appt.date)}</p>
+        <p>{formatAppointmentDate(appt.date, appt.timezone)}</p>
         {expanded && (
           <div className="tm-appt-expanded">
             <span>Therapist: {appt.therapist}</span>
+            {appt.durationMinutes && <span>{appt.durationMinutes} minutes · {formatTimezone(appt.timezone)}</span>}
+            <StatusBadge status={appt.status || 'confirmed'} />
             {appt.desc && <span>{appt.desc}</span>}
           </div>
         )}
@@ -1272,12 +1417,23 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
   const [reloadKey, setReloadKey] = useState(0)
   const [appointmentSaving, setAppointmentSaving] = useState(false)
   const [showApptForm, setShowApptForm] = useState(false)
+  const [showCareHistory, setShowCareHistory] = useState(false)
   const [showProfileCard, setShowProfileCard] = useState(false)
-  const [activeAppointment, setActiveAppointment] = useState(null)
+  const [appointments, setAppointments] = useState([])
+  const [bookings, setBookings] = useState([])
   const [appointmentExpanded, setAppointmentExpanded] = useState(false)
+  const [editingAppointmentId, setEditingAppointmentId] = useState(null)
+  const [appointmentConfirming, setAppointmentConfirming] = useState(false)
+  const [cancellingBookingId, setCancellingBookingId] = useState(null)
+  const [cancellingAppointmentId, setCancellingAppointmentId] = useState(null)
+  const [workflowActionId, setWorkflowActionId] = useState(null)
+  const [workflowNotice, setWorkflowNotice] = useState('')
+  const [workflowError, setWorkflowError] = useState('')
   const [apptTitle, setApptTitle] = useState('')
   const [apptDate, setApptDate] = useState('')
   const [apptDesc, setApptDesc] = useState('')
+  const [apptDuration, setApptDuration] = useState(50)
+  const [apptTimezone, setApptTimezone] = useState(BROWSER_TIMEZONE)
   const messagesRef = useRef(null)
   const inputRef = useRef(null)
   const shouldScrollRef = useRef(false)
@@ -1298,9 +1454,10 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
       }
 
       try {
-        const [history, appointments] = await Promise.all([
+        const [history, savedAppointments, savedBookings] = await Promise.all([
           fetchTherapistMessages(t.matchId),
           fetchTherapistAppointments(t.matchId),
+          fetchTherapistBookings(t.matchId),
         ])
         if (!isActive) return
         setMessages(
@@ -1312,17 +1469,8 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
             type: 'text',
           })),
         )
-        const now = Date.now()
-        const nextAppointment = appointments.find((item) => (
-          new Date(item.scheduledFor).getTime() >= now
-        )) ?? appointments[0]
-        setActiveAppointment(nextAppointment ? {
-          id: nextAppointment.id,
-          title: nextAppointment.title,
-          date: nextAppointment.scheduledFor,
-          desc: nextAppointment.description,
-          therapist: t.name,
-        } : null)
+        setAppointments(savedAppointments)
+        setBookings(savedBookings)
         setChatError('')
       } catch (error) {
         if (!isActive) return
@@ -1340,6 +1488,22 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
       isActive = false
     }
   }, [t.matchId, reloadKey])
+
+  const now = Date.now()
+  const upcomingAppointments = appointments
+    .filter((item) => item.status !== 'cancelled' && new Date(item.scheduledFor).getTime() >= now)
+    .sort((a, b) => new Date(a.scheduledFor) - new Date(b.scheduledFor))
+  const previousAppointments = appointments
+    .filter((item) => item.status === 'cancelled' || new Date(item.scheduledFor).getTime() < now)
+    .sort((a, b) => new Date(b.scheduledFor) - new Date(a.scheduledFor))
+  const activeAppointment = upcomingAppointments[0]
+    ? {
+        ...upcomingAppointments[0],
+        date: upcomingAppointments[0].scheduledFor,
+        desc: upcomingAppointments[0].description,
+        therapist: t.name,
+      }
+    : null
 
   useEffect(() => {
     const messagesEl = messagesRef.current
@@ -1406,43 +1570,122 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
     }
   }
 
-  async function createAppointment() {
+  function resetAppointmentForm() {
+    setEditingAppointmentId(null)
+    setApptTitle('')
+    setApptDate('')
+    setApptDesc('')
+    setApptDuration(50)
+    setApptTimezone(BROWSER_TIMEZONE)
+    setAppointmentConfirming(false)
+  }
+
+  function openAppointmentForm() {
+    resetAppointmentForm()
+    setShowApptForm(true)
+    setWorkflowError('')
+    setWorkflowNotice('')
+  }
+
+  function reviewAppointment() {
+    const selectedDate = new Date(apptDate)
+    if (!apptTitle.trim() || Number.isNaN(selectedDate.getTime())) {
+      setWorkflowError('Add a title and select a valid date and time.')
+      return
+    }
+    if (selectedDate.getTime() <= Date.now()) {
+      setWorkflowError('Appointment time must be in the future.')
+      return
+    }
+    setWorkflowError('')
+    setAppointmentConfirming(true)
+  }
+
+  async function saveAppointment() {
     if (!apptTitle || !apptDate || appointmentSaving) return
     setAppointmentSaving(true)
-    setChatError('')
-    setChatErrorContext('')
+    setWorkflowError('')
+    setWorkflowNotice('')
     try {
-      const appointment = await createTherapistAppointment(t.matchId, {
+      const payload = {
         title: apptTitle,
         scheduledFor: new Date(apptDate).toISOString(),
+        durationMinutes: Number(apptDuration),
+        timezone: apptTimezone,
         description: apptDesc,
-      })
-      setActiveAppointment({
-        id: appointment.id,
-        title: appointment.title,
-        date: appointment.scheduledFor,
-        desc: appointment.description,
-        therapist: t.name,
-      })
+      }
+      const appointment = editingAppointmentId
+        ? await updateTherapistAppointment(t.matchId, editingAppointmentId, payload)
+        : await createTherapistAppointment(t.matchId, payload)
+      setAppointments((current) => (
+        current.some((item) => item.id === appointment.id)
+          ? current.map((item) => item.id === appointment.id ? appointment : item)
+          : [...current, appointment]
+      ))
       setAppointmentExpanded(false)
-      setApptTitle('')
-      setApptDate('')
-      setApptDesc('')
       setShowApptForm(false)
-      setChatError('')
+      setWorkflowNotice(editingAppointmentId ? 'Appointment updated.' : 'Appointment confirmed and saved.')
+      resetAppointmentForm()
     } catch (error) {
-      setChatError(error.message || 'Unable to create the appointment right now.')
-      setChatErrorContext('appointment')
+      const conflict = error.data?.conflict
+      setWorkflowError(
+        conflict
+          ? `That time overlaps “${conflict.title}” on ${formatAppointmentDate(conflict.scheduledFor, conflict.timezone)}.`
+          : error.message || 'Unable to save the appointment right now.',
+      )
+      setAppointmentConfirming(false)
     } finally {
       setAppointmentSaving(false)
     }
   }
 
+  function editAppointment(appointment) {
+    setEditingAppointmentId(appointment.id)
+    setApptTitle(appointment.title)
+    setApptDate(toLocalDateTimeInput(appointment.scheduledFor))
+    setApptDesc(appointment.description || '')
+    setApptDuration(appointment.durationMinutes || 50)
+    setApptTimezone(BROWSER_TIMEZONE)
+    setAppointmentConfirming(false)
+    setShowApptForm(true)
+    setShowCareHistory(false)
+    setWorkflowError('')
+    setWorkflowNotice('')
+  }
+
   function cancelAppointmentForm() {
-    setApptTitle('')
-    setApptDate('')
-    setApptDesc('')
+    resetAppointmentForm()
     setShowApptForm(false)
+  }
+
+  async function confirmBookingCancellation(bookingId) {
+    setWorkflowActionId(`booking-${bookingId}`)
+    setWorkflowError('')
+    try {
+      const updated = await cancelTherapistBooking(t.matchId, bookingId)
+      setBookings((current) => current.map((item) => item.id === updated.id ? updated : item))
+      setCancellingBookingId(null)
+      setWorkflowNotice('Booking request cancelled.')
+    } catch (error) {
+      setWorkflowError(error.message || 'Unable to cancel the booking request.')
+    } finally {
+      setWorkflowActionId(null)
+    }
+  }
+
+  async function confirmAppointmentCancellation(appointmentId) {
+    setWorkflowActionId(`appointment-${appointmentId}`)
+    setWorkflowError('')
+    try {
+      const updated = await cancelTherapistAppointment(t.matchId, appointmentId)
+      setAppointments((current) => current.map((item) => item.id === updated.id ? updated : item))
+      setCancellingAppointmentId(null)
+      setWorkflowNotice('Appointment cancelled.')
+    } catch (error) {
+      setWorkflowError(error.message || 'Unable to cancel the appointment.')
+    } finally {
+      setWorkflowActionId(null)
+    }
   }
 
   return (
@@ -1460,13 +1703,18 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
             <span className="tm-chat-status">{t.credentials.license} - {t.credentials.location}</span>
           </span>
         </button>
-        <button
-          className="tm-appt-trigger"
-          onClick={() => setShowApptForm((v) => !v)}
-          title="Schedule appointment"
-        >
-          + Appointment
-        </button>
+        <div className="tm-chat-actions">
+          <button
+            className="tm-appt-trigger"
+            onClick={() => setShowCareHistory((value) => !value)}
+            aria-expanded={showCareHistory}
+          >
+            Care history ({bookings.length + appointments.length})
+          </button>
+          <button className="tm-appt-trigger" onClick={openAppointmentForm} title="Schedule appointment">
+            + Appointment
+          </button>
+        </div>
       </div>
 
       {activeAppointment && (
@@ -1479,41 +1727,182 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
         </div>
       )}
 
+      {showCareHistory && (
+        <section className="tm-care-history" aria-label="Booking requests and appointments">
+          <div className="tm-care-section">
+            <h3>Booking requests</h3>
+            {bookings.length === 0 ? (
+              <EmptyState title="No booking requests" description="Session requests will remain here with their latest status." compact />
+            ) : bookings.map((booking) => (
+              <article className="tm-care-item" key={booking.id}>
+                <div>
+                  <div className="tm-care-item-title">
+                    <strong>Session request</strong>
+                    <StatusBadge status={booking.status} />
+                  </div>
+                  <p>{new Date(booking.createdAt).toLocaleString()} · {booking.insuranceProvider || 'No insurance listed'}</p>
+                  {booking.memberId && <small>Member ID ending in {booking.memberId.slice(-4)}</small>}
+                </div>
+                {booking.status === 'requested' && (
+                  cancellingBookingId === booking.id ? (
+                    <div className="tm-confirm-actions">
+                      <span>Cancel this outstanding request?</span>
+                      <AsyncButton
+                        className="tm-danger-inline"
+                        pending={workflowActionId === `booking-${booking.id}`}
+                        pendingLabel="Cancelling…"
+                        onClick={() => confirmBookingCancellation(booking.id)}
+                      >
+                        Yes, cancel
+                      </AsyncButton>
+                      <button className="tm-link-btn" onClick={() => setCancellingBookingId(null)}>Keep request</button>
+                    </div>
+                  ) : (
+                    <button className="tm-link-btn tm-link-btn--danger" onClick={() => setCancellingBookingId(booking.id)}>
+                      Cancel request
+                    </button>
+                  )
+                )}
+              </article>
+            ))}
+          </div>
+
+          <div className="tm-care-section">
+            <h3>Upcoming appointments</h3>
+            {upcomingAppointments.length === 0 ? (
+              <EmptyState title="No upcoming appointments" description="Confirmed appointments will appear here." compact />
+            ) : upcomingAppointments.map((appointment) => (
+              <article className="tm-care-item" key={appointment.id}>
+                <div>
+                  <div className="tm-care-item-title">
+                    <strong>{appointment.title}</strong>
+                    <StatusBadge status={appointment.status} />
+                  </div>
+                  <p>{formatAppointmentDate(appointment.scheduledFor, appointment.timezone)}</p>
+                  <small>{appointment.durationMinutes} minutes · {formatTimezone(appointment.timezone)}</small>
+                  {appointment.description && <p>{appointment.description}</p>}
+                </div>
+                {cancellingAppointmentId === appointment.id ? (
+                  <div className="tm-confirm-actions">
+                    <span>Cancel this appointment?</span>
+                    <AsyncButton
+                      className="tm-danger-inline"
+                      pending={workflowActionId === `appointment-${appointment.id}`}
+                      pendingLabel="Cancelling…"
+                      onClick={() => confirmAppointmentCancellation(appointment.id)}
+                    >
+                      Yes, cancel
+                    </AsyncButton>
+                    <button className="tm-link-btn" onClick={() => setCancellingAppointmentId(null)}>Keep appointment</button>
+                  </div>
+                ) : (
+                  <div className="tm-care-item-actions">
+                    <button className="tm-link-btn" onClick={() => editAppointment(appointment)}>Edit</button>
+                    <button className="tm-link-btn tm-link-btn--danger" onClick={() => setCancellingAppointmentId(appointment.id)}>Cancel</button>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+
+          <div className="tm-care-section">
+            <h3>Previous appointments</h3>
+            {previousAppointments.length === 0 ? (
+              <EmptyState title="No previous appointments" description="Past and cancelled appointments will remain here." compact />
+            ) : previousAppointments.map((appointment) => (
+              <article className="tm-care-item" key={appointment.id}>
+                <div>
+                  <div className="tm-care-item-title">
+                    <strong>{appointment.title}</strong>
+                    <StatusBadge status={appointment.status === 'cancelled' ? 'cancelled' : 'confirmed'} />
+                  </div>
+                  <p>{formatAppointmentDate(appointment.scheduledFor, appointment.timezone)}</p>
+                  <small>{appointment.durationMinutes} minutes · {formatTimezone(appointment.timezone)}</small>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
       {showApptForm && (
         <div className="tm-appt-form">
-          <strong style={{ fontSize: '0.9rem' }}>Schedule an appointment</strong>
-          <input className="tm-input" placeholder="Title (e.g. Initial Consultation)" value={apptTitle} onChange={(e) => setApptTitle(e.target.value)} />
-          <input className="tm-input" type="datetime-local" value={apptDate} onChange={(e) => setApptDate(e.target.value)} />
-          <p className="tm-selected-date">
-            {apptDate ? `Selected: ${formatAppointmentDate(apptDate)}` : 'Choose a date before creating the appointment.'}
-          </p>
-          <input className="tm-input" placeholder="Description (optional)" value={apptDesc} onChange={(e) => setApptDesc(e.target.value)} />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <AsyncButton
-              className="tm-primary-btn"
-              style={{ flex: 1 }}
-              onClick={createAppointment}
-              pending={appointmentSaving}
-              pendingLabel="Creating appointment…"
-              disabled={!apptTitle || !apptDate}
-            >
-              Create appointment
-            </AsyncButton>
-            <button className="tm-outline-btn" onClick={cancelAppointmentForm} disabled={appointmentSaving}>Cancel</button>
-          </div>
+          <strong style={{ fontSize: '0.9rem' }}>{editingAppointmentId ? 'Edit appointment' : 'Schedule an appointment'}</strong>
+          {!appointmentConfirming ? (
+            <>
+              <label className="tm-form-field">
+                <span className="tm-field-label">Title</span>
+                <input className="tm-input" placeholder="e.g. Initial consultation" value={apptTitle} onChange={(e) => setApptTitle(e.target.value)} />
+              </label>
+              <label className="tm-form-field">
+                <span className="tm-field-label">Date and time</span>
+                <input
+                  className="tm-input"
+                  type="datetime-local"
+                  min={toLocalDateTimeInput(new Date())}
+                  value={apptDate}
+                  onChange={(e) => setApptDate(e.target.value)}
+                />
+              </label>
+              <label className="tm-form-field">
+                <span className="tm-field-label">Duration</span>
+                <select className="tm-select" value={apptDuration} onChange={(e) => setApptDuration(Number(e.target.value))}>
+                  <option value={30}>30 minutes</option>
+                  <option value={50}>50 minutes</option>
+                  <option value={60}>60 minutes</option>
+                  <option value={90}>90 minutes</option>
+                </select>
+              </label>
+              <label className="tm-form-field">
+                <span className="tm-field-label">Description (optional)</span>
+                <input className="tm-input" placeholder="What you would like to discuss" value={apptDesc} onChange={(e) => setApptDesc(e.target.value)} />
+              </label>
+              <FeedbackNotice
+                variant="info"
+                title="Timezone"
+                message={`Times are shown and saved in ${formatTimezone(apptTimezone)}.`}
+                compact
+              />
+              <div className="tm-form-actions">
+                <button className="tm-primary-btn" onClick={reviewAppointment} disabled={!apptTitle || !apptDate}>Review date and time</button>
+                <button className="tm-outline-btn" onClick={cancelAppointmentForm}>Cancel</button>
+              </div>
+            </>
+          ) : (
+            <div className="tm-appointment-confirm">
+              <p className="tm-section-label">Confirm appointment details</p>
+              <strong>{apptTitle}</strong>
+              <p>{formatAppointmentDate(apptDate, apptTimezone)}</p>
+              <p>{apptDuration} minutes · {formatTimezone(apptTimezone)}</p>
+              {apptDesc && <p>{apptDesc}</p>}
+              <FeedbackNotice variant="warning" message="Please confirm the date, time, duration, and timezone before saving." compact />
+              <div className="tm-form-actions">
+                <AsyncButton
+                  className="tm-primary-btn"
+                  onClick={saveAppointment}
+                  pending={appointmentSaving}
+                  pendingLabel="Saving appointment…"
+                >
+                  Confirm and save
+                </AsyncButton>
+                <button className="tm-outline-btn" onClick={() => setAppointmentConfirming(false)} disabled={appointmentSaving}>Go back</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
+
+      {workflowNotice && <FeedbackNotice variant="success" message={workflowNotice} onDismiss={() => setWorkflowNotice('')} compact />}
+      {workflowError && <FeedbackNotice variant="error" title="Could not complete that action" message={workflowError} onDismiss={() => setWorkflowError('')} compact />}
 
       {chatError && (
         <FeedbackNotice
           variant="error"
-          title={chatErrorContext === 'load' ? 'Could not load this conversation' : chatErrorContext === 'appointment' ? 'Could not create the appointment' : 'Message not sent'}
+          title={chatErrorContext === 'load' ? 'Could not load therapist messages and care history' : 'Message not sent'}
           message={chatError}
           onRetry={chatErrorContext === 'load'
             ? () => setReloadKey((key) => key + 1)
-            : chatErrorContext === 'appointment'
-              ? createAppointment
-              : () => {
+            : () => {
                   setInput(failedMessage)
                   setChatError('')
                   setChatErrorContext('')
@@ -1966,6 +2355,7 @@ const TM_STYLES = `
     transition: opacity 140ms, transform 140ms;
   }
   .tm-primary-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .tm-primary-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
   .tm-outline-btn {
     padding: 10px 20px; border-radius: 999px;
     border: 1.5px solid var(--line); background: transparent;
@@ -2097,6 +2487,41 @@ const TM_STYLES = `
     transition: left 200ms;
   }
   .tm-toggle--on .tm-toggle-knob { left: 23px; }
+  .tm-toggle:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  /* exact sharing preview */
+  .tm-sharing-preview {
+    background: var(--panel-strong);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .tm-sharing-preview > summary {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 18px 20px; cursor: pointer; list-style: none;
+  }
+  .tm-sharing-preview > summary::-webkit-details-marker { display: none; }
+  .tm-sharing-preview > summary span:first-child { display: grid; gap: 3px; }
+  .tm-sharing-preview > summary small { color: var(--muted); font-weight: 400; }
+  .tm-sharing-summary-action { color: var(--accent); font-size: 0.8rem; font-weight: 800; white-space: nowrap; }
+  .tm-sharing-groups { display: grid; gap: 12px; padding: 0 20px 20px; }
+  .tm-sharing-group { display: grid; gap: 9px; padding: 14px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,0.55); }
+  .tm-sharing-group p { margin: 0; color: var(--muted); font-size: 0.84rem; }
+  .tm-sharing-group-head, .tm-care-item-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .tm-shared-record { border-top: 1px solid var(--line); padding-top: 8px; }
+  .tm-shared-record summary { cursor: pointer; color: var(--accent); font-size: 0.82rem; font-weight: 700; }
+  .tm-shared-record dl { display: grid; gap: 5px; margin: 10px 0 0; }
+  .tm-shared-record dl div { display: flex; justify-content: space-between; gap: 10px; font-size: 0.8rem; }
+  .tm-shared-record dt { text-transform: capitalize; color: var(--muted); }
+  .tm-shared-record dd { margin: 0; font-weight: 800; }
+  .tm-shared-message { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .tm-shared-message span { justify-self: end; color: var(--muted); font-size: 0.7rem; }
+  .tm-shared-message p { grid-column: 1 / -1; white-space: pre-wrap; }
+  .tm-status { display: inline-flex; width: fit-content; padding: 3px 9px; border-radius: 999px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: capitalize; }
+  .tm-status--requested { background: #fef3c7; color: #92400e; }
+  .tm-status--confirmed { background: #dcfce7; color: #166534; }
+  .tm-status--cancelled { background: #f1f5f9; color: #64748b; }
 
   /* booking */
   .tm-match-score-card, .tm-booking-card {
@@ -2141,6 +2566,7 @@ const TM_STYLES = `
     padding: 14px 18px; border-bottom: 1px solid var(--line);
     background: rgba(255,255,255,0.9); flex-shrink: 0;
   }
+  .tm-chat-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
   .tm-back { background: none; border: none; color: var(--muted); font-size: 0.9rem; font-weight: 600; padding: 0; }
   .tm-back--inline { font-size: 1.1rem; margin-right: 4px; }
   .tm-chat-profile-trigger {
@@ -2216,6 +2642,7 @@ const TM_STYLES = `
     color: var(--accent); font-size: 0.8rem; font-weight: 700;
     transition: background 140ms, color 140ms;
   }
+  .tm-chat-actions .tm-appt-trigger { margin-left: 0; }
   .tm-appt-trigger:hover { background: var(--accent); color: #fff; }
   .tm-appt-form {
     display: grid; gap: 8px; padding: 14px 18px;
@@ -2223,6 +2650,33 @@ const TM_STYLES = `
     background: rgba(210,228,220,0.3);
     flex-shrink: 0;
   }
+  .tm-form-actions { display: flex; gap: 8px; }
+  .tm-form-actions > * { flex: 1; }
+  .tm-appointment-confirm { display: grid; gap: 8px; }
+  .tm-appointment-confirm > p { margin: 0; color: var(--muted); font-size: 0.84rem; }
+  .tm-care-history {
+    display: grid; gap: 18px; max-height: 55%; overflow-y: auto;
+    padding: 16px 18px; border-bottom: 1px solid var(--line);
+    background: rgba(248,250,252,0.96);
+  }
+  .tm-care-section { display: grid; gap: 9px; }
+  .tm-care-section h3 { margin: 0; font-size: 0.9rem; }
+  .tm-care-item {
+    display: grid; grid-template-columns: minmax(0,1fr) auto;
+    align-items: center; gap: 12px; padding: 12px;
+    border: 1px solid var(--line); border-radius: 14px; background: #fff;
+  }
+  .tm-care-item p { margin: 4px 0 0; color: var(--muted); font-size: 0.78rem; }
+  .tm-care-item small { color: var(--muted); }
+  .tm-care-item-actions, .tm-confirm-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+  .tm-confirm-actions span { width: 100%; color: var(--muted); font-size: 0.78rem; text-align: right; }
+  .tm-link-btn, .tm-danger-inline {
+    padding: 5px 9px; border: 0; border-radius: 9px; background: transparent;
+    color: var(--accent); font-size: 0.76rem; font-weight: 800; cursor: pointer;
+  }
+  .tm-link-btn:hover { background: var(--accent-soft); }
+  .tm-link-btn--danger, .tm-danger-inline { color: #b91c1c; }
+  .tm-danger-inline { border: 1px solid rgba(185,28,28,0.22); background: rgba(185,28,28,0.06); }
   .tm-appt-hanger {
     padding: 0 18px 10px;
     border-bottom: 1px solid var(--line);
@@ -2351,5 +2805,13 @@ const TM_STYLES = `
     .tm-detail-grid  { grid-template-columns: 1fr; }
     .tm-result-card  { flex-wrap: wrap; }
     .tm-chat-profile-grid { grid-template-columns: 1fr; }
+    .tm-chat-header { flex-wrap: wrap; }
+    .tm-chat-actions { width: 100%; margin-left: 0; }
+    .tm-chat-actions .tm-appt-trigger { flex: 1; }
+    .tm-care-history { max-height: 62%; }
+    .tm-care-item { grid-template-columns: 1fr; }
+    .tm-care-item-actions, .tm-confirm-actions { justify-content: flex-start; }
+    .tm-confirm-actions span { text-align: left; }
+    .tm-sharing-preview > summary { align-items: flex-start; }
   }
 `

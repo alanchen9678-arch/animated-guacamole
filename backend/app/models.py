@@ -382,6 +382,10 @@ class TherapistBooking(models.Model):
 
 
 class TherapistAppointment(models.Model):
+    class Status(models.TextChoices):
+        CONFIRMED = 'confirmed', 'Confirmed'
+        CANCELLED = 'cancelled', 'Cancelled'
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -394,6 +398,9 @@ class TherapistAppointment(models.Model):
     )
     title = models.CharField(max_length=150)
     scheduled_for = models.DateTimeField()
+    duration_minutes = models.PositiveSmallIntegerField(default=50)
+    timezone = models.CharField(max_length=64, default='UTC')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.CONFIRMED)
     description = models.TextField(blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
