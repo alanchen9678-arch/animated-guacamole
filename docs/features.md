@@ -14,7 +14,7 @@ Each user can store one entry per day with text, mood, and a doodle. Local stora
 
 ## Therapist match
 
-Matching ranks a bundled demo directory against needs and user preferences. Saved matches, booking-request history, therapist chat, and appointment history persist to the account. Outstanding requests can be cancelled; upcoming appointments can be reviewed, edited, or cancelled; overlapping appointments are rejected. Appointment times display their saved timezone. A privacy-aware preview lists the exact check-ins, recent journal entries, and recent AI-chat messages that would be shared. Booking sends an internal request only; no external therapist or payment system is connected.
+Matching ranks a bundled demo directory against needs and user preferences. Saved matches, booking-request history, therapist chat, and appointment history persist to the account. Outstanding requests can be cancelled; upcoming appointments can be reviewed, edited, or cancelled; overlapping appointments are rejected. Appointment times display their saved timezone. Account-wide therapist-sharing controls live on the Therapist Match homepage and apply to every current and future match and booking; individual bookings cannot override them. A privacy-aware preview lists the exact check-ins, recent journal entries, and recent AI-chat messages that would be shared. Booking sends an internal request only; no external therapist or payment system is connected.
 
 ## Peer support
 

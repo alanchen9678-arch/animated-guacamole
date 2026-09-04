@@ -52,7 +52,7 @@ npm audit
 ## Behavior boundaries
 
 - Chat messages and a rolling seven-day usage allowance are stored in the database.
-- Journal entries, doodles, moods, and therapist-sharing preferences are persisted per user.
+- Journal entries, doodles, moods, and global therapist-sharing preferences are persisted per user. Therapist sharing is managed from the Therapist Match homepage and applies to every match and booking.
 - Therapist matches, booking-request history, chat messages, and timezone-aware appointments are persisted. Users can review sharing details and edit or cancel eligible requests and appointments; overlapping appointments are blocked. The bundled therapist directory and therapist replies are demo data; Aurora does not contact a real provider or collect payment.
 - Peer identities are anonymous. Messages pass local policy checks and, when configured, AI moderation before storage.
 - Educational quiz completion records a daily learning streak.

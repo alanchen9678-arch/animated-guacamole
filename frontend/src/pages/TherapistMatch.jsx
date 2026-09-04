@@ -629,6 +629,53 @@ function SharingPreview({ refreshKey }) {
   )
 }
 
+function TherapistSharingSettings({ privacy, onUpdatePrivacy, privacySaving }) {
+  return (
+    <div className="tm-top3-card" aria-label="Global therapist privacy and data sharing">
+      <p className="tm-section-label">Privacy &amp; data sharing</p>
+      <p className="tm-privacy-global">
+        These account-wide choices apply to every current and future therapist match and booking.
+      </p>
+      <p className="tm-privacy-always">
+        Always shared: your stored needs profile and check-in scores.
+      </p>
+      <div className="tm-privacy-row">
+        <div>
+          <strong>Allow AI chat logs</strong>
+          <p>Share recent Aurora conversations with your therapists.</p>
+        </div>
+        <button
+          className={`tm-toggle${privacy.allowChatAccess ? ' tm-toggle--on' : ''}`}
+          onClick={() => onUpdatePrivacy({ allowChatAccess: !privacy.allowChatAccess })}
+          aria-label="Share AI chat logs with all therapists"
+          aria-pressed={privacy.allowChatAccess}
+          disabled={privacySaving}
+        >
+          <span className="tm-toggle-knob" />
+        </button>
+      </div>
+      <div className="tm-privacy-row">
+        <div>
+          <strong>Allow journal history</strong>
+          <p>Share recent journal entries with your therapists.</p>
+        </div>
+        <button
+          className={`tm-toggle${privacy.allowJournalAccess ? ' tm-toggle--on' : ''}`}
+          onClick={() => onUpdatePrivacy({ allowJournalAccess: !privacy.allowJournalAccess })}
+          aria-label="Share journal history with all therapists"
+          aria-pressed={privacy.allowJournalAccess}
+          disabled={privacySaving}
+        >
+          <span className="tm-toggle-knob" />
+        </button>
+      </div>
+      <p className="tm-privacy-global tm-privacy-global--footer">
+        Change these settings here at any time. Individual bookings cannot override them.
+      </p>
+    </div>
+  )
+}
+
 function NeedsProfileView({ profile, activeChats, onOpenChat, onFind, onRefresh, privacy, onUpdatePrivacy, privacySaving }) {
   const [refreshed, setRefreshed] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
@@ -652,7 +699,7 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind, onRefresh,
       <section className="page tm-page">
         <header className="page-header">
           <h2>Therapist Match</h2>
-          <p>Complete your initial assessment to unlock therapist matching and sharing controls.</p>
+          <p>Complete your initial assessment to unlock matching. You can manage therapist data sharing below.</p>
         </header>
 
         <div className="tm-profile-grid">
@@ -663,7 +710,14 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind, onRefresh,
             <div className="tm-big-score-sub">No assessment data yet</div>
             <p className="tm-updated">Start with your initial assessment in Check-Ins.</p>
           </div>
+          <TherapistSharingSettings
+            privacy={privacy}
+            onUpdatePrivacy={onUpdatePrivacy}
+            privacySaving={privacySaving}
+          />
         </div>
+
+        <SharingPreview refreshKey={`${privacy.allowChatAccess}-${privacy.allowJournalAccess}`} />
       </section>
     )
   }
@@ -708,40 +762,11 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind, onRefresh,
           )}
         </div>
 
-        <div className="tm-top3-card">
-          <p className="tm-section-label">Therapist sharing</p>
-          <p className="tm-privacy-always">
-            Always shared: your stored needs profile and check-in scores.
-          </p>
-          <div className="tm-privacy-row">
-            <div>
-              <strong>Allow AI chat logs</strong>
-              <p>Share recent Aurora conversations with your therapist.</p>
-            </div>
-            <button
-              className={`tm-toggle${privacy.allowChatAccess ? ' tm-toggle--on' : ''}`}
-              onClick={() => onUpdatePrivacy({ allowChatAccess: !privacy.allowChatAccess })}
-              aria-pressed={privacy.allowChatAccess}
-              disabled={privacySaving}
-            >
-              <span className="tm-toggle-knob" />
-            </button>
-          </div>
-          <div className="tm-privacy-row">
-            <div>
-              <strong>Allow journal history</strong>
-              <p>Share past journal entries with your therapist.</p>
-            </div>
-            <button
-              className={`tm-toggle${privacy.allowJournalAccess ? ' tm-toggle--on' : ''}`}
-              onClick={() => onUpdatePrivacy({ allowJournalAccess: !privacy.allowJournalAccess })}
-              aria-pressed={privacy.allowJournalAccess}
-              disabled={privacySaving}
-            >
-              <span className="tm-toggle-knob" />
-            </button>
-          </div>
-        </div>
+        <TherapistSharingSettings
+          privacy={privacy}
+          onUpdatePrivacy={onUpdatePrivacy}
+          privacySaving={privacySaving}
+        />
       </div>
 
       <SharingPreview refreshKey={`${privacy.allowChatAccess}-${privacy.allowJournalAccess}`} />
@@ -919,7 +944,7 @@ function ResultsView({ matches, prefs, onSelect, onBack }) {
 
 // ─── detail view ──────────────────────────────────────────────────────────────
 
-function DetailView({ therapist: t, prefs, onChat, onBook, onBack, privacy, onUpdatePrivacy, privacySaving }) {
+function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
   const [insurer, setInsurer]           = useState(prefs.insurance)
   const [memberId, setMemberId]         = useState('')
   const [booked, setBooked]             = useState(null)
@@ -990,41 +1015,6 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack, privacy, onUp
             </div>
           </div>
 
-          {/* ── privacy toggles ── */}
-          <div className="tm-privacy-card">
-            <p className="tm-section-label">Privacy &amp; data sharing</p>
-            <p className="tm-privacy-always">
-              Always shared: your Needs Profile + check-in scores.
-            </p>
-            <div className="tm-privacy-row">
-              <div>
-                <strong>Chatbot transcripts</strong>
-                <p>Last 7 days of AI conversations</p>
-              </div>
-              <button
-                className={`tm-toggle${privacy.allowChatAccess ? ' tm-toggle--on' : ''}`}
-                onClick={() => onUpdatePrivacy({ allowChatAccess: !privacy.allowChatAccess })}
-                aria-pressed={privacy.allowChatAccess}
-                disabled={privacySaving}
-              >
-                <span className="tm-toggle-knob" />
-              </button>
-            </div>
-            <div className="tm-privacy-row">
-              <div>
-                <strong>Journal entries</strong>
-                <p>Last month of thought journal</p>
-              </div>
-              <button
-                className={`tm-toggle${privacy.allowJournalAccess ? ' tm-toggle--on' : ''}`}
-                onClick={() => onUpdatePrivacy({ allowJournalAccess: !privacy.allowJournalAccess })}
-                aria-pressed={privacy.allowJournalAccess}
-                disabled={privacySaving}
-              >
-                <span className="tm-toggle-knob" />
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* ── right panel ── */}
@@ -1070,7 +1060,7 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack, privacy, onUp
                   />
                 </div>
                 <p className="tm-privacy-always">
-                  Aurora sends a booking request only. No payment is collected in this demo.
+                  Your global Therapist Match sharing settings apply to this request. Aurora sends a booking request only; no payment is collected in this demo.
                 </p>
                 {bookingError && (
                   <FeedbackNotice
@@ -2202,7 +2192,7 @@ export default function TherapistMatch() {
       {view === 'profile'  && <NeedsProfileView profile={needsProfile} activeChats={activeChats} onOpenChat={openChat} onFind={() => setView('prefs')} onRefresh={refreshUser} privacy={privacy} onUpdatePrivacy={changePrivacy} privacySaving={privacySaving} />}
       {view === 'prefs'    && <PreferencesView onBack={() => setView('profile')} onMatch={handleMatch} />}
       {view === 'results'  && <ResultsView matches={matches} prefs={prefs} onSelect={t => { setSelected(t); setView('detail') }} onBack={() => setView('prefs')} />}
-      {view === 'detail'   && selected && <DetailView therapist={selected} prefs={prefs} onChat={() => openChat(selected)} onBook={requestBooking} onBack={() => setView('results')} privacy={privacy} onUpdatePrivacy={changePrivacy} privacySaving={privacySaving} />}
+      {view === 'detail'   && selected && <DetailView therapist={selected} prefs={prefs} onChat={() => openChat(selected)} onBook={requestBooking} onBack={() => setView('results')} />}
       {view === 'chat'     && selected && <PersistentTherapistChatView therapist={selected} onBack={() => setView('profile')} />}
     </>
   )
@@ -2462,10 +2452,8 @@ const TM_STYLES = `
   .tm-dr-label { color: var(--muted); font-weight: 600; }
 
   /* privacy */
-  .tm-privacy-card {
-    background: var(--panel-strong); border: 1px solid var(--line);
-    border-radius: 18px; padding: 18px;
-  }
+  .tm-privacy-global { font-size: 0.82rem; color: var(--muted); line-height: 1.5; margin: 0 0 10px; }
+  .tm-privacy-global--footer { margin: 12px 0 0; }
   .tm-privacy-always { font-size: 0.8rem; color: var(--muted); margin: 0 0 14px; }
   .tm-privacy-row {
     display: flex; justify-content: space-between; align-items: center; gap: 12px;

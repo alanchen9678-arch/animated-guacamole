@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test'
 
-test('therapist care history supports cancellation and confirms appointment details before saving', async ({ page }) => {
+test('global therapist sharing and care history persist through the therapist workflow', async ({ page }) => {
   const future = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
   const past = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   let createdAppointmentPayload = null
+  let privacySettings = { allowAiAccess: false, allowChatAccess: false, allowJournalAccess: false }
   let updatedAppointment = {
     id: 11,
     matchId: 15,
@@ -42,11 +43,16 @@ test('therapist care history supports cancellation and confirms appointment deta
     }),
   }))
 
-  await page.route('**/api/journal/privacy/', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ allowAiAccess: false, allowChatAccess: false, allowJournalAccess: false }),
-  }))
+  await page.route('**/api/journal/privacy/', async (route) => {
+    if (route.request().method() === 'PATCH') {
+      privacySettings = { ...privacySettings, ...route.request().postDataJSON() }
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(privacySettings),
+    })
+  })
 
   await page.route('**/api/therapist/sharing-preview/', (route) => route.fulfill({
     status: 200,
@@ -138,7 +144,17 @@ test('therapist care history supports cancellation and confirms appointment deta
   })
 
   await page.goto('/')
-  await page.getByText('Exactly what your therapist can see').click()
+  const globalSharing = page.getByLabel('Global therapist privacy and data sharing')
+  await expect(globalSharing).toHaveCount(1)
+  await expect(globalSharing).toContainText('apply to every current and future therapist match and booking')
+  const chatSharingToggle = globalSharing.getByRole('button', { name: 'Share AI chat logs with all therapists' })
+  await expect(chatSharingToggle).toHaveAttribute('aria-pressed', 'false')
+  await chatSharingToggle.click()
+  await expect(chatSharingToggle).toHaveAttribute('aria-pressed', 'true')
+  await expect(chatSharingToggle).toBeEnabled()
+  expect(privacySettings.allowChatAccess).toBe(true)
+
+  await page.locator('.tm-sharing-preview').evaluate((details) => { details.open = true })
   await expect(page.getByText('Initial assessment · 2026-08-01')).toBeVisible()
   await expect(page.getByText('Journal · last 30 days')).toBeVisible()
   await expect(page.getByText('AI chat · last 7 days')).toBeVisible()
