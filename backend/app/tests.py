@@ -402,6 +402,7 @@ class AuthAPITests(TestCase):
         self.assertNotIn('personality', response.data)
         self.assertIn('needsProfile', response.data)
         self.assertFalse(response.data['hasInitialAssessment'])
+        self.assertFalse(response.data['hasCurrentPersonalityAssessment'])
 
     def test_me_patch_updates_user_and_profile_fields(self):
         # Profile edits should persist both built-in user fields and custom profile metadata.
@@ -477,6 +478,7 @@ class CheckInAPITests(TestCase):
         self.assertEqual(len(response.data['history']), 1)
         self.assertEqual(response.data['history'][0]['qIds'], [1, 2])
         self.assertTrue(response.data['hasInitialAssessment'])
+        self.assertFalse(response.data['hasCurrentPersonalityAssessment'])
 
     def test_post_initial_checkin_creates_entry_and_updates_history(self):
         # Posting an initial assessment should create a new entry and include it in the response.
@@ -497,6 +499,7 @@ class CheckInAPITests(TestCase):
         self.assertEqual(response.data['entry']['type'], CheckIn.CheckInType.INITIAL)
         self.assertEqual(response.data['entry']['qIds'], [1, 2, 3])
         self.assertTrue(response.data['hasInitialAssessment'])
+        self.assertTrue(response.data['hasCurrentPersonalityAssessment'])
         self.assertEqual(self.user.checkins.count(), 1)
         self.assertEqual(self.user.profile.personality['schemaVersion'], 2)
         self.assertEqual(self.user.profile.personality['dimensions']['selfManagement']['score'], 4.4)
@@ -612,6 +615,10 @@ class CheckInAPITests(TestCase):
             question_ids=[1, 2],
             scores={'stress': 44},
         )
+        UserProfile.objects.update_or_create(
+            user=self.user,
+            defaults={'personality': continuous_personality_profile()},
+        )
 
         response = self.client.post(
             reverse('checkins'),
@@ -627,6 +634,53 @@ class CheckInAPITests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data['error'], 'Initial assessment already completed.')
         self.assertEqual(self.user.checkins.filter(type=CheckIn.CheckInType.INITIAL).count(), 1)
+
+    def test_legacy_user_can_complete_personality_upgrade_without_losing_history(self):
+        initial = CheckIn.objects.create(
+            user=self.user,
+            type=CheckIn.CheckInType.INITIAL,
+            question_ids=[7, 9],
+            scores={'stress': 44, 'sleep': 65},
+        )
+        UserProfile.objects.update_or_create(
+            user=self.user,
+            defaults={'personality': {'id': 'architect', 'name': 'The Architect'}},
+        )
+
+        response = self.client.post(
+            reverse('checkins'),
+            {
+                'type': 'personality',
+                'qIds': [],
+                'scores': {},
+                'personality': continuous_personality_profile(),
+            },
+            format='json',
+        )
+
+        initial.refresh_from_db()
+        self.user.profile.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.data['entry'])
+        self.assertTrue(response.data['hasInitialAssessment'])
+        self.assertTrue(response.data['hasCurrentPersonalityAssessment'])
+        self.assertEqual(initial.question_ids, [7, 9])
+        self.assertEqual(initial.scores, {'stress': 44, 'sleep': 65})
+        self.assertEqual(self.user.checkins.count(), 1)
+        self.assertEqual(self.user.profile.personality['instrument'], 'aurora-personality-v2')
+
+    def test_personality_only_upgrade_requires_existing_initial_assessment(self):
+        response = self.client.post(
+            reverse('checkins'),
+            {
+                'type': 'personality',
+                'personality': continuous_personality_profile(),
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data['error'], 'Complete the initial assessment first.')
 
     def test_post_weekly_checkin_reuses_current_week_entry(self):
         # Weekly submissions should update the same week instead of creating duplicate weekly records.

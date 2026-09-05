@@ -19,6 +19,7 @@ test('home uses one daily prompt and an editorial two-column tool layout', async
       streak: 4,
       checkInDueThisWeek: false,
       hasInitialAssessment: true,
+      hasCurrentPersonalityAssessment: true,
       personality: {},
       needsProfile: null,
     }),

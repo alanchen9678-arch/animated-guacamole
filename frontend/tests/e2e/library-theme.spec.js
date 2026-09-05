@@ -17,6 +17,7 @@ test('library uses the assigned topic palette without streak behavior', async ({
       streak: 6,
       checkInDueThisWeek: false,
       hasInitialAssessment: true,
+      hasCurrentPersonalityAssessment: true,
       personality: {},
       needsProfile: null,
     }),

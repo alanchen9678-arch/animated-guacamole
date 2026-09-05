@@ -17,6 +17,7 @@ test.beforeEach(async ({ page }) => {
       username: 'draft-user',
       firstName: 'Avery',
       hasInitialAssessment: true,
+      hasCurrentPersonalityAssessment: true,
       personality: {},
       needsProfile: null,
     }),
@@ -31,6 +32,7 @@ test.beforeEach(async ({ page }) => {
       lastCheckInDate: '2026-08-01',
       dueThisWeek: true,
       hasInitialAssessment: true,
+      hasCurrentPersonalityAssessment: true,
     }),
   }))
 })

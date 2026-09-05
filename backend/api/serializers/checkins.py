@@ -13,7 +13,7 @@ PERSONALITY_SIGNAL_STRENGTHS = {'weak', 'moderate', 'strong', 'inconsistent'}
 
 
 class CheckInWriteSerializer(serializers.Serializer):
-    type = serializers.ChoiceField(choices=CheckIn.CheckInType.choices)
+    type = serializers.ChoiceField(choices=[*CheckIn.CheckInType.choices, ('personality', 'Personality')])
     qIds = serializers.ListField(
         child=serializers.IntegerField(),
         required=False,
@@ -70,7 +70,7 @@ class CheckInWriteSerializer(serializers.Serializer):
         }
 
     def validate(self, attrs):
-        if attrs.get('type') == CheckIn.CheckInType.INITIAL and not attrs.get('personality'):
+        if attrs.get('type') in {CheckIn.CheckInType.INITIAL, 'personality'} and not attrs.get('personality'):
             raise serializers.ValidationError({
                 'personality': 'The initial assessment requires personalization responses.',
             })

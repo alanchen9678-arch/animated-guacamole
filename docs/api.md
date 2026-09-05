@@ -27,7 +27,9 @@ Initial assessments require a `personality` object using the version 2 continuou
 
 The `dimensions` object must contain exactly `socialEnergy`, `cooperationTrust`, `selfManagement`, `emotionalRecovery`, and `opennessCuriosity`. Scores range from 1 to 5, consistency ranges from 0 to 1, and signal strength is `weak`, `moderate`, `strong`, or `inconsistent`. Legacy archetype payloads are rejected for new initial assessments and ignored by AI personalization.
 
-- `GET|POST /api/checkins/` — list/submit initial and weekly assessments.
+Authentication and check-in summary responses include `hasCurrentPersonalityAssessment`. Existing users for whom it is false submit the 30-question upgrade with type `personality`. The upgrade requires an existing initial assessment, creates no replacement check-in record, and leaves historical wellness scores unchanged. A valid v2 profile makes the flag true; repeated upgrade submissions are rejected.
+
+- `GET|POST /api/checkins/` — list/submit initial, personality-upgrade, and weekly assessments.
 - `GET|POST /api/journal/` — list or upsert a daily entry. Accepts `date`, `title`, `content`, `mood`, and `doodleData`.
 - `GET|PATCH /api/journal/privacy/` — read/update `allowAiAccess`, `allowJournalAccess`, and `allowChatAccess`.
 - `GET|POST /api/library/progress/` — read progress or record today's quiz completion.

@@ -17,6 +17,7 @@ test('journal calendar keeps navigation fixed and uses smooth month transitions'
       username: 'journal-user',
       firstName: 'Avery',
       hasInitialAssessment: true,
+      hasCurrentPersonalityAssessment: true,
       personality: {},
       needsProfile: null,
     }),

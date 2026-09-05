@@ -32,6 +32,7 @@ test('global therapist sharing and care history persist through the therapist wo
       username: 'care-user',
       firstName: 'Avery',
       hasInitialAssessment: true,
+      hasCurrentPersonalityAssessment: true,
       personality: {},
       needsProfile: {
         basis: 'initial_assessment',

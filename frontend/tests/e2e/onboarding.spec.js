@@ -58,6 +58,7 @@ test('restored sessions show a loading state instead of flashing logged-out cont
         username: 'restored-user',
         firstName: 'Avery',
         hasInitialAssessment: true,
+        hasCurrentPersonalityAssessment: true,
         needsProfile: null,
       }),
     })

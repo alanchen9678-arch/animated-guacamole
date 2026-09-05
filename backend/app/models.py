@@ -27,6 +27,43 @@ class UserProfile(models.Model):
         return f"{self.user.username}'s profile"
 
 
+CURRENT_PERSONALITY_SCHEMA_VERSION = 2
+CURRENT_PERSONALITY_INSTRUMENT = 'aurora-personality-v2'
+CURRENT_PERSONALITY_DIMENSIONS = {
+    'socialEnergy',
+    'cooperationTrust',
+    'selfManagement',
+    'emotionalRecovery',
+    'opennessCuriosity',
+}
+
+
+def is_current_personality_profile(personality):
+    if not isinstance(personality, dict):
+        return False
+    dimensions = personality.get('dimensions')
+    if not (
+        personality.get('schemaVersion') == CURRENT_PERSONALITY_SCHEMA_VERSION
+        and personality.get('instrument') == CURRENT_PERSONALITY_INSTRUMENT
+        and isinstance(dimensions, dict)
+        and set(dimensions) == CURRENT_PERSONALITY_DIMENSIONS
+    ):
+        return False
+    for dimension in dimensions.values():
+        if not isinstance(dimension, dict):
+            return False
+        try:
+            score = float(dimension.get('score'))
+            consistency = float(dimension.get('consistency'))
+        except (TypeError, ValueError):
+            return False
+        if not 1 <= score <= 5 or not 0 <= consistency <= 1:
+            return False
+        if dimension.get('signalStrength') not in {'weak', 'moderate', 'strong', 'inconsistent'}:
+            return False
+    return True
+
+
 class LibraryProgress(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -432,6 +469,8 @@ class TherapistAppointment(models.Model):
 def get_user_checkin_summary(user, today=None):
     today = today or timezone.localdate()
     has_initial_assessment = user.checkins.filter(type=CheckIn.CheckInType.INITIAL).exists()
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    has_current_personality_assessment = is_current_personality_profile(profile.personality)
     weekly_entries = list(
         user.checkins.filter(type=CheckIn.CheckInType.WEEKLY).order_by('-week_start_date', '-created_at', '-id')
     )
@@ -466,6 +505,7 @@ def get_user_checkin_summary(user, today=None):
         'last_check_in_date': latest_entry.check_in_date if latest_entry else None,
         'due_this_week': due_this_week,
         'has_initial_assessment': has_initial_assessment,
+        'has_current_personality_assessment': has_current_personality_assessment,
     }
 
 

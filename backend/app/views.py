@@ -27,6 +27,7 @@ def _user_payload(user):
         'isPeerOnboarded': profile.is_peer_onboarded,
         'needsProfile': profile.needs_profile,
         'hasInitialAssessment': checkin_summary['has_initial_assessment'],
+        'hasCurrentPersonalityAssessment': checkin_summary['has_current_personality_assessment'],
         'lastCheckInDate': checkin_summary['last_check_in_date'],
         'checkInDueThisWeek': checkin_summary['due_this_week'],
     }

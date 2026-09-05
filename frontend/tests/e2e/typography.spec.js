@@ -10,6 +10,7 @@ const user = {
   streak: 2,
   checkInDueThisWeek: false,
   hasInitialAssessment: true,
+  hasCurrentPersonalityAssessment: true,
   personality: {
     id: 'architect',
     name: 'The Architect',

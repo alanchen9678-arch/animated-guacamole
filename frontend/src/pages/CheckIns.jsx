@@ -190,10 +190,10 @@ function loadCheckInDraft(storageKey) {
     const draft = JSON.parse(raw)
     if (
       draft?.version !== CHECKIN_DRAFT_VERSION
-      || !['initial', 'weekly'].includes(draft.surveyType)
+      || !['initial', 'personality', 'weekly'].includes(draft.surveyType)
       || !Array.isArray(draft.questionIds)
       || !draft.questionIds.length
-      || (draft.surveyType === 'initial' && draft.personalityInstrument !== 'aurora-personality-v2')
+      || (draft.surveyType !== 'weekly' && draft.personalityInstrument !== 'aurora-personality-v2')
     ) return null
 
     const questions = draft.questionIds.map((id) => CHECKIN_QUESTION_BY_ID.get(String(id)))
@@ -224,7 +224,7 @@ function saveCheckInDraft(storageKey, { surveyType, questions, answers, currentI
     localStorage.setItem(storageKey, JSON.stringify({
       version: CHECKIN_DRAFT_VERSION,
       surveyType,
-      personalityInstrument: surveyType === 'initial' ? 'aurora-personality-v2' : null,
+      personalityInstrument: surveyType !== 'weekly' ? 'aurora-personality-v2' : null,
       questionIds: questions.map((question) => question.id),
       answers,
       currentIndex,
@@ -317,6 +317,7 @@ function buildSurvey(type, lastDisorderQIds = []) {
     // 40 questions: 10 disorder first, then 30 personality
     return [...INITIAL_DISORDER_QUESTIONS, ...PERSONALITY_QUESTIONS]
   }
+  if (type === 'personality') return [...PERSONALITY_QUESTIONS]
   // Weekly: 12 disorder questions total, 2 from each of the 6 categories.
   const disorderQs = CATEGORIES.flatMap(({ id: cat }) => {
     const pool = WEEKLY_QUESTION_BANK.filter(q => q.cat === cat)
@@ -430,7 +431,8 @@ function fmtDate(str) {
 
 // ─── hub view ─────────────────────────────────────────────────────────────────
 
-function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, onStart }) {
+function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, hasCurrentPersonalityAssessment, onStart }) {
+  const needsPersonalityUpgrade = hasInitialAssessment && !hasCurrentPersonalityAssessment
   return (
     <div className="ci-hub">
       {/* streak + due banner */}
@@ -441,8 +443,14 @@ function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, onSt
           <div className="ci-streak-sub">{lastCheckInDate ? `Last check-in ${fmtDate(lastCheckInDate)}` : 'No check-ins yet'}</div>
         </div>
 
-        <div className={`ci-due-card${(!hasInitialAssessment || dueToday) ? ' ci-due-card--due' : ''}`}>
-          {!hasInitialAssessment ? (
+        <div className={`ci-due-card${(!hasCurrentPersonalityAssessment || dueToday) ? ' ci-due-card--due' : ''}`}>
+          {needsPersonalityUpgrade ? (
+            <>
+              <div className="ci-due-badge">Update required</div>
+              <p className="ci-due-text">Aurora's personalization assessment has changed. Complete the new 30-question assessment to continue using Aurora. Your previous check-ins and wellness history will be preserved.</p>
+              <button className="ci-start-btn" onClick={() => onStart('personality')}>Take updated assessment</button>
+            </>
+          ) : !hasInitialAssessment ? (
             <>
               <div className="ci-due-badge">Get started</div>
               <p className="ci-due-text">Before weekly check-ins begin, complete your 40-question initial assessment to set your wellness baseline and help Aurora personalize its support.</p>
@@ -474,11 +482,14 @@ function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, onSt
 
 function IntroView({ type, onStart, onBack }) {
   const isInitial = type === 'initial'
-  const count     = isInitial ? 40 : 12
-  const time      = isInitial ? '~15' : '~5'
-  const title     = isInitial ? 'Initial Assessment' : 'Weekly Check-In'
+  const isPersonality = type === 'personality'
+  const count     = isInitial ? 40 : isPersonality ? 30 : 12
+  const time      = isInitial ? '~15' : isPersonality ? '~10' : '~5'
+  const title     = isInitial ? 'Initial Assessment' : isPersonality ? 'Updated Personalization Assessment' : 'Weekly Check-In'
   const desc      = isInitial
     ? 'This one-time assessment establishes your baseline across six well-being dimensions and gives Aurora general personalization signals. It takes about 15 minutes and does not diagnose or define who you are.'
+    : isPersonality
+      ? 'Aurora now uses five continuous personalization signals instead of fixed personality types. Complete these 30 questions to keep using Aurora. Your existing wellness history will not be changed.'
     : "This weekly check-in tracks how you've been doing across all six well-being dimensions. Aurora uses it to keep your score profile current and spot meaningful changes over time."
 
   return (
@@ -645,7 +656,7 @@ function SurveyView({ questions, answers, setAnswers, initialIndex = 0, onIndexC
 // ─── results view ─────────────────────────────────────────────────────────────
 
 function ResultsView({ surveyType, scores, prevScores, onDone }) {
-  if (surveyType === 'initial') {
+  if (surveyType !== 'weekly') {
     return (
       <div className="ci-results ci-results--initial">
         <div className="ci-results-header">
@@ -708,6 +719,7 @@ export default function CheckIns() {
     dueToday: isWeeklyCheckInDue(MOCK_HISTORY),
     lastCheckInDate: getLatestEntry(MOCK_HISTORY)?.date ?? null,
     hasInitialAssessment: MOCK_HISTORY.some((entry) => entry.type === 'initial'),
+    hasCurrentPersonalityAssessment: true,
   })
   const [loadingState, setLoadingState] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
@@ -729,6 +741,7 @@ export default function CheckIns() {
         dueToday: isWeeklyCheckInDue(MOCK_HISTORY),
         lastCheckInDate: getLatestEntry(MOCK_HISTORY)?.date ?? null,
         hasInitialAssessment: MOCK_HISTORY.some((entry) => entry.type === 'initial'),
+        hasCurrentPersonalityAssessment: true,
       })
       setHistoryLoaded(true)
       return
@@ -748,6 +761,7 @@ export default function CheckIns() {
           dueToday: Boolean(data.dueThisWeek),
           lastCheckInDate: data.lastCheckInDate ?? null,
           hasInitialAssessment: Boolean(data.hasInitialAssessment),
+          hasCurrentPersonalityAssessment: data.hasCurrentPersonalityAssessment === true,
         })
       })
       .catch((error) => {
@@ -775,10 +789,10 @@ export default function CheckIns() {
     if (!draft) return
 
     const isNoLongerValid = (
-      draft.surveyType === 'initial' && serverSummary.hasInitialAssessment
+      draft.surveyType !== 'weekly' && serverSummary.hasCurrentPersonalityAssessment
     ) || (
       draft.surveyType === 'weekly'
-      && (!serverSummary.hasInitialAssessment || !serverSummary.dueToday)
+      && (!serverSummary.hasCurrentPersonalityAssessment || !serverSummary.dueToday)
     )
     if (isNoLongerValid) {
       clearCheckInDraft(draftStorageKey)
@@ -843,7 +857,7 @@ export default function CheckIns() {
         const payload = {
           type: surveyType,
           qIds: questions.filter(q => q.cat).map(q => q.id),
-          scores,
+          scores: surveyType === 'personality' ? {} : scores,
         }
         if (personality) payload.personality = personality
         const data = await submitCheckIn(payload)
@@ -855,6 +869,7 @@ export default function CheckIns() {
           dueToday: Boolean(data.dueThisWeek),
           lastCheckInDate: data.lastCheckInDate ?? null,
           hasInitialAssessment: Boolean(data.hasInitialAssessment),
+          hasCurrentPersonalityAssessment: data.hasCurrentPersonalityAssessment === true,
         })
         // The check-in is already committed once this response arrives. A
         // profile refresh failure must not invite a duplicate submission.
@@ -887,6 +902,7 @@ export default function CheckIns() {
         dueToday: isWeeklyCheckInDue(nextHistory),
         lastCheckInDate: getLatestEntry(nextHistory)?.date ?? null,
         hasInitialAssessment: nextHistory.some((entry) => entry.type === 'initial'),
+        hasCurrentPersonalityAssessment: surveyType !== 'weekly' || serverSummary.hasCurrentPersonalityAssessment,
       })
       setSaveError('')
     }
@@ -904,6 +920,10 @@ export default function CheckIns() {
   }
 
   const hasInitialAssessment = useMemo(() => serverSummary.hasInitialAssessment, [serverSummary])
+  const hasCurrentPersonalityAssessment = useMemo(
+    () => serverSummary.hasCurrentPersonalityAssessment,
+    [serverSummary],
+  )
   const streak = useMemo(() => serverSummary.streak, [serverSummary])
   const dueToday = useMemo(() => serverSummary.dueToday, [serverSummary])
   const latestEntryDate = useMemo(() => serverSummary.lastCheckInDate, [serverSummary])
@@ -936,6 +956,7 @@ export default function CheckIns() {
           dueToday={dueToday}
           lastCheckInDate={latestEntryDate}
           hasInitialAssessment={hasInitialAssessment}
+          hasCurrentPersonalityAssessment={hasCurrentPersonalityAssessment}
           onStart={startSurvey}
         />
       )}

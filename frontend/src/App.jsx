@@ -55,8 +55,8 @@ function AppShell() {
   const contentRef = useRef(null)
 
   const isLoggedIn = !!user
-  const hasInitialAssessment = !!user?.hasInitialAssessment
-  const assessmentLocked = isLoggedIn && !hasInitialAssessment
+  const hasCurrentPersonalityAssessment = user?.hasCurrentPersonalityAssessment === true
+  const assessmentLocked = isLoggedIn && !hasCurrentPersonalityAssessment
   const activeShellPage = assessmentLocked && activePage !== 'checkins' ? 'checkins' : activePage
 
   // dynamic notifications
@@ -996,7 +996,8 @@ function AppShell() {
 
 function AppContent() {
   const { user } = useUser()
-  const lockedPageId = user && !user.hasInitialAssessment ? 'checkins' : null
+  const hasCurrentPersonalityAssessment = user?.hasCurrentPersonalityAssessment === true
+  const lockedPageId = user && !hasCurrentPersonalityAssessment ? 'checkins' : null
 
   return (
     <NavigationProvider lockedPageId={lockedPageId}>

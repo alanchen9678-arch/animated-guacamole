@@ -50,6 +50,7 @@ test('failed check-in loading presents a working retry action', async ({ page })
       username: 'feedback-user',
       firstName: 'Avery',
       hasInitialAssessment: true,
+      hasCurrentPersonalityAssessment: true,
       personality: {},
       needsProfile: null,
     }),
@@ -75,6 +76,7 @@ test('failed check-in loading presents a working retry action', async ({ page })
         lastCheckInDate: '2026-08-01',
         dueThisWeek: true,
         hasInitialAssessment: true,
+        hasCurrentPersonalityAssessment: true,
       }),
     })
   })
