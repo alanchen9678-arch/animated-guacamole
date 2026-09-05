@@ -13,11 +13,27 @@ WEEK_IN_SECONDS = 60 * 60 * 24 * 7
 CONTEXT_MESSAGE_LIMIT = 12
 HISTORY_MESSAGE_LIMIT = 100
 
-PERSONALITY_STYLE_BY_CATEGORY = {
-    'Thinker': 'Keep the tone a little more structured, direct, and concrete.',
-    'Creator': 'Leave room for light imagery, curiosity, and reflective language.',
-    'Leader': 'Sound steady, clear, and action-oriented without being pushy.',
-    'Helper': 'Lean a bit more into warmth, validation, and relational language.',
+PERSONALITY_DIMENSION_GUIDANCE = {
+    'socialEnergy': {
+        'low': 'Prefer private reflection, one trusted person, and lower-intensity social options before group activities.',
+        'high': 'Include collaboration, talking ideas through, gathering perspectives, and group-based options when relevant.',
+    },
+    'cooperationTrust': {
+        'low': 'Emphasize evidence, tradeoffs, autonomy, and alternative viewpoints.',
+        'high': 'Include relationship effects, collaboration, boundaries, and mutually workable options.',
+    },
+    'selfManagement': {
+        'low': 'Offer fewer steps at once, a clear immediate action, and shorter planning horizons.',
+        'high': 'Offer structured multi-step plans, milestones, dependencies, and longer planning horizons when useful.',
+    },
+    'emotionalRecovery': {
+        'low': 'Reduce information overload, break difficult situations into smaller parts, and separate controllable from uncontrollable factors.',
+        'high': 'Move efficiently into analysis and present multiple tradeoffs without unnecessary emotional framing.',
+    },
+    'opennessCuriosity': {
+        'low': 'Start with practical, concrete, established approaches and familiar examples.',
+        'high': 'Include alternative perspectives, creative approaches, analogies, and broader possibilities.',
+    },
 }
 
 
@@ -91,31 +107,42 @@ def build_style_context(user):
         return None
 
     personality = profile.personality or {}
-    category = personality.get('category')
-    name = personality.get('name')
-    traits = [trait for trait in personality.get('traits') or [] if isinstance(trait, str) and trait.strip()]
-    strengths = personality.get('strengths')
-
-    parts = []
-    if name:
-        parts.append(f'The user identifies with {name}.')
-    elif category:
-        parts.append(f"The user's personality leans toward {category}.")
-
-    category_hint = PERSONALITY_STYLE_BY_CATEGORY.get(category)
-    if category_hint:
-        parts.append(category_hint)
-
-    if traits:
-        parts.append(f"Subtly mirror cues like {', '.join(traits[:3])}.")
-
-    if strengths:
-        parts.append('When helpful, reflect their strengths without naming the profile.')
-
-    if not parts:
+    if (
+        personality.get('schemaVersion') != 2
+        or personality.get('instrument') != 'aurora-personality-v2'
+    ):
         return None
 
-    return 'Personality style guidance: ' + ' '.join(parts) + ' Keep this subtle and never mention the profile explicitly.'
+    dimensions = personality.get('dimensions')
+    if not isinstance(dimensions, dict):
+        return None
+
+    guidance = []
+    for dimension_id, options in PERSONALITY_DIMENSION_GUIDANCE.items():
+        dimension = dimensions.get(dimension_id)
+        if not isinstance(dimension, dict):
+            continue
+        signal_strength = dimension.get('signalStrength')
+        if signal_strength not in {'moderate', 'strong'}:
+            continue
+        try:
+            score = float(dimension.get('score'))
+        except (TypeError, ValueError):
+            continue
+        direction = 'high' if score >= 3 else 'low'
+        qualifier = 'Lightly consider' if signal_strength == 'moderate' else 'Consider'
+        guidance.append(f'{qualifier}: {options[direction]}')
+
+    if not guidance:
+        return None
+
+    return (
+        'Personalization guidance (low priority): '
+        + ' '.join(guidance)
+        + ' Safety, factual accuracy, the current request, and current conversation context always override these tendencies.'
+        + ' Use them only to rank or frame potentially helpful options. Never mention a profile, score, trait label, or inferred identity.'
+        + ' Never infer mental health, ability, character, identity, or life outcomes from these signals.'
+    )
 
 
 class ChatView(APIView):

@@ -11,6 +11,22 @@ All feature routes require `Authorization: Token <token>`. Register and login ar
 
 ## Core wellness data
 
+Initial assessments require a `personality` object using the version 2 continuous-signal schema:
+
+    {
+      schemaVersion: 2,
+      instrument: aurora-personality-v2,
+      dimensions: {
+        socialEnergy: {
+          score: 3.67,
+          consistency: 0.72,
+          signalStrength: moderate
+        }
+      }
+    }
+
+The `dimensions` object must contain exactly `socialEnergy`, `cooperationTrust`, `selfManagement`, `emotionalRecovery`, and `opennessCuriosity`. Scores range from 1 to 5, consistency ranges from 0 to 1, and signal strength is `weak`, `moderate`, `strong`, or `inconsistent`. Legacy archetype payloads are rejected for new initial assessments and ignored by AI personalization.
+
 - `GET|POST /api/checkins/` — list/submit initial and weekly assessments.
 - `GET|POST /api/journal/` — list or upsert a daily entry. Accepts `date`, `title`, `content`, `mood`, and `doodleData`.
 - `GET|PATCH /api/journal/privacy/` — read/update `allowAiAccess`, `allowJournalAccess`, and `allowChatAccess`.

@@ -26,6 +26,20 @@ from .models import (
 )
 
 
+def continuous_personality_profile():
+    return {
+        'schemaVersion': 2,
+        'instrument': 'aurora-personality-v2',
+        'dimensions': {
+            'socialEnergy': {'score': 2.2, 'consistency': 0.8, 'signalStrength': 'moderate'},
+            'cooperationTrust': {'score': 3.4, 'consistency': 0.7, 'signalStrength': 'weak'},
+            'selfManagement': {'score': 4.4, 'consistency': 0.9, 'signalStrength': 'strong'},
+            'emotionalRecovery': {'score': 2.8, 'consistency': 0.6, 'signalStrength': 'weak'},
+            'opennessCuriosity': {'score': 3.8, 'consistency': 0.8, 'signalStrength': 'moderate'},
+        },
+    }
+
+
 class ConversationModelTests(TestCase):
     def setUp(self):
         # Each conversation test gets its own user in the isolated test database.
@@ -385,7 +399,7 @@ class AuthAPITests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['username'], 'auth-user')
         self.assertEqual(response.data['firstName'], 'Avery')
-        self.assertIn('personality', response.data)
+        self.assertNotIn('personality', response.data)
         self.assertIn('needsProfile', response.data)
         self.assertFalse(response.data['hasInitialAssessment'])
 
@@ -472,11 +486,7 @@ class CheckInAPITests(TestCase):
                 'type': CheckIn.CheckInType.INITIAL,
                 'qIds': [1, 2, 3],
                 'scores': {'stress': 44, 'sleep': 72},
-                'personality': {
-                    'id': 'architect',
-                    'name': 'The Architect',
-                    'category': 'Thinker',
-                },
+                'personality': continuous_personality_profile(),
             },
             format='json',
         )
@@ -488,9 +498,31 @@ class CheckInAPITests(TestCase):
         self.assertEqual(response.data['entry']['qIds'], [1, 2, 3])
         self.assertTrue(response.data['hasInitialAssessment'])
         self.assertEqual(self.user.checkins.count(), 1)
-        self.assertEqual(self.user.profile.personality['id'], 'architect')
+        self.assertEqual(self.user.profile.personality['schemaVersion'], 2)
+        self.assertEqual(self.user.profile.personality['dimensions']['selfManagement']['score'], 4.4)
+        self.assertNotIn('personality', response.data)
         self.assertEqual(self.user.profile.needs_profile['basis'], 'initial_assessment')
         self.assertEqual(self.user.profile.needs_profile['concerns']['stress'], 44)
+
+    def test_post_initial_checkin_rejects_legacy_archetype_payload(self):
+        response = self.client.post(
+            reverse('checkins'),
+            {
+                'type': CheckIn.CheckInType.INITIAL,
+                'qIds': [1, 2, 3],
+                'scores': {'stress': 44},
+                'personality': {
+                    'id': 'architect',
+                    'name': 'The Architect',
+                    'category': 'Thinker',
+                },
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('personality', response.data)
+        self.assertFalse(self.user.checkins.exists())
 
     def test_needs_profile_uses_initial_assessment_until_five_weeklies_exist(self):
         CheckIn.objects.create(
@@ -587,6 +619,7 @@ class CheckInAPITests(TestCase):
                 'type': CheckIn.CheckInType.INITIAL,
                 'qIds': [3, 4],
                 'scores': {'stress': 72},
+                'personality': continuous_personality_profile(),
             },
             format='json',
         )
@@ -844,10 +877,15 @@ class ChatAPITests(TestCase):
         UserProfile.objects.create(
             user=self.user,
             personality={
-                'name': 'The Architect',
-                'category': 'Thinker',
-                'traits': ['Strategic', 'Analytical', 'Precise'],
-                'strengths': 'Exceptional planning and long-term thinking.',
+                'schemaVersion': 2,
+                'instrument': 'aurora-personality-v2',
+                'dimensions': {
+                    'socialEnergy': {'score': 3, 'consistency': 1, 'signalStrength': 'weak'},
+                    'cooperationTrust': {'score': 3, 'consistency': 1, 'signalStrength': 'weak'},
+                    'selfManagement': {'score': 1.5, 'consistency': 0.9, 'signalStrength': 'strong'},
+                    'emotionalRecovery': {'score': 3, 'consistency': 1, 'signalStrength': 'weak'},
+                    'opennessCuriosity': {'score': 4, 'consistency': 0.8, 'signalStrength': 'moderate'},
+                },
             },
         )
 
@@ -859,9 +897,30 @@ class ChatAPITests(TestCase):
 
         style_context = mock_generate_chat_reply.call_args.kwargs['style_context']
 
-        self.assertIn('The Architect', style_context)
-        self.assertIn('structured, direct, and concrete', style_context)
-        self.assertIn('Strategic', style_context)
+        self.assertNotIn('personality', style_context.lower())
+        self.assertIn('fewer steps at once', style_context)
+        self.assertIn('alternative perspectives', style_context)
+        self.assertIn('current request', style_context)
+
+    @patch('api.routes.chat.generate_chat_reply')
+    def test_chat_ignores_legacy_archetype_profile(self, mock_generate_chat_reply):
+        mock_generate_chat_reply.return_value = 'I am here with you.'
+        UserProfile.objects.create(
+            user=self.user,
+            personality={
+                'name': 'The Architect',
+                'category': 'Thinker',
+                'traits': ['Strategic'],
+            },
+        )
+
+        self.client.post(
+            reverse('chat'),
+            {'message': 'Help me make a plan.'},
+            format='json',
+        )
+
+        self.assertIsNone(mock_generate_chat_reply.call_args.kwargs['style_context'])
 
     @patch('api.routes.chat.generate_chat_reply')
     def test_chat_history_returns_saved_messages_in_order(self, mock_generate_chat_reply):

@@ -25,7 +25,6 @@ def _user_payload(user):
         'avatarColor': profile.avatar_color,
         'anonymousName': profile.anonymous_name or '',
         'isPeerOnboarded': profile.is_peer_onboarded,
-        'personality': profile.personality,
         'needsProfile': profile.needs_profile,
         'hasInitialAssessment': checkin_summary['has_initial_assessment'],
         'lastCheckInDate': checkin_summary['last_check_in_date'],

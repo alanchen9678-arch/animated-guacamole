@@ -75,7 +75,6 @@ class CheckInCollectionView(APIView):
                 'lastCheckInDate': summary['last_check_in_date'],
                 'dueThisWeek': summary['due_this_week'],
                 'hasInitialAssessment': summary['has_initial_assessment'],
-                'personality': profile.personality,
                 'needsProfile': profile.needs_profile,
             }
         )

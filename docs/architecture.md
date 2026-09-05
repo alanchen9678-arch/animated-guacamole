@@ -21,6 +21,8 @@ SQLite is the local default. When `DATABASE_URL` is present, Django uses Postgre
 
 Chat reserves usage in `ChatUsage` inside a transaction. A provider failure releases the reservation and stores no partial message. Successful user and assistant messages are committed together.
 
+The one-time initial Check-In stores an `aurora-personality-v2` profile with five continuous dimensions: social energy, cooperation and trust, self-management, emotional reactivity and recovery, and openness and curiosity. These values are internal personalization signals rather than user-facing personality types. Each dimension includes a consistency measure and a signal-strength classification. Chat ignores weak, inconsistent, malformed, and legacy archetype data; safety requirements, factual accuracy, the current request, and current context always take priority over personalization.
+
 ## Frontend
 
 - `frontend/src/context`: session and navigation state.
@@ -33,3 +35,5 @@ Dashboard pages are lazy-loaded so the public landing bundle does not include ev
 ## Trust boundaries
 
 OpenAI credentials stay on the server. Journal and therapist resources are always filtered by user. Therapist records in this repository are demonstrative and do not represent a provider-network or payment integration.
+
+Personality signals may only help rank choices or frame a response. They must never be used to infer a diagnosis, ability, character, identity, or life outcome, and chatbot responses must not expose profile scores or trait labels.

@@ -13,9 +13,7 @@ const user = {
   personality: {
     id: 'architect',
     name: 'The Architect',
-    emoji: '🏛️',
     category: 'Thinker',
-    color: '#6366f1',
   },
   needsProfile: { overall_score: 42, concern_scores: {} },
 }
@@ -94,7 +92,6 @@ test('dashboard pages share the home typography hierarchy and secondary color', 
   await page.getByRole('button', { name: 'Check-Ins', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Check-Ins' })).toHaveCSS('font-size', '32px')
   await expect(page.getByRole('heading', { name: 'Check-Ins' })).toHaveCSS('font-weight', '650')
-  await expect(page.locator('.ci-hub-personality-emoji')).toHaveCount(0)
-  await expect(page.getByText('🏛️')).toHaveCount(0)
-  await expect(page.locator('.ci-hub-personality-cat')).toHaveCSS('color', 'rgb(86, 103, 133)')
+  await expect(page.locator('.ci-hub-personality')).toHaveCount(0)
+  await expect(page.getByText('The Architect')).toHaveCount(0)
 })
