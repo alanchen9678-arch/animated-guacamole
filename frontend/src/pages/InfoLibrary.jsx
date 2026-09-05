@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { completeLibraryQuiz, fetchLibraryProgress } from '../services/api.js'
-import { AsyncButton, FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
+import { useMemo, useState } from 'react'
+import { AsyncButton } from '../components/ui/feedback.jsx'
 
 // ─── disorder data ─────────────────────────────────────────────────────────────
 
@@ -8,7 +7,7 @@ const DISORDERS = [
   {
     id: 'anxiety',
     title: 'Anxiety Disorders',
-    color: '#3a6898',
+    color: '#9a6b2a',
     source: 'Mayo Clinic Staff',
     sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/anxiety/symptoms-causes/syc-20350961',
     what: 'Anxiety disorders involve excessive, persistent fear or worry that is difficult to control and significantly interferes with daily activities. They are among the most common mental health conditions worldwide and include generalized anxiety disorder, panic disorder, and social anxiety disorder.',
@@ -34,7 +33,7 @@ const DISORDERS = [
   {
     id: 'depression',
     title: 'Depression',
-    color: '#1d4ed8',
+    color: '#3a6898',
     source: 'Mayo Clinic Staff',
     sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/depression/symptoms-causes/syc-20356007',
     what: 'Depression (major depressive disorder) is a common and serious mood disorder that causes persistent feelings of sadness and loss of interest. It affects how a person thinks, feels, and handles daily activities such as sleeping, eating, or working.',
@@ -61,7 +60,7 @@ const DISORDERS = [
   {
     id: 'bipolar',
     title: 'Bipolar Disorder',
-    color: '#d97706',
+    color: '#735d8f',
     source: 'Mayo Clinic Staff',
     sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/bipolar-disorder/symptoms-causes/syc-20355955',
     what: 'Bipolar disorder is a mental health condition that causes extreme mood swings including emotional highs (mania or hypomania) and lows (depression). These mood episodes can affect sleep, energy, activity, judgment, behavior, and the ability to think clearly.',
@@ -88,7 +87,7 @@ const DISORDERS = [
   {
     id: 'ptsd',
     title: 'Post-Traumatic Stress Disorder (PTSD)',
-    color: '#dc2626',
+    color: '#b96535',
     source: 'Mayo Clinic Staff',
     sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/post-traumatic-stress-disorder/symptoms-causes/syc-20355967',
     what: 'PTSD is a mental health condition triggered by experiencing or witnessing a terrifying event. Symptoms may include flashbacks, nightmares, severe anxiety, and uncontrollable thoughts about the event. Many people who go through traumatic events recover with time; PTSD develops when symptoms persist and worsen.',
@@ -113,7 +112,7 @@ const DISORDERS = [
   {
     id: 'schizophrenia',
     title: 'Schizophrenia',
-    color: '#4d6b58',
+    color: '#a54f4f',
     source: 'Mayo Clinic Staff',
     sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/schizophrenia/symptoms-causes/syc-20354443',
     what: 'Schizophrenia is a serious mental disorder in which people interpret reality abnormally. It may result in some combination of hallucinations, delusions, and extremely disordered thinking and behavior. Symptoms are divided into "positive" (added experiences) and "negative" (loss of normal functioning).',
@@ -140,7 +139,7 @@ const DISORDERS = [
   {
     id: 'eating',
     title: 'Eating Disorders',
-    color: '#be185d',
+    color: '#a85f78',
     source: 'Mayo Clinic Staff',
     sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/eating-disorders/symptoms-causes/syc-20353603',
     what: 'Eating disorders are serious conditions related to persistent eating behaviors that negatively impact health, emotions, and the ability to function in important areas of life. Common types include anorexia nervosa, bulimia nervosa, and binge-eating disorder.',
@@ -167,7 +166,7 @@ const DISORDERS = [
   {
     id: 'odd',
     title: 'Disruptive Behavior Disorders (ODD)',
-    color: '#ea580c',
+    color: '#4d6b58',
     source: 'Mayo Clinic Staff',
     sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/oppositional-defiant-disorder/symptoms-causes/syc-20375831',
     what: 'Oppositional Defiant Disorder (ODD) is a childhood-onset behavioral disorder involving a persistent pattern of angry or irritable mood, argumentative or defiant behavior toward authority figures, and vindictiveness. It often co-occurs with ADHD and anxiety disorders.',
@@ -192,7 +191,7 @@ const DISORDERS = [
   {
     id: 'neuro',
     title: 'Neurodevelopmental Disorders',
-    color: '#15803d',
+    color: '#3f7773',
     source: 'Mayo Clinic Laboratories',
     sourceUrl: 'https://news.mayocliniclabs.com/pediatrics/neurology/neurodevelopmental-disorders/',
     what: 'Neurodevelopmental disorders are conditions that affect brain development and emerge in early childhood. They include autism spectrum disorder (ASD), attention-deficit/hyperactivity disorder (ADHD), intellectual disabilities, and learning disorders. These conditions often persist into adulthood.',
@@ -448,14 +447,13 @@ function LibraryTab() {
 
 // ─── quiz tab ─────────────────────────────────────────────────────────────────
 
-function QuizTab({ onComplete }) {
+function QuizTab() {
   const [questions, setQuestions] = useState(() => buildQuizRound())
   const [idx, setIdx]             = useState(0)
   const [selected, setSelected]   = useState(null)
   const [score, setScore]         = useState(0)
   const [done, setDone]           = useState(false)
   const [answers, setAnswers]     = useState([])
-  const [finishing, setFinishing] = useState(false)
 
   const q = questions[idx]
   const total = questions.length
@@ -475,13 +473,9 @@ function QuizTab({ onComplete }) {
     }])
   }
 
-  async function next() {
+  function next() {
     if (idx + 1 >= total) {
-      if (finishing) return
-      setFinishing(true)
-      await onComplete?.()
       setDone(true)
-      setFinishing(false)
     } else {
       setIdx(i => i + 1)
       setSelected(null)
@@ -580,8 +574,6 @@ function QuizTab({ onComplete }) {
           <AsyncButton
             className="il-next-btn"
             onClick={next}
-            pending={finishing}
-            pendingLabel="Saving progress…"
           >
             {idx + 1 >= total ? 'See results' : 'Next question →'}
           </AsyncButton>
@@ -595,48 +587,6 @@ function QuizTab({ onComplete }) {
 
 export default function InfoLibrary() {
   const [tab, setTab] = useState('library')
-  const [streak, setStreak] = useState(0)
-  const [progressError, setProgressError] = useState('')
-  const [progressLoading, setProgressLoading] = useState(true)
-  const [completionStatus, setCompletionStatus] = useState('')
-  const [errorContext, setErrorContext] = useState('')
-  const [reloadKey, setReloadKey] = useState(0)
-
-  useEffect(() => {
-    let cancelled = false
-    setProgressLoading(true)
-    setProgressError('')
-    setErrorContext('')
-    fetchLibraryProgress()
-      .then((progress) => {
-        if (!cancelled) setStreak(progress.streak ?? 0)
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          setProgressError(error.message)
-          setErrorContext('load')
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setProgressLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [reloadKey])
-
-  async function recordQuizCompletion() {
-    setCompletionStatus('')
-    setProgressError('')
-    setErrorContext('')
-    try {
-      const progress = await completeLibraryQuiz()
-      setStreak(progress.streak ?? 0)
-      setProgressError('')
-      setCompletionStatus('Quiz complete. Your learning progress was saved.')
-    } catch (error) {
-      setProgressError(error.message)
-      setErrorContext('completion')
-    }
-  }
 
   return (
     <section className="page">
@@ -648,13 +598,6 @@ export default function InfoLibrary() {
           <p className="il-page-sub">
             Evidence-based information on 8 common conditions, with a quiz to reinforce what you learn.
           </p>
-        </div>
-        <div className="il-streak-badge">
-          <span className="il-streak-flame">▲</span>
-          <div>
-            <span className="il-streak-num">{streak}</span>
-            <span className="il-streak-label">day streak</span>
-          </div>
         </div>
       </div>
 
@@ -673,20 +616,8 @@ export default function InfoLibrary() {
         </button>
       </div>
 
-      {progressLoading && <LoadingState label="Loading learning progress…" compact />}
-      {progressError && (
-        <FeedbackNotice
-          variant="error"
-          title="Could not update learning progress"
-          message={progressError}
-          onRetry={errorContext === 'completion' ? recordQuizCompletion : () => setReloadKey((key) => key + 1)}
-          retryLabel={errorContext === 'completion' ? 'Retry saving progress' : 'Reload progress'}
-        />
-      )}
-      {completionStatus && <FeedbackNotice variant="success" message={completionStatus} compact />}
-
       {tab === 'library' && <LibraryTab />}
-      {tab === 'quiz' && <QuizTab onComplete={recordQuizCompletion} />}
+      {tab === 'quiz' && <QuizTab />}
     </section>
   )
 }
@@ -699,17 +630,12 @@ const IL_STYLES = `
   .il-page-title  {
     margin: 0 0 4px;
     font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 2rem;
+    font-size: var(--type-page-title);
+    font-weight: var(--weight-page-title);
+    line-height: 1.15;
     letter-spacing: -0.03em;
   }
-  .il-page-sub    { margin: 0; color: var(--muted); font-size: 0.95rem; }
-
-  /* streak badge */
-  .il-streak-badge { display: flex; align-items: center; gap: 10px; }
-  .il-streak-flame { font-size: 1.4rem; color: #f59e0b; }
-  .il-streak-num   { display: block; font-size: 1.6rem; font-weight: 900; color: #92400e; letter-spacing: -0.03em; line-height: 1; }
-  .il-streak-label { display: block; font-size: 0.72rem; color: #b45309; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
-  .il-progress-error { margin: 0; color: #9f1239; font-size: 0.86rem; }
+  .il-page-sub    { margin: 0; color: var(--muted); font-size: var(--type-body); font-weight: 400; line-height: 1.55; }
 
   /* tabs */
   .il-tabs {
@@ -750,7 +676,7 @@ const IL_STYLES = `
   }
   .il-card-header:hover { background: rgba(0,0,0,0.02); }
   .il-card-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .il-card-title { flex: 1; font-size: 1rem; font-weight: 700; }
+  .il-card-title { flex: 1; font-size: var(--type-card-title); font-weight: var(--weight-card-title); }
   .il-chevron { font-size: 1rem; color: var(--muted); transition: transform 200ms ease; flex-shrink: 0; }
 
   .il-card-body {
@@ -759,16 +685,16 @@ const IL_STYLES = `
     animation: fade-up 180ms ease;
   }
   .il-source-row { display: flex; justify-content: flex-end; padding: 10px 0 14px; }
-  .il-source-label { font-size: 0.74rem; color: var(--muted); font-style: italic; }
+  .il-source-label { font-size: var(--type-metadata); color: var(--muted); font-style: italic; }
 
   .il-section { margin-bottom: 16px; }
-  .il-section-label { margin: 0 0 8px; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-  .il-section-text  { margin: 0; font-size: 0.88rem; color: var(--muted); line-height: 1.65; }
+  .il-section-label { margin: 0 0 8px; font-size: var(--type-section-title); font-weight: var(--weight-section-title); letter-spacing: 0.02em; }
+  .il-section-text  { margin: 0; font-size: 0.875rem; font-weight: 400; color: var(--muted); line-height: 1.65; }
 
   .il-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
   .il-list { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 5px; }
-  .il-list li { font-size: 0.86rem; color: var(--muted); line-height: 1.5; }
+  .il-list li { font-size: 0.875rem; font-weight: 400; color: var(--muted); line-height: 1.5; }
 
   .il-article-link {
     display: inline-block; margin-top: 6px;

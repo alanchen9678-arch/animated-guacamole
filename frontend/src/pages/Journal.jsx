@@ -904,11 +904,16 @@ const JN_STYLES = `
     gap: 14px;
     margin-bottom: -6px;
   }
-  .jn-page-header h2 { font-size: 1.65rem; }
+  .jn-page-header h2 {
+    font-size: var(--type-page-title);
+    font-weight: var(--weight-page-title);
+    line-height: 1.15;
+  }
   .jn-page-header p {
     margin-top: 4px;
-    font-size: 0.9rem;
-    line-height: 1.4;
+    font-size: var(--type-body);
+    font-weight: 400;
+    line-height: 1.55;
   }
   .jn-error {
     margin: 0;
@@ -930,8 +935,8 @@ const JN_STYLES = `
   .jn-calendar-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
 
   .jn-section-label {
-    font-size: 0.74rem; font-weight: 700;
-    letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+    font-size: var(--type-section-title); font-weight: var(--weight-section-title);
+    letter-spacing: 0.02em; color: var(--muted);
     margin-bottom: 4px;
   }
 
@@ -945,7 +950,12 @@ const JN_STYLES = `
     display: flex; align-items: center; justify-content: space-between;
     gap: 12px; flex-wrap: wrap;
   }
-  .jn-entry-topline strong { display: block; font-size: 1rem; color: var(--ink); }
+  .jn-entry-topline strong {
+    display: block;
+    font-size: var(--type-card-title);
+    font-weight: var(--weight-card-title);
+    color: var(--ink);
+  }
   .jn-mood-picker-inline {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   }

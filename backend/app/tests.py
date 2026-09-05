@@ -1,6 +1,7 @@
 from datetime import date
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 from unittest.mock import patch
@@ -75,6 +76,23 @@ class ConversationModelTests(TestCase):
         self.assertEqual(messages, [first_message, second_message])
         self.assertEqual(messages[0].role, 'user')
         self.assertEqual(messages[1].role, 'assistant')
+        self.assertEqual(messages[0].user_id, self.user.id)
+        self.assertEqual(messages[1].user_id, self.user.id)
+
+    def test_message_user_must_match_conversation_owner(self):
+        other_user = get_user_model().objects.create_user(username='different-message-user')
+        conversation = Conversation.objects.create(
+            user=self.user,
+            type=Conversation.ConversationType.AI,
+        )
+
+        with self.assertRaises(ValidationError):
+            Message.objects.create(
+                conversation=conversation,
+                user=other_user,
+                role=Message.MessageRole.USER,
+                content='This owner does not match.',
+            )
 
 
 class JournalModelTests(TestCase):
@@ -251,6 +269,7 @@ class TherapistMatchAPITests(TestCase):
         self.assertEqual(response.data['therapistId'], 2)
         self.assertEqual(len(response.data['messages']), 1)
         self.assertEqual(response.data['messages'][0]['role'], 'therapist')
+        self.assertEqual(response.data['messages'][0]['userId'], self.user.id)
         self.assertTrue(self.user.conversations.filter(therapist_match=match).exists())
 
     def test_therapist_match_messages_store_user_and_therapist_replies(self):
@@ -269,6 +288,9 @@ class TherapistMatchAPITests(TestCase):
         self.assertEqual(response.data['userMessage']['role'], 'user')
         self.assertEqual(response.data['userMessage']['content'], 'I have been feeling burned out.')
         self.assertEqual(response.data['replyMessage']['role'], 'therapist')
+        self.assertEqual(response.data['userMessage']['userId'], self.user.id)
+        self.assertEqual(response.data['replyMessage']['userId'], self.user.id)
+        self.assertTrue(all(message.user_id == self.user.id for message in conversation.messages.all()))
         self.assertEqual(stored_roles, ['therapist', 'user', 'therapist'])
 
 
@@ -870,6 +892,7 @@ class ChatAPITests(TestCase):
             ],
         )
         self.assertTrue(all('timestamp' in message for message in response.data['messages']))
+        self.assertTrue(all(message['userId'] == self.user.id for message in response.data['messages']))
 
 
 class PeerModerationAPITests(TestCase):

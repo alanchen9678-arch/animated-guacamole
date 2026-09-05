@@ -404,6 +404,7 @@ class TherapistPersistenceRegressionTests(AuthenticatedAPITestCase):
         shared_chat = self.client.get(reverse('therapist-sharing-preview'))
         self.assertTrue(shared_chat.data['chat']['allowed'])
         self.assertEqual(shared_chat.data['chat']['messages'][0]['content'], 'A recent AI chat message.')
+        self.assertEqual(shared_chat.data['chat']['messages'][0]['userId'], self.user.id)
 
 
 class PeerColorRegressionTests(TestCase):

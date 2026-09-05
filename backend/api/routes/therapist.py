@@ -47,6 +47,7 @@ def get_or_create_therapist_conversation(match):
     )
     Message.objects.create(
         conversation=conversation,
+        user=match.user,
         role=Message.MessageRole.THERAPIST,
         content=THERAPIST_AUTO_REPLIES[0],
     )
@@ -56,6 +57,7 @@ def get_or_create_therapist_conversation(match):
 def serialize_therapist_message(message):
     return {
         'id': message.id,
+        'userId': message.user_id,
         'role': message.role,
         'content': message.content,
         'timestamp': message.timestamp.isoformat(),
@@ -391,7 +393,7 @@ class TherapistSharingPreviewView(APIView):
             messages = (
                 Message.objects
                 .filter(
-                    conversation__user=request.user,
+                    user=request.user,
                     conversation__type=Conversation.ConversationType.AI,
                     timestamp__gte=cutoff,
                 )
@@ -455,6 +457,7 @@ class TherapistMatchMessageView(APIView):
 
         user_message = Message.objects.create(
             conversation=conversation,
+            user=request.user,
             role=Message.MessageRole.USER,
             content=serializer.validated_data['message'],
         )
@@ -472,6 +475,7 @@ class TherapistMatchMessageView(APIView):
         reply_text = choice(candidate_replies or THERAPIST_AUTO_REPLIES)
         reply_message = Message.objects.create(
             conversation=conversation,
+            user=request.user,
             role=Message.MessageRole.THERAPIST,
             content=reply_text,
         )

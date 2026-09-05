@@ -272,7 +272,9 @@ const styles = `
   .intro-heading {
     margin: 0 0 10px;
     font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 2rem;
+    font-size: var(--type-page-title);
+    font-weight: var(--weight-page-title);
+    line-height: 1.15;
     letter-spacing: -0.03em;
   }
   .intro-badge {
@@ -285,7 +287,7 @@ const styles = `
     font-weight: 700;
     margin-bottom: 20px;
   }
-  .intro-body { color: var(--muted); font-size: 1rem; line-height: 1.7; margin: 0 0 28px; }
+  .intro-body { color: var(--muted); font-size: var(--type-body); font-weight: 400; line-height: 1.65; margin: 0 0 28px; }
   .highlights-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -299,8 +301,13 @@ const styles = `
     padding: 18px 20px;
     box-shadow: var(--shadow);
   }
-  .highlight-card strong { display: block; margin-bottom: 6px; font-size: 0.92rem; }
-  .highlight-card p { margin: 0; font-size: 0.86rem; color: var(--muted); line-height: 1.55; }
+  .highlight-card strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: var(--type-card-title);
+    font-weight: var(--weight-card-title);
+  }
+  .highlight-card p { margin: 0; font-size: 0.875rem; font-weight: 400; color: var(--muted); line-height: 1.55; }
   .disclaimer-box {
     display: flex;
     gap: 14px;

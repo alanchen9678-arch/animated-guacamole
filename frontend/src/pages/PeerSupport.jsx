@@ -823,16 +823,18 @@ export default function PeerSupport() {
 
 const PS_STYLES = `
   .ps-eyebrow {
-    margin: 0 0 10px; font-size: 0.78rem; font-weight: 700;
-    letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);
+    margin: 0 0 10px; font-size: var(--type-metadata); font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent);
   }
   .ps-heading {
     margin: 0 0 8px;
     font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 2rem;
+    font-size: var(--type-page-title);
+    font-weight: var(--weight-page-title);
+    line-height: 1.15;
     letter-spacing: -0.03em;
   }
-  .ps-sub { margin: 0 0 24px; color: var(--muted); font-size: 1rem; line-height: 1.65; max-width: 60ch; }
+  .ps-sub { margin: 0 0 24px; color: var(--muted); font-size: var(--type-body); font-weight: 400; line-height: 1.65; max-width: 60ch; }
   .ps-primary-btn {
     padding: 13px 32px; border-radius: 999px; border: none;
     background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 700;
@@ -856,7 +858,7 @@ const PS_STYLES = `
     font-size: 0.76rem; font-weight: 800;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-  .ps-guideline-row p { margin: 0; font-size: 0.88rem; color: var(--ink); line-height: 1.5; }
+  .ps-guideline-row p { margin: 0; font-size: 0.875rem; font-weight: 400; color: var(--ink); line-height: 1.5; }
   .ps-agree-label { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; margin-bottom: 20px; cursor: pointer; }
   .ps-agree-label input { width: 16px; height: 16px; accent-color: var(--accent); }
 
@@ -866,8 +868,8 @@ const PS_STYLES = `
     background: var(--panel-strong); border: 1px solid var(--line);
     border-radius: 18px; padding: 16px 18px;
   }
-  .ps-hub-name { margin: 0; font-weight: 700; font-size: 1rem; }
-  .ps-hub-name-sub { margin: 2px 0 0; font-size: 0.76rem; color: var(--muted); }
+  .ps-hub-name { margin: 0; font-weight: var(--weight-card-title); font-size: var(--type-card-title); }
+  .ps-hub-name-sub { margin: 2px 0 0; font-size: var(--type-metadata); color: var(--muted); }
 
   .ps-hub-cards { display: grid; gap: 12px; margin-bottom: 14px; }
   .ps-hub-card {

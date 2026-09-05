@@ -26,9 +26,11 @@ load_dotenv(BASE_DIR / ".env")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-8hpsmmu!9^zwa1$s&#-vsy1#s9z-*@x$84s27!as8hyb5je284")
-
 DEBUG = os.getenv("DEBUG", "true").lower() == "true"
+
+_development_secret_key = "django-insecure-8hpsmmu!9^zwa1$s&#-vsy1#s9z-*@x$84s27!as8hyb5je284"
+_configured_secret_key = os.getenv("SECRET_KEY", "").strip()
+SECRET_KEY = _configured_secret_key or (_development_secret_key if DEBUG else "")
 
 if not DEBUG and (not SECRET_KEY or SECRET_KEY.startswith("django-insecure-")):
     raise ImproperlyConfigured("Set a strong SECRET_KEY when DEBUG is false.")
@@ -63,10 +65,17 @@ REST_FRAMEWORK = {
     ],
 }
 
-_cors_origins = os.getenv(
+_configured_cors_origins = os.getenv(
     "CORS_ALLOWED_ORIGINS",
     "http://localhost:5173,http://127.0.0.1:5173"
 ).split(",")
+_cors_origins = [origin.strip() for origin in _configured_cors_origins if origin.strip()]
+if DEBUG:
+    _cors_origins = list(dict.fromkeys([
+        *_cors_origins,
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]))
 
 CORS_ALLOWED_ORIGINS = _cors_origins
 CSRF_TRUSTED_ORIGINS = _cors_origins

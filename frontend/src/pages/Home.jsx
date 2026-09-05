@@ -35,21 +35,32 @@ const JOURNAL_PROMPT_BANK = [
   'What deserves a little more attention in your inner world right now?',
 ]
 
-function getTodayKey() {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = `${today.getMonth() + 1}`.padStart(2, '0')
-  const day = `${today.getDate()}`.padStart(2, '0')
+function getDayKey(date) {
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
-function hashPromptForDay(prompt, dayKey) {
+function hashDayKey(dayKey) {
   let hash = 0
-  const input = `${dayKey}:${prompt}`
-  for (let index = 0; index < input.length; index++) {
-    hash = ((hash << 5) - hash + input.charCodeAt(index)) | 0
+  for (let index = 0; index < dayKey.length; index++) {
+    hash = ((hash << 5) - hash + dayKey.charCodeAt(index)) | 0
   }
-  return hash
+  return Math.abs(hash)
+}
+
+function getDailyJournalPrompt(date = new Date()) {
+  const todayKey = getDayKey(date)
+  const yesterday = new Date(date)
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  let promptIndex = hashDayKey(todayKey) % JOURNAL_PROMPT_BANK.length
+  const yesterdayIndex = hashDayKey(getDayKey(yesterday)) % JOURNAL_PROMPT_BANK.length
+  if (promptIndex === yesterdayIndex) {
+    promptIndex = (promptIndex + 1) % JOURNAL_PROMPT_BANK.length
+  }
+  return JOURNAL_PROMPT_BANK[promptIndex]
 }
 
 const GREETINGS = [
@@ -76,38 +87,38 @@ const features = [
   {
     id: 'chatbot',
     title: 'AI Chatbot',
-    desc: "Talk through what's on your mind with Aurora's AI, available around the clock.",
-    tag: '24/7',
+    desc: "Talk through what's on your mind.",
+    action: 'Open chatbot',
   },
   {
     id: 'checkins',
     title: 'Check-Ins',
-    desc: 'Quick weekly surveys that track your mental wellness over time.',
-    tag: 'Weekly',
+    desc: 'Track your wellbeing over time.',
+    action: 'View check-ins',
   },
   {
     id: 'journal',
     title: 'Thought Journal',
-    desc: 'A private, open-ended space to process your feelings and daily experiences.',
-    tag: 'Private',
+    desc: 'Reflect privately on your day and emotions.',
+    action: 'Open journal',
   },
   {
     id: 'therapist',
     title: 'Therapist Match',
-    desc: 'Get paired with a licensed professional suited to your needs and preferences.',
-    tag: 'Licensed pros',
+    desc: 'Find a professional who fits your needs.',
+    action: 'Find a therapist',
   },
   {
     id: 'community',
     title: 'Peer Support',
-    desc: "Connect anonymously with others who understand what you're going through.",
-    tag: 'Anonymous',
+    desc: 'Connect anonymously with people who understand.',
+    action: 'Explore peer support',
   },
   {
     id: 'library',
     title: 'Info Library',
-    desc: 'Learn about mental health through interactive content and learning streaks.',
-    tag: 'Interactive',
+    desc: 'Read clear, practical mental-health guidance.',
+    action: 'Browse the library',
   },
 ]
 
@@ -120,12 +131,7 @@ export default function Home() {
     () => GREETINGS[Math.floor(Math.random() * GREETINGS.length)],
     [],
   )
-  const journalPrompts = useMemo(() => {
-    const dayKey = getTodayKey()
-    return [...JOURNAL_PROMPT_BANK]
-      .sort((a, b) => hashPromptForDay(a, dayKey) - hashPromptForDay(b, dayKey))
-      .slice(0, 3)
-  }, [])
+  const journalPrompt = useMemo(() => getDailyJournalPrompt(), [])
 
   const checkInLabel = user?.checkInDueThisWeek === false ? 'Up to date' : 'Due this week'
 
@@ -136,45 +142,66 @@ export default function Home() {
 
         .page {
           font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+          --home-secondary: #5b605c;
         }
 
         .home-greeting {
           font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-          font-size: 2rem;
+          font-size: clamp(1.875rem, 3vw, 2rem);
+          font-weight: 650;
+          line-height: 1.15;
           letter-spacing: -0.03em;
-          margin: 0 0 6px;
+          margin: 0 0 8px;
         }
-        .home-sub { margin: 0; color: var(--muted); }
+        .home-sub { margin: 0; color: var(--home-secondary); font-size: 0.9375rem; line-height: 1.55; }
+        .home-section-title {
+          margin: 0;
+          color: var(--ink);
+          font-size: 0.875rem;
+          font-weight: 650;
+          letter-spacing: 0.01em;
+        }
+        .home-section-head {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 12px;
+        }
         .feature-grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 14px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          column-gap: 32px;
+          border-top: 1px solid var(--line);
         }
         .feature-card {
-          background: var(--panel-strong);
-          border: 1px solid var(--line);
-          border-radius: 20px;
-          padding: 20px;
-          box-shadow: var(--shadow);
+          background: transparent;
+          border: 0;
+          border-bottom: 1px solid var(--line);
+          border-radius: 0;
+          padding: 18px 2px;
           display: flex;
-          flex-direction: column;
-          gap: 8px;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
           text-align: left;
           width: 100%;
           cursor: pointer;
-          transition: transform 140ms ease, box-shadow 140ms ease;
+          transition: color 140ms ease, border-color 140ms ease;
         }
-        .feature-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+        .feature-card:hover { border-color: rgba(77, 107, 88, 0.5); }
+        .feature-card:hover .feature-action { color: #314f3c; transform: translateX(3px); }
         .feature-card:focus-visible { outline: 3px solid rgba(58, 104, 152, 0.28); outline-offset: 3px; }
-        .feature-tag {
-          display: inline-block;
-          font-size: 0.98rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; text-transform: none;
-          color: var(--accent); background: var(--accent-soft);
-          padding: 9px 14px; border-radius: 999px; width: fit-content;
-          border: 1px solid rgba(77,107,88,0.16);
+        .feature-copy { min-width: 0; }
+        .feature-card h4 { margin: 0 0 5px; font-size: 1rem; font-weight: 600; line-height: 1.3; }
+        .feature-card p { margin: 0; color: var(--home-secondary); font-size: 0.875rem; font-weight: 400; line-height: 1.5; }
+        .feature-action {
+          color: var(--accent);
+          font-size: 0.8125rem;
+          font-weight: 600;
+          white-space: nowrap;
+          transition: color 140ms ease, transform 140ms ease;
         }
-        .feature-card h4 { margin: 0; font-size: 1rem; }
-        .feature-card p { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.5; flex: 1; }
         .today-bar {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -183,37 +210,65 @@ export default function Home() {
         .today-stat {
           background: var(--panel-strong);
           border: 1px solid var(--line);
-          border-radius: 20px;
-          padding: 18px 20px;
-          box-shadow: var(--shadow);
+          border-radius: 16px;
+          padding: 16px 18px;
         }
         .today-stat .label {
-          font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
-          color: var(--muted); margin-bottom: 6px;
+          font-size: 0.8125rem; font-weight: 500;
+          color: var(--home-secondary); margin-bottom: 7px;
         }
         .today-stat .value {
           font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-          font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink);
+          font-size: 1.25rem; font-weight: 650; letter-spacing: -0.02em; color: var(--ink);
         }
         .prompts-card {
-          background: linear-gradient(135deg, rgba(218, 243, 236, 0.6), rgba(255, 255, 255, 0.9));
-          border: 1px solid rgba(15, 118, 110, 0.18);
-          border-radius: 20px; padding: 22px;
+          background: #fdfaf3;
+          border: 1px solid #ded8cb;
+          border-radius: 18px;
+          padding: 22px 24px;
         }
-        .prompts-card h3 { margin: 0 0 14px; font-size: 1rem; color: var(--accent); }
-        .prompt-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-        .prompt-list li {
-          padding: 12px 16px; background: rgba(255, 255, 255, 0.72);
-          border-radius: 14px; border: 1px solid rgba(15, 118, 110, 0.12);
-          color: var(--ink); font-size: 0.92rem; cursor: pointer;
-          transition: background 140ms;
+        .prompt-meta {
+          margin: 0 0 12px;
+          color: var(--home-secondary);
+          font-size: 0.8125rem;
+          font-weight: 500;
         }
-        .prompt-list li:hover { background: rgba(255,255,255,0.95); }
+        .prompt-content {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 24px;
+        }
+        .daily-prompt-text {
+          max-width: 720px;
+          margin: 0;
+          color: var(--ink);
+          font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+          font-size: 1.25rem;
+          font-weight: 600;
+          line-height: 1.4;
+          letter-spacing: -0.015em;
+        }
+        .prompt-action {
+          border: 0;
+          border-bottom: 1px solid currentColor;
+          background: transparent;
+          color: var(--accent);
+          padding: 3px 0;
+          font-size: 0.875rem;
+          font-weight: 600;
+          white-space: nowrap;
+        }
+        .prompt-action:hover { color: #314f3c; }
+        .prompt-action:focus-visible { outline: 3px solid rgba(58, 104, 152, 0.28); outline-offset: 4px; }
         @media (max-width: 960px) {
           .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .today-bar { grid-template-columns: 1fr; }
         }
-        @media (max-width: 640px) { .feature-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 700px) {
+          .feature-grid { grid-template-columns: 1fr; column-gap: 0; }
+          .prompt-content { align-items: flex-start; flex-direction: column; gap: 16px; }
+        }
       `}</style>
 
       <header className="page-header">
@@ -242,19 +297,20 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="prompts-card">
-        <h3>Journal prompts for today</h3>
-        <ul className="prompt-list">
-          {journalPrompts.map((prompt) => (
-            <li key={prompt} onClick={() => navigate('journal')}>{prompt}</li>
-          ))}
-        </ul>
-      </div>
+      <section className="prompts-card" aria-labelledby="daily-journal-prompt">
+        <p className="prompt-meta">Today&apos;s journal prompt</p>
+        <div className="prompt-content">
+          <h3 className="daily-prompt-text" id="daily-journal-prompt">{journalPrompt}</h3>
+          <button className="prompt-action" onClick={() => navigate('journal')} type="button">
+            Write in journal →
+          </button>
+        </div>
+      </section>
 
-      <div>
-        <h3 style={{ margin: '0 0 12px', fontSize: '1rem', color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-          Aurora tools
-        </h3>
+      <section aria-labelledby="aurora-tools-heading">
+        <div className="home-section-head">
+          <h3 className="home-section-title" id="aurora-tools-heading">Aurora tools</h3>
+        </div>
         <div className="feature-grid">
           {features.map((feature) => (
             <button
@@ -264,12 +320,15 @@ export default function Home() {
               type="button"
               aria-label={`Open ${feature.title}`}
             >
-              <span className="feature-tag">{feature.title}</span>
-              <p>{feature.desc}</p>
+              <span className="feature-copy">
+                <h4>{feature.title}</h4>
+                <p>{feature.desc}</p>
+              </span>
+              <span className="feature-action" aria-hidden="true">{feature.action} →</span>
             </button>
           ))}
         </div>
-      </div>
+      </section>
     </section>
   )
 }

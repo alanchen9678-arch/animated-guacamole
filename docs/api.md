@@ -18,10 +18,14 @@ All feature routes require `Authorization: Token <token>`. Register and login ar
 
 ## Chat
 
+Private AI message-log responses include the owning authenticated userId. The server derives this value from authentication and never accepts it from the client.
+
 - `GET /api/chat/` — return the newest 100 saved messages in chronological order.
 - `POST /api/chat/` with `{ "message": "…" }` — generate and store a reply. Returns `429` at the rolling weekly limit, `502` when the provider fails, and never stores a partial exchange.
 
 ## Therapist demo
+
+Private therapist message-log responses include the owning authenticated userId. Peer-support responses intentionally remain anonymous.
 
 - `GET|POST /api/therapist/matches/` — list/save a therapist ID.
 - `GET|POST /api/therapist/matches/:id/messages/` — list/send demo therapist messages.

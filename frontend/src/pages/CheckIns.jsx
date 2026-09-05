@@ -1507,8 +1507,8 @@ const CI_STYLES = `
   }
 
   .ci-section-label {
-    font-size: 0.72rem; font-weight: 700;
-    letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+    font-size: var(--type-section-title); font-weight: var(--weight-section-title);
+    letter-spacing: 0.02em; color: var(--muted);
     margin-bottom: 8px;
   }
   .ci-error {

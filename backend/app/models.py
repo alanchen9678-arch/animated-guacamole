@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
@@ -99,6 +100,11 @@ class Message(models.Model):
         on_delete=models.CASCADE,
         related_name='messages',
     )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='message_logs',
+    )
     role = models.CharField(max_length=20, choices=MessageRole.choices)
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -107,10 +113,20 @@ class Message(models.Model):
         ordering = ['timestamp', 'id']
         indexes = [
             models.Index(fields=['conversation', 'timestamp']),
+            models.Index(fields=['user', 'timestamp']),
         ]
 
+    def save(self, *args, **kwargs):
+        if self.conversation_id:
+            conversation_user_id = self.conversation.user_id
+            if self.user_id is None:
+                self.user_id = conversation_user_id
+            elif self.user_id != conversation_user_id:
+                raise ValidationError({'user': 'Message user must match the conversation owner.'})
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.conversation_id} - {self.role}"
+        return f"{self.user_id} - {self.conversation_id} - {self.role}"
 
 
 class ChatUsage(models.Model):

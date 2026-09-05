@@ -148,13 +148,22 @@ function AppShell() {
             linear-gradient(180deg, #faf4e8 0%, #f0e8d8 100%);
           -webkit-font-smoothing: antialiased;
           --ink:          #2e2a26;
-          --muted:        #6b6460;
+          --muted:        #5b605c;
+          --type-page-title: 2rem;
+          --type-section-title: 0.875rem;
+          --type-card-title: 1rem;
+          --type-body: 0.9375rem;
+          --type-metadata: 0.8125rem;
+          --weight-page-title: 650;
+          --weight-section-title: 650;
+          --weight-card-title: 600;
           --line:         rgba(46,42,38,0.16);
           --panel:        rgba(250,244,232,0.85);
           --panel-strong: #faf4e8;
           --accent:       #4d6b58;
           --accent-dark:  #3a5244;
           --accent-soft:  #d2e4dc;
+          --app-surround: #d6e2d8;
           --blue:         #3a6898;
           --blue-dark:    #2a5080;
           --blue-soft:    #d6e8f5;
@@ -175,6 +184,10 @@ function AppShell() {
         .app-root--dashboard {
           height: 100vh;
           overflow: hidden;
+          background-color: var(--app-surround);
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)' opacity='.16'/%3E%3C/svg%3E");
+          background-size: 180px 180px;
+          background-blend-mode: soft-light;
         }
 
         /* ── top bar ───────────────────────────────────────── */
@@ -418,7 +431,7 @@ function AppShell() {
           min-height: 0;
           max-width: 1180px;
           margin: 0 auto;
-          background: var(--panel);
+          background: var(--panel-strong);
           border: 1px solid var(--line);
           border-radius: 28px;
           backdrop-filter: blur(14px);
@@ -499,19 +512,26 @@ function AppShell() {
           gap: 18px;
           width: min(100%, 980px);
           margin: 0 auto;
+          font-size: var(--type-body);
+          font-weight: 400;
           animation: fade-up 220ms ease;
         }
 
         .page-header h2 {
           margin: 0;
           font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-          font-size: 2rem;
+          font-size: var(--type-page-title);
+          font-weight: var(--weight-page-title);
+          line-height: 1.15;
           letter-spacing: -0.03em;
         }
 
         .page-header p {
           margin: 8px 0 0;
           color: var(--muted);
+          font-size: var(--type-body);
+          font-weight: 400;
+          line-height: 1.55;
           max-width: 70ch;
         }
 
@@ -529,8 +549,18 @@ function AppShell() {
           padding: 20px;
           box-shadow: 0 10px 24px rgba(46,42,38,0.06);
         }
-        .card h3 { margin: 0 0 10px; font-size: 1.05rem; }
-        .card p, .card li { color: var(--muted); }
+        .card h3 {
+          margin: 0 0 10px;
+          font-size: var(--type-card-title);
+          font-weight: var(--weight-card-title);
+          line-height: 1.3;
+        }
+        .card p, .card li {
+          color: var(--muted);
+          font-size: 0.875rem;
+          font-weight: 400;
+          line-height: 1.55;
+        }
         .card ul { margin: 0; padding-left: 18px; }
 
         .span-4  { grid-column: span 4; }

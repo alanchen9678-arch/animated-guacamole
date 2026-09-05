@@ -51,6 +51,7 @@ def serialize_chat_messages(conversation):
     return [
         {
             "id": message.id,
+            "userId": message.user_id,
             "role": message.role,
             "content": message.content,
             "timestamp": message.timestamp.isoformat(),
@@ -171,11 +172,13 @@ class ChatView(APIView):
             with transaction.atomic():
                 Message.objects.create(
                     conversation=conversation,
+                    user=user,
                     role=Message.MessageRole.USER,
                     content=message_text,
                 )
                 Message.objects.create(
                     conversation=conversation,
+                    user=user,
                     role=Message.MessageRole.ASSISTANT,
                     content=reply,
                 )
@@ -185,6 +188,7 @@ class ChatView(APIView):
 
         return Response(
             {
+                'userId': user.id,
                 'reply': reply,
                 'messages_used': reserved_count,
                 'messages_remaining': WEEKLY_MESSAGE_LIMIT - reserved_count,
