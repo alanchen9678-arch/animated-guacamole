@@ -39,6 +39,9 @@ test('unfinished weekly check-in restores its answers and position after reload'
   await page.goto('/')
 
   await page.getByRole('button', { name: /Start weekly check-in/ }).click()
+  await expect(page.locator('.ci-intro-badge')).toHaveCount(0)
+  await expect(page.getByText('Weekly', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('One-time', { exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: /Begin/ }).click()
   await expect(page.getByText('Question 1 of 12')).toBeVisible()
 

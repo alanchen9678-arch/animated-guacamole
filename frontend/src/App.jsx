@@ -262,15 +262,6 @@ function AppShell() {
           user-select: none;
         }
 
-        .logo-mark {
-          width: 30px;
-          height: 30px;
-          border-radius: 9px;
-          background: linear-gradient(135deg, #4d6b58 0%, #3a6898 100%);
-          flex: none;
-          box-shadow: 0 4px 12px rgba(58,104,152,0.28);
-        }
-
         .logo-text {
           font-size: 1.15rem;
           font-weight: 800;
@@ -768,7 +759,6 @@ function AppShell() {
         <div className="topbar-actions" />
 
         <div className="aurora-logo">
-          <div className="logo-mark" />
           <TextReveal
             as="button"
             text="Aurora"

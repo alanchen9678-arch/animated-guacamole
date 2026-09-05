@@ -317,7 +317,7 @@ const PERSONALITY_QUESTIONS = [
 
 const PERSONALITIES = [
   {
-    id: 'architect', name: 'The Architect', emoji: '🏛️', category: 'Thinker', color: '#6366f1',
+    id: 'architect', name: 'The Architect', category: 'Thinker', color: '#566785',
     profile: [0, 1, 1, 0, 3],
     description: "You're a master systems builder — methodical, precise, and driven by long-term vision.",
     traits: ['Strategic', 'Analytical', 'Precise', 'Independent', 'Visionary'],
@@ -325,7 +325,7 @@ const PERSONALITIES = [
     growth: 'Try embracing spontaneity and investing more emotionally in your relationships.',
   },
   {
-    id: 'philosopher', name: 'The Philosopher', emoji: '🔮', category: 'Thinker', color: '#6366f1',
+    id: 'philosopher', name: 'The Philosopher', category: 'Thinker', color: '#566785',
     profile: [1, 0, 2, 4, 2],
     description: 'You\'re a deep thinker who questions everything. Truth, meaning, and understanding are your ultimate pursuits.',
     traits: ['Introspective', 'Curious', 'Thoughtful', 'Idealistic', 'Perceptive'],
@@ -333,7 +333,7 @@ const PERSONALITIES = [
     growth: "Ground your ideas in action — wisdom that isn't applied remains theoretical.",
   },
   {
-    id: 'scientist', name: 'The Scientist', emoji: '🔬', category: 'Thinker', color: '#6366f1',
+    id: 'scientist', name: 'The Scientist', category: 'Thinker', color: '#566785',
     profile: [0, 1, 0, 1, 3],
     description: 'Evidence-driven and methodical, you trust data over intuition. You want to understand how things work at a fundamental level.',
     traits: ['Empirical', 'Methodical', 'Curious', 'Objective', 'Focused'],
@@ -341,7 +341,7 @@ const PERSONALITIES = [
     growth: "Don't let logic override connection — emotions carry real data too.",
   },
   {
-    id: 'scholar', name: 'The Scholar', emoji: '📚', category: 'Thinker', color: '#6366f1',
+    id: 'scholar', name: 'The Scholar', category: 'Thinker', color: '#566785',
     profile: [1, 1, 3, 1, 1],
     description: 'Knowledge is your currency. You\'re a lifelong learner who finds genuine joy in mastering captivating subjects.',
     traits: ['Knowledgeable', 'Diligent', 'Thoughtful', 'Humble', 'Detail-oriented'],
@@ -349,7 +349,7 @@ const PERSONALITIES = [
     growth: "Share your knowledge more generously — don't stay in the library forever.",
   },
   {
-    id: 'strategist', name: 'The Strategist', emoji: '♟️', category: 'Thinker', color: '#6366f1',
+    id: 'strategist', name: 'The Strategist', category: 'Thinker', color: '#566785',
     profile: [1, 3, 1, 1, 4],
     description: 'You think several moves ahead. Calculated and sharp, you approach life like a chess game.',
     traits: ['Calculated', 'Forward-thinking', 'Decisive', 'Competitive', 'Resourceful'],
@@ -357,7 +357,7 @@ const PERSONALITIES = [
     growth: "Remember that people aren't chess pieces — relationships matter alongside results.",
   },
   {
-    id: 'visionary', name: 'The Visionary', emoji: '🚀', category: 'Creator', color: '#f59e0b',
+    id: 'visionary', name: 'The Visionary', category: 'Creator', color: '#9a6b2a',
     profile: [5, 3, 3, 4, 5],
     description: "You see what others can't yet imagine. Bold, future-focused, and endlessly imaginative.",
     traits: ['Imaginative', 'Bold', 'Inspiring', 'Future-focused', 'Unconventional'],
@@ -365,7 +365,7 @@ const PERSONALITIES = [
     growth: 'Great visions need great execution — partner with those who can build your dreams.',
   },
   {
-    id: 'artist', name: 'The Artist', emoji: '🎨', category: 'Creator', color: '#f59e0b',
+    id: 'artist', name: 'The Artist', category: 'Creator', color: '#9a6b2a',
     profile: [6, 2, 5, 5, 3],
     description: 'Life is your canvas. You process the world through emotion and aesthetics, turning raw experience into expression.',
     traits: ['Expressive', 'Sensitive', 'Original', 'Passionate', 'Aesthetic'],
@@ -373,7 +373,7 @@ const PERSONALITIES = [
     growth: "Share your work even when it feels vulnerable — the world needs your perspective.",
   },
   {
-    id: 'dreamer', name: 'The Dreamer', emoji: '💭', category: 'Creator', color: '#f59e0b',
+    id: 'dreamer', name: 'The Dreamer', category: 'Creator', color: '#9a6b2a',
     profile: [5, 1, 5, 5, 2],
     description: 'You live partly in another world — full of possibility, beauty, and breathtaking what-ifs.',
     traits: ['Idealistic', 'Imaginative', 'Sensitive', 'Hopeful', 'Whimsical'],
@@ -381,7 +381,7 @@ const PERSONALITIES = [
     growth: "Turn your dreams into tangible plans — the real world desperately needs your vision.",
   },
   {
-    id: 'inventor', name: 'The Inventor', emoji: '⚡', category: 'Creator', color: '#f59e0b',
+    id: 'inventor', name: 'The Inventor', category: 'Creator', color: '#9a6b2a',
     profile: [4, 2, 2, 3, 5],
     description: "You're a problem-solver at your core — combining creative thinking with technical curiosity to build new things.",
     traits: ['Innovative', 'Resourceful', 'Tinkering', 'Curious', 'Persistent'],
@@ -389,7 +389,7 @@ const PERSONALITIES = [
     growth: "Not every problem needs reinventing from scratch — elegant simplicity often wins.",
   },
   {
-    id: 'storyteller', name: 'The Storyteller', emoji: '📖', category: 'Creator', color: '#f59e0b',
+    id: 'storyteller', name: 'The Storyteller', category: 'Creator', color: '#9a6b2a',
     profile: [4, 4, 5, 4, 3],
     description: 'You make sense of the world through narrative, weaving meaning from raw human experience with grace.',
     traits: ['Empathetic', 'Expressive', 'Perceptive', 'Warm', 'Articulate'],
@@ -397,7 +397,7 @@ const PERSONALITIES = [
     growth: "Listen as much as you speak — the best stories are born from deep, patient listening.",
   },
   {
-    id: 'commander', name: 'The Commander', emoji: '🦁', category: 'Leader', color: '#ef4444',
+    id: 'commander', name: 'The Commander', category: 'Leader', color: '#a55a52',
     profile: [2, 6, 1, 1, 6],
     description: 'Born to lead. Decisive, confident, and energized by taking charge.',
     traits: ['Decisive', 'Confident', 'Direct', 'Goal-driven', 'Commanding'],
@@ -405,7 +405,7 @@ const PERSONALITIES = [
     growth: "Leadership means listening — make genuine room for other voices in your decisions.",
   },
   {
-    id: 'champion', name: 'The Champion', emoji: '🔥', category: 'Leader', color: '#ef4444',
+    id: 'champion', name: 'The Champion', category: 'Leader', color: '#a55a52',
     profile: [3, 5, 5, 3, 5],
     description: "You're a passionate, full-bodied force for what you believe in. You fight for causes with conviction.",
     traits: ['Passionate', 'Courageous', 'Driven', 'Inspiring', 'Relentless'],
@@ -413,7 +413,7 @@ const PERSONALITIES = [
     growth: "Channel your fire strategically — not every hill is worth dying on. Pick your battles.",
   },
   {
-    id: 'pioneer', name: 'The Pioneer', emoji: '🏔️', category: 'Leader', color: '#ef4444',
+    id: 'pioneer', name: 'The Pioneer', category: 'Leader', color: '#a55a52',
     profile: [4, 5, 2, 4, 6],
     description: 'You go first — always. Trailblazing and fearless, you\'re most alive exploring uncharted territory.',
     traits: ['Adventurous', 'Bold', 'Innovative', 'Fearless', 'Independent'],
@@ -421,7 +421,7 @@ const PERSONALITIES = [
     growth: "Bring others along — even the most legendary pioneers needed great teams.",
   },
   {
-    id: 'mentor', name: 'The Mentor', emoji: '🌿', category: 'Leader', color: '#ef4444',
+    id: 'mentor', name: 'The Mentor', category: 'Leader', color: '#a55a52',
     profile: [2, 3, 6, 2, 2],
     description: 'You lead by lifting others higher. Patient, wise, and deeply invested in human potential.',
     traits: ['Nurturing', 'Patient', 'Wise', 'Encouraging', 'Invested'],
@@ -429,7 +429,7 @@ const PERSONALITIES = [
     growth: "Don't neglect your own growth while pouring so generously into everyone else.",
   },
   {
-    id: 'diplomat', name: 'The Diplomat', emoji: '🤝', category: 'Leader', color: '#ef4444',
+    id: 'diplomat', name: 'The Diplomat', category: 'Leader', color: '#a55a52',
     profile: [2, 4, 5, 2, 3],
     description: 'You navigate complexity with grace and emotional intelligence. A natural bridge-builder.',
     traits: ['Tactful', 'Empathetic', 'Persuasive', 'Harmonious', 'Adaptive'],
@@ -437,7 +437,7 @@ const PERSONALITIES = [
     growth: "Don't sacrifice your own values in the relentless pursuit of harmony.",
   },
   {
-    id: 'caregiver', name: 'The Caregiver', emoji: '🌸', category: 'Helper', color: '#10b981',
+    id: 'caregiver', name: 'The Caregiver', category: 'Helper', color: '#4d6b58',
     profile: [2, 3, 6, 2, 1],
     description: 'Your heart is your compass. Warm, selfless, and deeply attuned to others.',
     traits: ['Compassionate', 'Generous', 'Nurturing', 'Loyal', 'Selfless'],
@@ -445,7 +445,7 @@ const PERSONALITIES = [
     growth: "Remember to fill your own cup — you genuinely cannot pour from an empty vessel.",
   },
   {
-    id: 'connector', name: 'The Connector', emoji: '🌐', category: 'Helper', color: '#10b981',
+    id: 'connector', name: 'The Connector', category: 'Helper', color: '#4d6b58',
     profile: [2, 6, 5, 3, 3],
     description: "You're the social glue of every room you enter. You build real communities and forge unlikely friendships.",
     traits: ['Sociable', 'Warm', 'Inclusive', 'Energetic', 'Relational'],
@@ -453,7 +453,7 @@ const PERSONALITIES = [
     growth: "Depth matters as much as breadth — invest your full self in your closest relationships.",
   },
   {
-    id: 'peacemaker', name: 'The Peacemaker', emoji: '🕊️', category: 'Helper', color: '#10b981',
+    id: 'peacemaker', name: 'The Peacemaker', category: 'Helper', color: '#4d6b58',
     profile: [2, 3, 6, 3, 1],
     description: 'Harmony is your highest value. Calm, steady, and conflict-averse.',
     traits: ['Calm', 'Mediating', 'Patient', 'Accepting', 'Steady'],
@@ -461,7 +461,7 @@ const PERSONALITIES = [
     growth: "Don't avoid every conflict — some issues genuinely need addressing, not just smoothing over.",
   },
   {
-    id: 'guardian', name: 'The Guardian', emoji: '🛡️', category: 'Helper', color: '#10b981',
+    id: 'guardian', name: 'The Guardian', category: 'Helper', color: '#4d6b58',
     profile: [1, 3, 4, 1, 3],
     description: "You're the rock people anchor themselves to. Reliable, protective, and deeply loyal.",
     traits: ['Loyal', 'Dependable', 'Protective', 'Traditional', 'Steadfast'],
@@ -469,7 +469,7 @@ const PERSONALITIES = [
     growth: "Embrace change and new perspectives — true protection never means preventing growth.",
   },
   {
-    id: 'advocate', name: 'The Advocate', emoji: '⚖️', category: 'Helper', color: '#10b981',
+    id: 'advocate', name: 'The Advocate', category: 'Helper', color: '#4d6b58',
     profile: [2, 5, 5, 2, 4],
     description: "Justice drives everything you do. You speak up fiercely for those who can't.",
     traits: ['Principled', 'Courageous', 'Passionate', 'Fair', 'Determined'],
@@ -477,7 +477,7 @@ const PERSONALITIES = [
     growth: "Grace and nuance are your allies — righteous anger needs strategic, thoughtful direction.",
   },
   {
-    id: 'explorer', name: 'The Explorer', emoji: '🧭', category: 'Independent', color: '#8b5cf6',
+    id: 'explorer', name: 'The Explorer', category: 'Independent', color: '#735d8f',
     profile: [4, 5, 3, 5, 5],
     description: 'Life is one continuous adventure. Restless, insatiably curious, and endlessly drawn to the new.',
     traits: ['Curious', 'Adventurous', 'Open-minded', 'Spontaneous', 'Free-spirited'],
@@ -485,7 +485,7 @@ const PERSONALITIES = [
     growth: "Plant some roots — real depth comes from staying still as much as from always moving.",
   },
   {
-    id: 'rebel', name: 'The Rebel', emoji: '💥', category: 'Independent', color: '#8b5cf6',
+    id: 'rebel', name: 'The Rebel', category: 'Independent', color: '#735d8f',
     profile: [4, 5, 3, 6, 5],
     description: "You don't follow rules — you question their very existence. Bold, nonconformist, unapologetically authentic.",
     traits: ['Nonconformist', 'Bold', 'Disruptive', 'Authentic', 'Unconventional'],
@@ -493,7 +493,7 @@ const PERSONALITIES = [
     growth: "Channel rebellion constructively — disruption for its own sake only burns bridges.",
   },
   {
-    id: 'sage', name: 'The Sage', emoji: '🌙', category: 'Independent', color: '#8b5cf6',
+    id: 'sage', name: 'The Sage', category: 'Independent', color: '#735d8f',
     profile: [2, 0, 4, 4, 2],
     description: 'Still waters run extraordinarily deep. Quietly wise, deeply self-aware, at complete peace with your inner world.',
     traits: ['Wise', 'Serene', 'Introspective', 'Perceptive', 'Grounded'],
@@ -501,7 +501,7 @@ const PERSONALITIES = [
     growth: "Share your wisdom more freely — your silence robs the world of gifts it needs.",
   },
   {
-    id: 'survivor', name: 'The Survivor', emoji: '💪', category: 'Independent', color: '#8b5cf6',
+    id: 'survivor', name: 'The Survivor', category: 'Independent', color: '#735d8f',
     profile: [3, 3, 3, 4, 4],
     description: "You've walked through fire and emerged stronger every time. Resilient, adaptive, fundamentally unbreakable.",
     traits: ['Resilient', 'Adaptive', 'Pragmatic', 'Strong', 'Determined'],
@@ -509,7 +509,7 @@ const PERSONALITIES = [
     growth: "Vulnerability isn't weakness — let the right people in, not just during the hard times.",
   },
   {
-    id: 'maverick', name: 'The Maverick', emoji: '🎯', category: 'Independent', color: '#8b5cf6',
+    id: 'maverick', name: 'The Maverick', category: 'Independent', color: '#735d8f',
     profile: [3, 4, 2, 5, 6],
     description: "You play by your own rules — and somehow, it always works. Self-reliant, boldly original, completely unconventional.",
     traits: ['Self-reliant', 'Original', 'Bold', 'Unconventional', 'Driven'],
@@ -831,6 +831,13 @@ function findPersonality(profile) {
   return best
 }
 
+function normalizeSavedPersonality(personality) {
+  if (!personality) return null
+  const currentDefinition = PERSONALITIES.find((candidate) => candidate.id === personality.id)
+  if (currentDefinition) return currentDefinition
+  return personality
+}
+
 function scoreBand(n) {
   if (n <= 20) return { label: 'Very Low',  color: '#22c55e' }
   if (n <= 40) return { label: 'Low',       color: '#34d399' }
@@ -880,7 +887,6 @@ function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, onSt
             background: savedPersonality.color + '0d',
           }}
         >
-          <span className="ci-hub-personality-emoji">{savedPersonality.emoji}</span>
           <div className="ci-hub-personality-info">
             <span className="ci-hub-personality-name">{savedPersonality.name}</span>
             <span
@@ -944,7 +950,6 @@ function IntroView({ type, onStart, onBack }) {
 
   return (
     <div className="ci-intro">
-      <div className="ci-intro-badge">{isInitial ? 'One-time' : 'Weekly'}</div>
       <h3 className="ci-intro-title">{title}</h3>
       <p className="ci-intro-desc">{desc}</p>
 
@@ -1131,7 +1136,6 @@ function ResultsView({ surveyType, scores, prevScores, personality, onDone }) {
           }}
         >
           <div className="ci-personality-header">
-            <span className="ci-personality-emoji">{personality.emoji}</span>
             <div>
               <p className="ci-personality-name" style={{ color: personality.color }}>{personality.name}</p>
               <span
@@ -1335,7 +1339,6 @@ export default function CheckIns() {
         localStorage.setItem(PERSONALITY_STORAGE_KEY, JSON.stringify({
           id: personality.id,
           name: personality.name,
-          emoji: personality.emoji,
           category: personality.category,
           color: personality.color,
           updatedAt: new Date().toISOString(),
@@ -1419,12 +1422,13 @@ export default function CheckIns() {
   const latestEntryDate = useMemo(() => serverSummary.lastCheckInDate, [serverSummary])
   const savedPersonality = useMemo(() => {
     if (token) {
-      return user?.personality && Object.keys(user.personality).length ? user.personality : null
+      const personality = user?.personality && Object.keys(user.personality).length ? user.personality : null
+      return normalizeSavedPersonality(personality)
     }
 
     try {
       const raw = localStorage.getItem(PERSONALITY_STORAGE_KEY)
-      return raw ? JSON.parse(raw) : null
+      return normalizeSavedPersonality(raw ? JSON.parse(raw) : null)
     } catch {
       return null
     }
@@ -1544,7 +1548,6 @@ const CI_STYLES = `
     display: flex; align-items: center; gap: 12px;
     border: 1px solid; border-radius: 16px; padding: 14px 18px;
   }
-  .ci-hub-personality-emoji { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
   .ci-hub-personality-info { display: flex; align-items: center; gap: 10px; flex: 1; flex-wrap: wrap; }
   .ci-hub-personality-name { font-size: 1rem; font-weight: 800; letter-spacing: -0.02em; }
   .ci-hub-personality-cat {
@@ -1655,12 +1658,6 @@ const CI_STYLES = `
     display: flex; flex-direction: column; gap: 16px;
     width: 100%;
     animation: fade-up 200ms ease;
-  }
-  .ci-intro-badge {
-    display: inline-block; font-size: 0.68rem; font-weight: 700;
-    letter-spacing: 0.16em; text-transform: uppercase;
-    padding: 3px 10px; border-radius: 999px; width: fit-content;
-    background: var(--accent-soft); color: var(--accent);
   }
   .ci-intro-title {
     margin: 0;
@@ -1800,7 +1797,6 @@ const CI_STYLES = `
     display: flex; flex-direction: column; gap: 14px;
   }
   .ci-personality-header { display: flex; align-items: center; gap: 14px; }
-  .ci-personality-emoji { font-size: 2.4rem; line-height: 1; }
   .ci-personality-name { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; margin: 0; }
   .ci-personality-cat {
     font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;

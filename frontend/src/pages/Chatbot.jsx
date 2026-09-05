@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/chat-input.jsx'
+import { useUser } from '../context/UserContext.jsx'
 import { fetchChatHistory, sendChatMessage } from '../services/api.js'
 import { FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
 
@@ -55,7 +56,7 @@ function TypingIndicator() {
   )
 }
 
-function Message({ msg }) {
+function Message({ msg, userAvatar }) {
   const isUser = msg.role === 'user'
 
   return (
@@ -65,17 +66,19 @@ function Message({ msg }) {
         <p className="bubble-text">{msg.text}</p>
         <span className="bubble-time">{msg.time}</span>
       </div>
-      {isUser && <div className="msg-avatar msg-avatar--user">You</div>}
+      {isUser && (
+        <div
+          className="msg-avatar msg-avatar--user"
+          style={{ backgroundColor: userAvatar.color }}
+          aria-label={`${userAvatar.name} avatar`}
+          title={userAvatar.name}
+        >
+          {userAvatar.initials}
+        </div>
+      )}
     </div>
   )
 }
-
-const highlights = [
-  { label: 'Honest, not just agreeable', body: 'Aurora can respond thoughtfully and ground the conversation instead of only mirroring you back.' },
-  { label: 'Personalized to you', body: 'This app can grow into a personal digital space that securely saves your daily check-ins and notes for future use.' },
-  { label: 'Knows its limits', body: 'The assistant is supportive, but not a substitute for licensed mental health care.' },
-  { label: 'Connected to the platform', body: 'It can eventually point people toward Peer Support, Therapist Match, and other Aurora features.' },
-]
 
 function ChatbotIntro({ onStart }) {
   return (
@@ -90,33 +93,27 @@ function ChatbotIntro({ onStart }) {
           the rest of the platform.
         </p>
 
-        <div className="highlights-grid">
-          {highlights.map((highlight) => (
-            <div key={highlight.label} className="highlight-card">
-              <strong>{highlight.label}</strong>
-              <p>{highlight.body}</p>
-            </div>
-          ))}
-        </div>
+        <div className="intro-actions">
+          <div className="disclaimer-box">
+            <div className="disclaimer-icon">!</div>
+            <p>
+              Aurora&apos;s chatbot is <strong>not a replacement for professional mental health
+              care.</strong> If someone seems at risk, they should be directed to a crisis line,
+              emergency services, or a licensed clinician.
+            </p>
+          </div>
 
-        <div className="disclaimer-box">
-          <div className="disclaimer-icon">!</div>
-          <p>
-            Aurora&apos;s chatbot is <strong>not a replacement for professional mental health
-            care.</strong> If someone seems at risk, they should be directed to a crisis line,
-            emergency services, or a licensed clinician.
-          </p>
+          <button className="start-btn" onClick={onStart}>
+            Start chatting →
+          </button>
         </div>
-
-        <button className="start-btn" onClick={onStart}>
-          Start chatting →
-        </button>
       </div>
     </section>
   )
 }
 
 function ChatbotChat() {
+  const { user } = useUser()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoadingHistory, setIsLoadingHistory] = useState(true)
@@ -125,6 +122,12 @@ function ChatbotChat() {
   const [reloadKey, setReloadKey] = useState(0)
   const messagesRef = useRef(null)
   const inputRef = useRef(null)
+  const userAvatarName = user?.displayName || user?.firstName || user?.username || 'You'
+  const userAvatar = {
+    name: userAvatarName,
+    initials: userAvatarName.slice(0, 2).toUpperCase(),
+    color: user?.avatarColor || 'var(--accent)',
+  }
 
   useEffect(() => {
     let isActive = true
@@ -224,7 +227,7 @@ function ChatbotChat() {
 
       <div className="chat-messages" ref={messagesRef}>
         {isLoadingHistory && <LoadingState label="Loading your conversation…" compact skeletonLines={3} />}
-        {messages.map((message) => <Message key={message.id} msg={message} />)}
+        {messages.map((message) => <Message key={message.id} msg={message} userAvatar={userAvatar} />)}
         {isTyping && <TypingIndicator />}
         {chatError && (
           <FeedbackNotice
@@ -265,7 +268,11 @@ function ChatbotChat() {
 }
 
 const styles = `
-  .intro-wrap { max-width: 680px; font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; }
+  .intro-wrap {
+    width: min(100%, 820px);
+    padding-top: clamp(12px, 4vh, 42px);
+    font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
   .intro-eyebrow {
     display: none;
   }
@@ -287,27 +294,23 @@ const styles = `
     font-weight: 700;
     margin-bottom: 20px;
   }
-  .intro-body { color: var(--muted); font-size: var(--type-body); font-weight: 400; line-height: 1.65; margin: 0 0 28px; }
-  .highlights-grid {
+  .intro-body {
+    max-width: 62ch;
+    color: var(--muted);
+    font-size: var(--type-body);
+    font-weight: 400;
+    line-height: 1.65;
+    margin: 0;
+  }
+  .intro-actions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-    margin-bottom: 28px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 24px;
+    margin-top: clamp(32px, 6vh, 64px);
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
   }
-  .highlight-card {
-    background: var(--panel-strong);
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    padding: 18px 20px;
-    box-shadow: var(--shadow);
-  }
-  .highlight-card strong {
-    display: block;
-    margin-bottom: 6px;
-    font-size: var(--type-card-title);
-    font-weight: var(--weight-card-title);
-  }
-  .highlight-card p { margin: 0; font-size: 0.875rem; font-weight: 400; color: var(--muted); line-height: 1.55; }
   .disclaimer-box {
     display: flex;
     gap: 14px;
@@ -316,7 +319,7 @@ const styles = `
     border: 1px solid rgba(251, 191, 36, 0.3);
     border-radius: 16px;
     padding: 16px 18px;
-    margin-bottom: 32px;
+    margin: 0;
   }
   .disclaimer-icon {
     flex: none;
@@ -334,6 +337,7 @@ const styles = `
   }
   .disclaimer-box p { margin: 0; font-size: 0.88rem; color: #78350f; line-height: 1.55; }
   .start-btn {
+    white-space: nowrap;
     padding: 14px 36px;
     border-radius: 999px;
     border: none;
@@ -370,7 +374,7 @@ const styles = `
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #4d6b58, #3a6898);
+    background: var(--accent-dark);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -408,7 +412,10 @@ const styles = `
     font-size: 0.65rem;
     margin-bottom: 2px;
   }
-  .msg-avatar--user { background: linear-gradient(135deg, #334155, #64748b); }
+  .msg-avatar--user {
+    background-image: none;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.24);
+  }
   .bubble {
     max-width: 68%;
     padding: 11px 15px 8px;
@@ -419,7 +426,7 @@ const styles = `
   }
   .bubble--ai {
     background: #e8f1f9;
-    border: 1px solid rgba(58, 104, 152, 0.14);
+    border: none;
     border-bottom-left-radius: 6px;
   }
   .bubble--user {
@@ -478,8 +485,24 @@ const styles = `
     width: 40px;
     height: 40px;
   }
+  .send-btn.aurora-chat-input__submit {
+    background: var(--accent-dark);
+    border-color: rgba(58, 82, 68, 0.34);
+  }
+  .send-btn.aurora-chat-input__submit:hover:not(:disabled) {
+    background: #31483a;
+  }
+  .send-btn.aurora-chat-input__submit:disabled {
+    background: var(--accent-dark);
+    border-color: rgba(58, 82, 68, 0.22);
+    opacity: 0.42;
+  }
+  @media (max-width: 720px) {
+    .intro-wrap { padding-top: 8px; }
+    .intro-actions { grid-template-columns: 1fr; gap: 18px; margin-top: 32px; }
+    .start-btn { width: 100%; }
+  }
   @media (max-width: 640px) {
-    .highlights-grid { grid-template-columns: 1fr; }
     .chat-root { height: calc(100vh - 140px); }
     .bubble { max-width: 85%; }
   }
