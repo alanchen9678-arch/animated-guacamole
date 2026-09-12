@@ -419,7 +419,7 @@ function generateInsight(scores, prevScores) {
     }
   }
   const avg = Object.values(scores).reduce((a, b) => a + b, 0) / CATEGORIES.length
-  if (avg < 35) return "Your scores look healthy across the board this week — keep doing what you're doing, and come back next week to keep the streak going."
+  if (avg < 35) return "Your scores look healthy across the board this week. Keep doing what you're doing, and come back next week to keep the streak going."
   if (scores[top.id] >= 75) return `Your ${top.label.toLowerCase()} is scoring in the ${scoreBand(scores[top.id]).label.toLowerCase()} range. Aurora's AI Chatbot and Therapist Match are here whenever you're ready for support.`
   return "Thanks for completing this check-in. Your results are tracked over time so Aurora can spot patterns and reach out when things start to shift."
 }
@@ -472,7 +472,7 @@ function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, hasC
       </div>
 
       <p className="ci-disclaimer">
-        These check-ins are tools for self-reflection and trend awareness — not diagnostic tools. They do not determine whether you have a mental health condition.
+        These check-ins are tools for self-reflection and trend awareness, not diagnostic tools. They do not determine whether you have a mental health condition.
       </p>
     </div>
   )
@@ -514,8 +514,8 @@ function IntroView({ type, onStart, onBack }) {
 
       <p className="ci-intro-note">
         {isInitial
-          ? 'For well-being questions, consider the past 1–2 weeks. For personalization statements, answer based on how you are most of the time. There are no right or wrong answers.'
-          : "Answer based on how you've been feeling over the past 1–2 weeks, not just today. There are no right or wrong answers."}
+          ? 'For well-being questions, consider the past 1-2 weeks. For personalization statements, answer based on how you are most of the time. There are no right or wrong answers.'
+          : "Answer based on how you've been feeling over the past 1-2 weeks, not just today. There are no right or wrong answers."}
       </p>
 
       <div className="ci-intro-actions">
@@ -660,7 +660,7 @@ function ResultsView({ surveyType, scores, prevScores, onDone }) {
     return (
       <div className="ci-results ci-results--initial">
         <div className="ci-results-header">
-          <h3 className="ci-results-title">Thanks — your check-in is complete.</h3>
+          <h3 className="ci-results-title">Thanks. Your check-in is complete.</h3>
           <p className="ci-results-sub">
             Your answers help Aurora adapt suggestions and approaches to what may work better for you over time.
           </p>

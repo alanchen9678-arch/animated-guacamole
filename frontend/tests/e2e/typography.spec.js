@@ -55,6 +55,22 @@ test('dashboard pages share the home typography hierarchy and secondary color', 
   await page.getByRole('button', { name: 'Journal', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Thought Journal' })).toHaveCSS('font-size', '32px')
   await expect(page.getByRole('heading', { name: 'Thought Journal' })).toHaveCSS('font-weight', '650')
+  const journalGeometry = await page.locator('.jn-page').evaluate((journalPage) => {
+    const pageRect = journalPage.getBoundingClientRect()
+    const content = journalPage.closest('.content')
+    const contentRect = content.getBoundingClientRect()
+    const contentStyle = getComputedStyle(content)
+    const contentLeft = contentRect.left + parseFloat(contentStyle.paddingLeft)
+    const contentRight = contentRect.right - parseFloat(contentStyle.paddingRight)
+    return {
+      width: pageRect.width,
+      leftInset: Math.abs(pageRect.left - contentLeft),
+      rightInset: Math.abs(contentRight - pageRect.right),
+    }
+  })
+  expect(journalGeometry.width).toBeGreaterThan(940)
+  expect(journalGeometry.leftInset).toBeLessThan(1)
+  expect(journalGeometry.rightInset).toBeLessThan(1)
 
   await page.getByRole('button', { name: 'Info Library', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Mental Health Library' })).toHaveCSS('font-size', '32px')
@@ -83,19 +99,29 @@ test('dashboard pages share the home typography hierarchy and secondary color', 
   const chatGeometry = await page.locator('.chat-root').evaluate((chatRoot) => {
     const scrollRegion = chatRoot.querySelector('.chat-messages')
     const conversation = chatRoot.querySelector('.chat-conversation')
+    const composer = chatRoot.querySelector('.chat-input-bar')
     const rootRect = chatRoot.getBoundingClientRect()
     const scrollRect = scrollRegion.getBoundingClientRect()
     const conversationRect = conversation.getBoundingClientRect()
+    const composerRect = composer.getBoundingClientRect()
 
     return {
       overflowY: getComputedStyle(scrollRegion).overflowY,
       rightEdgeDelta: Math.abs(rootRect.right - scrollRect.right),
       conversationIsInset: conversationRect.width < scrollRect.width,
+      conversationWidth: conversationRect.width,
+      composerWidth: composerRect.width,
+      conversationInset: Math.abs(conversationRect.left - scrollRect.left),
+      composerInset: Math.abs(composerRect.left - rootRect.left),
     }
   })
   expect(chatGeometry.overflowY).toBe('auto')
   expect(chatGeometry.rightEdgeDelta).toBeLessThan(1)
   expect(chatGeometry.conversationIsInset).toBe(true)
+  expect(chatGeometry.conversationWidth).toBeGreaterThan(900)
+  expect(Math.abs(chatGeometry.composerWidth - chatGeometry.conversationWidth)).toBeLessThanOrEqual(2)
+  expect(chatGeometry.conversationInset).toBeLessThan(12)
+  expect(chatGeometry.composerInset).toBeLessThan(12)
 
   await page.setViewportSize({ width: 390, height: 844 })
   const mobileRightEdgeDelta = await page.locator('.chat-root').evaluate((chatRoot) => {
@@ -123,4 +149,20 @@ test('dashboard pages share the home typography hierarchy and secondary color', 
   await expect(page.getByRole('heading', { name: 'Check-Ins' })).toHaveCSS('font-weight', '650')
   await expect(page.locator('.ci-hub-personality')).toHaveCount(0)
   await expect(page.getByText('The Architect')).toHaveCount(0)
+  const checkInsGeometry = await page.locator('.ci-page').evaluate((checkInsPage) => {
+    const pageRect = checkInsPage.getBoundingClientRect()
+    const content = checkInsPage.closest('.content')
+    const contentRect = content.getBoundingClientRect()
+    const contentStyle = getComputedStyle(content)
+    const contentLeft = contentRect.left + parseFloat(contentStyle.paddingLeft)
+    const contentRight = contentRect.right - parseFloat(contentStyle.paddingRight)
+    return {
+      width: pageRect.width,
+      leftInset: Math.abs(pageRect.left - contentLeft),
+      rightInset: Math.abs(contentRight - pageRect.right),
+    }
+  })
+  expect(checkInsGeometry.width).toBeGreaterThan(940)
+  expect(checkInsGeometry.leftInset).toBeLessThan(1)
+  expect(checkInsGeometry.rightInset).toBeLessThan(1)
 })

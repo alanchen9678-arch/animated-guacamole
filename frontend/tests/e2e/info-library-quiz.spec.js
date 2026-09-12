@@ -75,9 +75,10 @@ test('quiz tabs, progress, feedback, and active round are accessible and persist
   await libraryTab.click()
   await quizTab.click()
   await expect(feedback.locator('strong')).toHaveText(feedbackTitle)
+  await expect(quizTab).toBeFocused()
 
   await page.reload()
-  await page.getByRole('tab', { name: 'Quiz' }).click()
+  await expect(page.getByRole('tab', { name: 'Quiz' })).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByRole('status').locator('strong')).toHaveText(feedbackTitle)
 
   await page.locator('.il-next-btn').click()
@@ -96,10 +97,8 @@ test('results use the editorial sage summary and divided answer comparisons', as
   }
 
   await expect(page.locator('.il-results-summary')).toBeVisible()
-  await expect(page.locator('.il-results-score-ring')).toHaveCSS(
-    'background-image',
-    /conic-gradient\(rgb\(77, 107, 88\)/,
-  )
+  await expect(page.locator('.il-results-score')).toHaveCSS('border-left-color', 'rgb(77, 107, 88)')
+  await expect(page.locator('.il-results-score')).toHaveCSS('background-image', 'none')
 
   const missedRows = page.locator('.il-missed-card')
   await expect(missedRows.first()).toBeVisible()

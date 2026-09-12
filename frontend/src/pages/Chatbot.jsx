@@ -326,7 +326,7 @@ const styles = `
   }
   .start-btn:hover { opacity: 0.88; transform: translateY(-1px); }
   .chat-root {
-    --chat-column-width: 840px;
+    --chat-column-width: 940px;
     display: flex;
     flex-direction: column;
     width: 100%;

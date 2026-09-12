@@ -1,377 +1,40 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AsyncButton } from '../components/ui/feedback.jsx'
+import { useUser } from '../context/UserContext.jsx'
+import {
+  CRISIS_SUPPORT_URL,
+  DISORDER_LABELS,
+  DISORDERS,
+  QUIZ_BANK,
+  SOURCE_CHECKED_LABEL,
+  WHO_OVERVIEW_URL,
+} from './InfoLibrary.data.js'
+import './InfoLibrary.css'
 
-// ─── disorder data ─────────────────────────────────────────────────────────────
+const QUIZ_STORAGE_VERSION = 2
+const QUIZ_STORAGE_PREFIX = 'aurora.infoLibrary.quizSession.v2'
+const TAB_STORAGE_PREFIX = 'aurora.infoLibrary.activeTab.v2'
+const VALID_DISORDER_IDS = new Set(DISORDERS.map((item) => item.id))
 
-const DISORDERS = [
-  {
-    id: 'anxiety',
-    title: 'Anxiety Disorders',
-    color: '#9a6b2a',
-    source: 'Mayo Clinic Staff',
-    sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/anxiety/symptoms-causes/syc-20350961',
-    what: 'Anxiety disorders involve excessive, persistent fear or worry that is difficult to control and significantly interferes with daily activities. They are among the most common mental health conditions worldwide and include generalized anxiety disorder, panic disorder, and social anxiety disorder.',
-    symptoms: [
-      'Feeling nervous, restless, or tense',
-      'Excessive worry or fear that is difficult to control',
-      'Sense of impending danger, panic, or doom',
-      'Rapid heartbeat, sweating, or trembling',
-      'Trouble sleeping or concentrating',
-    ],
-    causes: [
-      'Traumatic or stressful life experiences',
-      'Family history of anxiety disorders',
-      'Certain personality traits such as shyness or behavioral inhibition',
-      'Other mental health conditions such as depression',
-    ],
-    treatment: [
-      'Psychotherapy (talk therapy), especially cognitive behavioral therapy (CBT)',
-      'Medications such as anti-anxiety medications or antidepressants when appropriate',
-      'Lifestyle changes: regular physical activity, maintaining social connections, and avoiding alcohol or substance misuse',
-    ],
-  },
-  {
-    id: 'depression',
-    title: 'Depression',
-    color: '#3a6898',
-    source: 'Mayo Clinic Staff',
-    sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/depression/symptoms-causes/syc-20356007',
-    what: 'Depression (major depressive disorder) is a common and serious mood disorder that causes persistent feelings of sadness and loss of interest. It affects how a person thinks, feels, and handles daily activities such as sleeping, eating, or working.',
-    symptoms: [
-      'Persistent sadness, emptiness, or hopelessness',
-      'Loss of interest or pleasure in activities once enjoyed',
-      'Irritability, frustration, or restlessness',
-      'Fatigue and lack of energy',
-      'Difficulty thinking, concentrating, or making decisions',
-    ],
-    causes: [
-      'Differences in brain chemistry and brain function',
-      'Hormonal changes (e.g., during pregnancy, menopause, or thyroid problems)',
-      'Inherited genetic factors or family history of depression',
-      'Major life events such as trauma, loss, or prolonged stress',
-    ],
-    treatment: [
-      'Psychotherapy (talk therapy), such as cognitive behavioral therapy (CBT)',
-      'Antidepressant medications',
-      'A combination of therapy and medication for many people',
-      'Lifestyle adjustments: regular exercise, adequate sleep, and social support',
-    ],
-  },
-  {
-    id: 'bipolar',
-    title: 'Bipolar Disorder',
-    color: '#735d8f',
-    source: 'Mayo Clinic Staff',
-    sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/bipolar-disorder/symptoms-causes/syc-20355955',
-    what: 'Bipolar disorder is a mental health condition that causes extreme mood swings including emotional highs (mania or hypomania) and lows (depression). These mood episodes can affect sleep, energy, activity, judgment, behavior, and the ability to think clearly.',
-    symptoms: [
-      'Manic episodes: feeling unusually happy, excited, or irritable',
-      'Manic episodes: increased energy and activity, reduced need for sleep',
-      'Depressive episodes: persistent sadness, emptiness, or hopelessness',
-      'Depressive episodes: loss of interest in activities once enjoyed',
-      'Depressive episodes: fatigue or low energy',
-    ],
-    causes: [
-      'Exact cause is unknown',
-      'Genetic factors play a significant role',
-      'Differences in brain structure and functioning may contribute',
-      'Environmental stressors can trigger episodes in those with a genetic predisposition',
-    ],
-    treatment: [
-      'Mood-stabilizing medications are commonly used for long-term management',
-      'Other psychiatric medications may be prescribed depending on symptoms',
-      'Psychotherapy to help manage symptoms and develop coping skills',
-      'Lifestyle structure: consistent sleep, routine, and stress management',
-    ],
-  },
-  {
-    id: 'ptsd',
-    title: 'Post-Traumatic Stress Disorder (PTSD)',
-    color: '#b96535',
-    source: 'Mayo Clinic Staff',
-    sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/post-traumatic-stress-disorder/symptoms-causes/syc-20355967',
-    what: 'PTSD is a mental health condition triggered by experiencing or witnessing a terrifying event. Symptoms may include flashbacks, nightmares, severe anxiety, and uncontrollable thoughts about the event. Many people who go through traumatic events recover with time; PTSD develops when symptoms persist and worsen.',
-    symptoms: [
-      'Intrusive memories: flashbacks, nightmares, or severe emotional distress about the event',
-      'Avoidance: steering clear of places, people, or activities that are reminders of the trauma',
-      'Negative changes in thinking and mood: hopelessness, memory problems, emotional numbness',
-      'Changes in physical and emotional reactions: being easily startled, always on guard, trouble sleeping',
-    ],
-    causes: [
-      'Experiencing, witnessing, or learning about a traumatic event',
-      'Severe or repeated trauma increases risk',
-      'Previous traumatic experiences, including childhood abuse',
-      'Lack of social support after the event',
-    ],
-    treatment: [
-      'Psychotherapy, especially trauma-focused therapies such as EMDR and prolonged exposure therapy',
-      'Medication when appropriate (e.g., SSRIs or SNRIs)',
-      'Building strong support systems with family, friends, or support groups',
-    ],
-  },
-  {
-    id: 'schizophrenia',
-    title: 'Schizophrenia',
-    color: '#a54f4f',
-    source: 'Mayo Clinic Staff',
-    sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/schizophrenia/symptoms-causes/syc-20354443',
-    what: 'Schizophrenia is a serious mental disorder in which people interpret reality abnormally. It may result in some combination of hallucinations, delusions, and extremely disordered thinking and behavior. Symptoms are divided into "positive" (added experiences) and "negative" (loss of normal functioning).',
-    symptoms: [
-      'Positive: delusions, which are false beliefs not based in reality',
-      'Positive: hallucinations, such as hearing or seeing things that do not exist',
-      'Positive: disorganized thinking and speech',
-      'Negative: reduced emotional expression and social withdrawal',
-      'Negative: loss of motivation and inability to function normally',
-    ],
-    causes: [
-      'Exact cause is unknown',
-      'Family history of schizophrenia increases risk',
-      'Differences in brain chemistry and structure',
-      'Exposure to significant stress or certain viral infections before birth',
-    ],
-    treatment: [
-      'Antipsychotic medications to help manage symptoms',
-      'Psychotherapy (talk therapy)',
-      'Social skills training and support for daily living, education, and employment',
-      'Coordinated specialty care that combines therapy, medication, and family support',
-    ],
-  },
-  {
-    id: 'eating',
-    title: 'Eating Disorders',
-    color: '#a85f78',
-    source: 'Mayo Clinic Staff',
-    sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/eating-disorders/symptoms-causes/syc-20353603',
-    what: 'Eating disorders are serious conditions related to persistent eating behaviors that negatively impact health, emotions, and the ability to function in important areas of life. Common types include anorexia nervosa, bulimia nervosa, and binge-eating disorder.',
-    symptoms: [
-      'Preoccupation with weight, food, calories, dieting, or body shape',
-      'Distorted or negative body image',
-      'Extreme or restrictive dieting behaviors',
-      'Evidence of binge eating or purging',
-      'Withdrawal from social activities, especially those involving food',
-    ],
-    causes: [
-      'Genetics and family history',
-      'Psychological factors such as perfectionism, low self-esteem, anxiety, or depression',
-      'Social and cultural pressures regarding appearance and body weight',
-      'History of dieting or weight-related bullying',
-    ],
-    treatment: [
-      'Psychotherapy to address thoughts, emotions, and behaviors related to food and body image',
-      'Nutritional counseling to develop healthy eating habits',
-      'Medical monitoring to address physical health complications',
-      'Medication may be used for some types, particularly binge-eating disorder',
-    ],
-  },
-  {
-    id: 'odd',
-    title: 'Disruptive Behavior Disorders (ODD)',
-    color: '#4d6b58',
-    source: 'Mayo Clinic Staff',
-    sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/oppositional-defiant-disorder/symptoms-causes/syc-20375831',
-    what: 'Oppositional Defiant Disorder (ODD) is a childhood-onset behavioral disorder involving a persistent pattern of angry or irritable mood, argumentative or defiant behavior toward authority figures, and vindictiveness. It often co-occurs with ADHD and anxiety disorders.',
-    symptoms: [
-      'Angry and irritable mood: frequent loss of temper, easily annoyed',
-      'Argumentative and defiant behavior: arguing with adults or authority figures, refusing to follow rules',
-      'Vindictiveness: being spiteful or seeking revenge at least twice in the past six months',
-    ],
-    causes: [
-      'Exact cause is unknown',
-      'May involve a combination of genetic, biological, and environmental factors',
-      'Difficult temperament or emotional regulation problems',
-      'Inconsistent parenting or family conflict may contribute',
-    ],
-    treatment: [
-      'Parent management training to help caregivers respond effectively to behaviors',
-      'Family therapy to improve communication and relationships',
-      'Individual therapy to develop problem-solving and emotional regulation skills',
-      'Treatment for any co-occurring conditions such as ADHD or anxiety',
-    ],
-  },
-  {
-    id: 'neuro',
-    title: 'Neurodevelopmental Disorders',
-    color: '#3f7773',
-    source: 'Mayo Clinic Laboratories',
-    sourceUrl: 'https://news.mayocliniclabs.com/pediatrics/neurology/neurodevelopmental-disorders/',
-    what: 'Neurodevelopmental disorders are conditions that affect brain development and emerge in early childhood. They include autism spectrum disorder (ASD), attention-deficit/hyperactivity disorder (ADHD), intellectual disabilities, and learning disorders. These conditions often persist into adulthood.',
-    symptoms: [
-      'Delays in reaching developmental milestones (speech, motor skills, social interaction)',
-      'Difficulties with learning or academic skills',
-      'Problems with attention, concentration, or impulse control',
-      'Challenges with social communication and interaction',
-      'Repetitive behaviors or highly restricted interests (in ASD)',
-    ],
-    causes: [
-      'Genetic factors and inherited conditions',
-      'Differences in brain development and structure',
-      'Chromosomal abnormalities (e.g., Down syndrome)',
-      'Prenatal exposures such as infections, toxins, or premature birth',
-    ],
-    treatment: [
-      'Early intervention programs to support development',
-      'Special education services tailored to individual needs',
-      'Speech and language therapy, occupational therapy, or behavioral therapy',
-      'Medication for specific symptoms such as inattention or anxiety',
-    ],
-  },
-]
-
-// ─── quiz questions ────────────────────────────────────────────────────────────
-
-const ALL_IDS   = DISORDERS.map(d => d.id)
-const ID_LABEL  = Object.fromEntries(DISORDERS.map(d => [d.id, d.title.replace(' (PTSD)', '').replace(' (ODD)', '')]))
-
-const QUIZ_BANK = {
-  anxiety: [
-    ['What is the main difference between normal anxiety and an anxiety disorder?', ['Anxiety disorders only happen during childhood', 'Anxiety disorders cause excessive fear or worry that interferes with daily life', 'Normal anxiety is always harmful', 'Anxiety disorders are caused only by stress'], 1],
-    ["Which system is responsible for the body's fight-or-flight response?", ['Digestive system', 'Immune system', 'Nervous system', 'Skeletal system'], 2],
-    ['Which is a common symptom of Generalized Anxiety Disorder (GAD)?', ['Constant worry about many areas of life', 'Complete lack of emotions', 'Memory loss', 'Increased appetite only'], 0],
-    ['A panic attack is best described as:', ['A planned emotional response', 'A sudden episode of intense fear and physical symptoms', 'A type of sleep disorder', 'A personality trait'], 1],
-    ['Social Anxiety Disorder involves:', ['Fear of social situations or being judged', 'Fear of sleeping', 'Loss of memory', 'Lack of emotions'], 0],
-    ['A phobia is:', ['A normal preference', 'An intense fear of a specific object or situation', 'A learning disability', 'A mood disorder'], 1],
-    ['Genetics can influence anxiety disorders by:', ['Making anxiety impossible to treat', "Increasing a person's vulnerability", 'Removing all stress', 'Preventing emotions'], 1],
-    ['Cognitive Behavioral Therapy (CBT) helps by:', ['Changing harmful thought patterns and behaviors', 'Removing all memories', 'Stopping emotions completely', 'Increasing stress'], 0],
-    ['Someone constantly worries about school, family, and the future for months. This may be:', ['PTSD', 'GAD', 'Schizophrenia', 'Bipolar disorder'], 1],
-    ['A healthy coping strategy for anxiety is:', ['Avoiding all responsibilities', 'Practicing relaxation techniques', 'Ignoring problems forever', 'Increasing isolation'], 1],
-  ],
-  depression: [
-    ['Depression is different from sadness because:', ['Depression usually lasts longer and affects daily functioning', 'Depression only happens after accidents', 'Depression disappears immediately', 'Depression is not a mental health condition'], 0],
-    ['A common symptom of depression is:', ['Increased confidence', 'Loss of interest in activities', 'Better concentration', 'Constant excitement'], 1],
-    ['Depression is often associated with changes in:', ['Bones', 'Neurotransmitters', 'Eye color', 'Height'], 1],
-    ['Major Depressive Disorder involves:', ['A temporary bad mood', 'Persistent depressive symptoms affecting life', 'Only physical illness', 'Increased energy only'], 1],
-    ['Depression can affect sleep by causing:', ['Sleep problems or changes in sleep patterns', 'Better memory', 'Faster learning', 'No emotional changes'], 0],
-    ['Which can contribute to depression?', ['Genetics and environmental stress', 'Only intelligence', 'Eye color', 'Height'], 0],
-    ['Depression may affect concentration because it can:', ['Change mood and thinking patterns', 'Improve focus', 'Increase memory automatically', 'Stop all thoughts'], 0],
-    ['Therapy can help depression by:', ['Teaching coping skills and managing thoughts', 'Removing all emotions', 'Changing personality completely', 'Preventing sleep'], 0],
-    ['Someone loses interest in hobbies and feels hopeless for weeks. This may indicate:', ['Depression', 'Phobia', 'ADHD', 'ODD'], 0],
-    ['A common treatment for depression is:', ['Therapy and/or medication', 'Avoiding everyone', 'Ignoring symptoms', 'Increasing stress'], 0],
-  ],
-  bipolar: [
-    ['Bipolar disorder involves:', ['Changes between mood episodes', 'Only physical symptoms', 'Loss of intelligence', 'A fear of objects'], 0],
-    ['Mania is usually associated with:', ['Increased energy and unusual activity levels', 'Extreme tiredness only', 'Memory loss', 'Fear of crowds'], 0],
-    ['A depressive episode involves:', ['Low mood and decreased interest', 'High energy only', 'Increased confidence only', 'Hallucinations only'], 0],
-    ['Bipolar I is mainly defined by:', ['Manic episodes', 'Anxiety attacks', 'Learning problems', 'Sleepwalking'], 0],
-    ['Bipolar disorder can affect:', ['Relationships and daily functioning', 'Eye color', 'Height', 'Blood type'], 0],
-    ['Genetics may:', ['Increase risk for bipolar disorder', 'Guarantee someone develops it', 'Remove emotions', 'Prevent treatment'], 0],
-    ['Tracking moods can help by:', ['Identifying patterns and changes', 'Creating symptoms', 'Stopping all emotions', 'Removing memories'], 0],
-    ['Someone has extreme energy, little sleep, and risky behavior. This may be:', ['Mania', 'Phobia', 'Depression only', 'PTSD'], 0],
-    ['Bipolar disorder is commonly treated with:', ['Therapy and mood-stabilizing medications', 'Ignoring symptoms', 'Isolation', 'Avoiding sleep'], 0],
-    ['Bipolar disorder primarily affects:', ['Mood regulation', 'Bone growth', 'Vision', 'Digestion'], 0],
-  ],
-  ptsd: [
-    ['PTSD can develop after:', ['A traumatic or extremely stressful event', 'Learning a new skill', 'Exercising regularly', 'Changing schools only'], 0],
-    ['A flashback is:', ['A future prediction', 'A memory or feeling that makes someone feel like they are reliving an event', 'A type of dream only', 'A physical injury'], 1],
-    ['Which is a common symptom of PTSD?', ['Intrusive memories of a traumatic event', 'Increased intelligence', 'Improved concentration', 'Complete lack of emotions'], 0],
-    ['Avoidance in PTSD means:', ['Avoiding reminders of the traumatic event', 'Avoiding all food', 'Avoiding sleep forever', 'Avoiding learning'], 0],
-    ['People with PTSD may experience hypervigilance, which means:', ['Feeling constantly alert or on guard', 'Losing all emotions', 'Becoming unable to speak', 'Having increased physical strength'], 0],
-    ["PTSD affects the brain's:", ['Stress response system', 'Bone structure', 'Digestive system only', 'Eye movement only'], 0],
-    ['Which therapy is commonly used for PTSD?', ['Trauma-focused therapy', 'Avoiding all memories', 'Ignoring symptoms', 'Physical exercise only'], 0],
-    ['A person experiences nightmares and fear months after a traumatic event. This may indicate:', ['PTSD', 'ADHD', 'ODD', 'Autism'], 0],
-    ['Why do different people respond differently to trauma?', ['People have different experiences, genetics, and coping abilities', 'Everyone responds exactly the same', 'Trauma affects only children', 'Trauma never affects emotions'], 0],
-    ['PTSD can affect:', ['Emotions, thoughts, and behaviors', 'Height only', 'Eye color only', 'Intelligence only'], 0],
-  ],
-  schizophrenia: [
-    ['Schizophrenia is mainly characterized by:', ['Changes in thinking, perception, and behavior', 'Only sadness', 'Only fear', 'Physical injuries'], 0],
-    ['Hallucinations are:', ['Sensing things that are not actually present', 'Forgetting homework', 'Feeling tired', 'Changing personality'], 0],
-    ['Delusions are:', ['Strong beliefs that are not based in reality', 'Normal opinions', 'Physical symptoms', 'Learning difficulties'], 0],
-    ['Positive symptoms of schizophrenia include:', ['Hallucinations and delusions', 'Improved memory', 'Better concentration', 'Increased athletic ability'], 0],
-    ['Negative symptoms of schizophrenia include:', ['Reduced emotional expression or motivation', 'Increased energy', 'High confidence', 'Stronger senses'], 0],
-    ['Schizophrenia can affect:', ['Thinking, communication, and behavior', 'Height and weight only', 'Vision only', 'Athletic performance only'], 0],
-    ['Dopamine is a:', ['Neurotransmitter involved in brain communication', 'Bone material', 'Vitamin', 'Muscle tissue'], 0],
-    ['Schizophrenia is NOT the same as:', ['Having multiple personalities', 'A mental health disorder', 'A condition affecting thinking', 'A condition that can require treatment'], 0],
-    ['A person hears voices others cannot hear and believes false ideas. This may suggest:', ['Schizophrenia', 'Anxiety disorder', 'ODD', 'Eating disorder'], 0],
-    ['Early treatment for schizophrenia is important because it can:', ['Help manage symptoms and improve functioning', 'Remove all emotions', 'Guarantee no challenges', "Change someone's identity"], 0],
-  ],
-  eating: [
-    ['Eating disorders are:', ['Mental health conditions involving unhealthy eating patterns and thoughts about food/body', 'Simple food preferences', 'Only physical illnesses', 'Temporary choices'], 0],
-    ['Anorexia nervosa often involves:', ['Restricting food intake and intense fear related to weight', 'Increased exercise only', 'Eating large amounts only', 'Avoiding school'], 0],
-    ['Bulimia nervosa involves:', ['Episodes of binge eating followed by behaviors to compensate', 'Never eating food', 'Only skipping breakfast', 'Fear of school'], 0],
-    ['Binge eating disorder involves:', ['Episodes of eating large amounts with a feeling of loss of control', 'Never eating', 'Eating only vegetables', 'Avoiding social situations'], 0],
-    ['Eating disorders can affect:', ['Physical and mental health', 'Height only', 'Hair color only', 'Intelligence only'], 0],
-    ['A factor that may contribute to eating disorders is:', ['Genetics, emotions, and social influences', 'Eye color', 'Favorite hobbies', 'Weather'], 0],
-    ['Eating disorders are considered mental health conditions because they involve:', ['Thoughts, emotions, and behaviors related to eating', 'Only food choices', 'Only physical appearance', 'Only exercise'], 0],
-    ['Therapy can help eating disorders by:', ['Addressing thoughts and behaviors related to eating', 'Ignoring emotions', 'Preventing communication', 'Increasing stress'], 0],
-    ['Someone repeatedly overeats while feeling unable to control it may have:', ['Binge eating disorder', 'PTSD', 'Schizophrenia', 'ODD'], 0],
-    ['A healthy relationship with food includes:', ['Balanced eating habits and positive attitudes toward nutrition', 'Avoiding all foods', 'Extreme rules', 'Ignoring hunger signals'], 0],
-  ],
-  odd: [
-    ['ODD is a disorder involving:', ['A pattern of angry, defiant, or disobedient behavior', 'Hallucinations', 'Mood swings only', 'Memory loss'], 0],
-    ['A common behavior in ODD is:', ['Frequent arguing with authority figures', 'Forgetting names', 'Hearing voices', 'Avoiding all activity'], 0],
-    ['ODD is different from normal behavior because it is:', ['Frequent and impacts daily life', 'A single disagreement', 'Always temporary', 'Only physical'], 0],
-    ['ODD can affect:', ['School, friendships, and family relationships', 'Eye color', 'Height', 'Intelligence'], 0],
-    ['Behavioral therapy for ODD focuses on:', ['Improving behaviors and coping skills', 'Removing emotions', 'Avoiding people', 'Ignoring problems'], 0],
-    ['Defiance means:', ['Resisting rules or authority', 'Having a disease', 'Losing memory', 'Having hallucinations'], 0],
-    ['Understanding triggers helps because it can:', ['Identify situations that lead to challenging behaviors', 'Increase conflict', 'Remove emotions', 'Prevent learning'], 0],
-    ['A child frequently argues, refuses rules, and blames others may show signs of:', ['ODD', 'PTSD', 'Bipolar disorder', 'Depression'], 0],
-    ['Parents and teachers can support ODD by:', ['Using consistent expectations and positive strategies', 'Ignoring all behavior', 'Punishing every mistake', 'Avoiding communication'], 0],
-    ['ODD is commonly diagnosed during:', ['Childhood or adolescence', 'Old age only', 'Infancy only', 'Adulthood only'], 0],
-  ],
-  neuro: [
-    ['Neurodevelopmental disorders usually begin:', ['During development in childhood', 'Only after age 50', 'After injuries only', 'During adulthood only'], 0],
-    ['ADHD mainly affects:', ['Attention, impulse control, and activity level', 'Vision', 'Height', 'Bone growth'], 0],
-    ['A common symptom of ADHD is:', ['Difficulty focusing and controlling impulses', 'Hearing voices', 'Extreme fear', 'Loss of identity'], 0],
-    ['Autism Spectrum Disorder affects:', ['Communication, behavior, and social interaction', 'Only physical strength', 'Only memory', 'Only emotions'], 0],
-    ['Genetics can play a role in neurodevelopmental disorders by:', ['Influencing risk and development', 'Guaranteeing a disorder', 'Preventing learning', 'Removing abilities'], 0],
-    ['Accommodations help students by:', ['Providing support for learning needs', 'Lowering intelligence', 'Removing challenges completely', 'Preventing education'], 0],
-    ['A student struggles with focus, organization, and impulsivity. This may suggest:', ['ADHD', 'PTSD', 'Eating disorder', 'Schizophrenia'], 0],
-    ['Early support is important because it can:', ['Improve skills and development', 'Remove personality', 'Prevent friendships', 'Stop learning'], 0],
-    ['Neurodevelopmental disorders affect:', ['Brain development and functioning', 'Only physical appearance', 'Only mood', 'Only sleep'], 0],
-    ['Support for neurodevelopmental disorders may include:', ['Therapy, education strategies, and accommodations', 'Ignoring symptoms', 'Avoiding school', 'Removing responsibilities'], 0],
-  ],
-}
-
-Object.values(QUIZ_BANK).forEach(group => {
-  group.forEach(([, options]) => {
-    options.forEach(option => {
-      ID_LABEL[option] = option
-    })
-  })
-})
-
-const QUESTIONS_BANK = [
-  { clue: "Feeling nervous or restless with a sense of impending danger or doom, even when no clear threat exists.", correct: 'anxiety',       note: "Anxiety disorders involve excessive fear that persists beyond realistic threats." },
-  { clue: "Persistent sadness and loss of interest in once-enjoyed activities lasting weeks or longer.", correct: 'depression',    note: "Major depressive disorder causes prolonged low mood affecting thoughts, feelings, and functioning." },
-  { clue: "Alternating periods of unusually high energy and elevated mood with episodes of deep sadness.", correct: 'bipolar',      note: "Bipolar disorder cycles between manic/hypomanic highs and depressive lows." },
-  { clue: "Intrusive memories, nightmares, and avoidance of reminders following a terrifying event.", correct: 'ptsd',          note: "PTSD develops when trauma responses persist and interfere with daily life." },
-  { clue: "Hearing voices or holding firm false beliefs that are not based in reality.", correct: 'schizophrenia',  note: "These are 'positive symptoms' of schizophrenia: added experiences not grounded in reality." },
-  { clue: "Preoccupation with calories and body shape, combined with extreme or restrictive eating behaviors.", correct: 'eating',        note: "Eating disorders involve an unhealthy relationship with food, eating, and body image." },
-  { clue: "Persistent angry mood and argumentative behavior toward authority figures in a child or adolescent.", correct: 'odd',          note: "ODD is a disruptive behavior disorder most commonly diagnosed in childhood." },
-  { clue: "Delays in reaching developmental milestones and difficulties with learning or impulse control from an early age.", correct: 'neuro',        note: "Neurodevelopmental disorders emerge in early childhood and affect brain development." },
-  { clue: "Reduced need for sleep, racing thoughts, and inflated self-esteem lasting at least a week.", correct: 'bipolar',      note: "These are hallmark manic episode symptoms within bipolar disorder." },
-  { clue: "Social withdrawal, reduced emotional expression, and loss of motivation even without hallucinations.", correct: 'schizophrenia',  note: "These are 'negative symptoms' of schizophrenia: a loss of normal functioning." },
-  { clue: "Excessive worry lasting six months or more, paired with restlessness, fatigue, and poor concentration.", correct: 'anxiety',       note: "These are core features of Generalized Anxiety Disorder (GAD), a type of anxiety disorder." },
-  { clue: "Genetic factors, chromosomal differences, and early brain development all contribute to this condition presenting in childhood.", correct: 'neuro', note: "Neurodevelopmental disorders have strong biological roots and typically emerge before school age." },
-]
-
-function shuffle(arr) {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]]
+function shuffle(items) {
+  const copy = [...items]
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1))
+    ;[copy[index], copy[randomIndex]] = [copy[randomIndex], copy[index]]
   }
-  return a
+  return copy
 }
 
 function buildQuizRound() {
-  return shuffle(
-    DISORDERS.map(d => {
-      const [clue, options, answerIndex] = shuffle(QUIZ_BANK[d.id])[0]
-      return {
-        disorderId: d.id,
-        clue,
-        options: shuffle(options),
-        correct: options[answerIndex],
-        note: `This question reviews ${ID_LABEL[d.id]}. Check the Library tab for more details.`,
-      }
-    })
-  )
+  return shuffle(DISORDERS.map((disorder) => {
+    const [clue, options, correct, explanation] = shuffle(QUIZ_BANK[disorder.id])[0]
+    return { disorderId: disorder.id, clue, options: shuffle(options), correct, explanation }
+  }))
 }
-
-const QUIZ_STORAGE_KEY = 'aurora.infoLibrary.quizSession'
 
 function createQuizSession() {
   return {
+    version: QUIZ_STORAGE_VERSION,
     questions: buildQuizRound(),
     idx: 0,
     selected: null,
@@ -381,116 +44,206 @@ function createQuizSession() {
   }
 }
 
-function loadQuizSession() {
+function isNonEmptyString(value) {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+function isQuizQuestion(value) {
+  return value
+    && typeof value === 'object'
+    && VALID_DISORDER_IDS.has(value.disorderId)
+    && isNonEmptyString(value.clue)
+    && Array.isArray(value.options)
+    && value.options.length === 4
+    && value.options.every(isNonEmptyString)
+    && new Set(value.options).size === value.options.length
+    && value.options.includes(value.correct)
+    && isNonEmptyString(value.explanation)
+}
+
+function isQuizAnswer(value, question) {
+  return value
+    && typeof value === 'object'
+    && value.disorderId === question.disorderId
+    && value.clue === question.clue
+    && value.correct === question.correct
+    && question.options.includes(value.selected)
+    && value.explanation === question.explanation
+}
+
+function isValidQuizSession(value) {
+  if (!value || typeof value !== 'object' || value.version !== QUIZ_STORAGE_VERSION) return false
+  if (!Array.isArray(value.questions) || value.questions.length !== DISORDERS.length) return false
+  if (!value.questions.every(isQuizQuestion)) return false
+  if (new Set(value.questions.map((question) => question.disorderId)).size !== DISORDERS.length) return false
+  if (!Number.isInteger(value.idx) || value.idx < 0 || value.idx >= value.questions.length) return false
+  if (!Number.isInteger(value.score) || value.score < 0 || value.score > value.questions.length) return false
+  if (typeof value.done !== 'boolean' || !Array.isArray(value.answers)) return false
+
+  const currentQuestion = value.questions[value.idx]
+  if (value.selected !== null && !currentQuestion.options.includes(value.selected)) return false
+  if (value.done && value.selected === null) return false
+
+  const expectedAnswers = value.done
+    ? value.questions.length
+    : value.idx + (value.selected === null ? 0 : 1)
+  if (value.answers.length !== expectedAnswers) return false
+  if (!value.answers.every((answer, index) => isQuizAnswer(answer, value.questions[index]))) return false
+
+  const calculatedScore = value.answers.filter((answer) => answer.selected === answer.correct).length
+  return calculatedScore === value.score
+}
+
+function getStorageScope(user) {
+  return String(user?.id ?? user?.username ?? 'current-user')
+}
+
+function loadQuizSession(storageKey) {
   if (typeof window === 'undefined') return createQuizSession()
-
   try {
-    const stored = JSON.parse(window.sessionStorage.getItem(QUIZ_STORAGE_KEY))
-    const isValid = stored
-      && Array.isArray(stored.questions)
-      && stored.questions.length === DISORDERS.length
-      && Number.isInteger(stored.idx)
-      && stored.idx >= 0
-      && stored.idx < stored.questions.length
-      && Array.isArray(stored.answers)
-
-    return isValid ? stored : createQuizSession()
+    const stored = JSON.parse(window.sessionStorage.getItem(storageKey))
+    return isValidQuizSession(stored) ? stored : createQuizSession()
   } catch {
     return createQuizSession()
   }
 }
 
-// ─── library accordion item ────────────────────────────────────────────────────
+function loadActiveTab(storageKey) {
+  if (typeof window === 'undefined') return 'library'
+  try {
+    return window.sessionStorage.getItem(storageKey) === 'quiz' ? 'quiz' : 'library'
+  } catch {
+    return 'library'
+  }
+}
 
-function DisorderCard({ d }) {
-  const [open, setOpen] = useState(false)
+function ExternalContext() {
+  return <span className='il-visually-hidden'> (opens in a new tab)</span>
+}
+
+function DisorderCard({ disorder, open, onToggle }) {
+  const triggerId = `il-condition-${disorder.id}-trigger`
+  const panelId = `il-condition-${disorder.id}-panel`
 
   return (
-    <div className={`il-card${open ? ' il-card--open' : ''}`} style={{ '--accent-local': d.color }}>
-      <button className="il-card-header" onClick={() => setOpen(v => !v)}>
-        <div className="il-card-dot" style={{ background: d.color }} />
-        <span className="il-card-title">{d.title}</span>
-        <span className="il-chevron" style={{ transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
+    <article className={`il-card${open ? ' il-card--open' : ''}`}>
+      <button
+        className='il-card-header'
+        id={triggerId}
+        type='button'
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={onToggle}
+      >
+        <span className='il-card-dot' style={{ backgroundColor: disorder.color }} aria-hidden='true' />
+        <span className='il-card-title'>{disorder.title}</span>
+        <span className='il-chevron' aria-hidden='true'>{open ? 'Close' : 'Open'}</span>
       </button>
 
       {open && (
-        <div className="il-card-body">
-          <div className="il-source-row">
-            <span className="il-source-label">Source: {d.source}</span>
+        <div className='il-card-body' id={panelId} role='region' aria-labelledby={triggerId}>
+          <div className='il-source-row'>
+            <span className='il-source-heading'>Source</span>
+            <a href={disorder.sourceUrl} target='_blank' rel='noopener noreferrer'>
+              {disorder.source}
+              <ExternalContext />
+            </a>
+            <span className='il-source-date'>{SOURCE_CHECKED_LABEL}</span>
           </div>
 
-          <div className="il-section">
-            <p className="il-section-label" style={{ color: d.color }}>What it is</p>
-            <p className="il-section-text">{d.what}</p>
-          </div>
+          <section className='il-section il-section--definition'>
+            <h4 className='il-section-label'>What it is</h4>
+            <p className='il-section-text'>{disorder.what}</p>
+          </section>
 
-          <div className="il-cols">
-            <div className="il-section">
-              <p className="il-section-label" style={{ color: d.color }}>Common symptoms</p>
-              <ul className="il-list">
-                {d.symptoms.map(s => <li key={s}>{s}</li>)}
+          <div className='il-cols'>
+            <section className='il-section'>
+              <h4 className='il-section-label'>Common signs and experiences</h4>
+              <ul className='il-list'>
+                {disorder.symptoms.map((symptom) => <li key={symptom}>{symptom}</li>)}
               </ul>
-            </div>
-            <div className="il-section">
-              <p className="il-section-label" style={{ color: d.color }}>Causes &amp; risk factors</p>
-              <ul className="il-list">
-                {d.causes.map(c => <li key={c}>{c}</li>)}
+            </section>
+            <section className='il-section'>
+              <h4 className='il-section-label'>Contributing factors</h4>
+              <ul className='il-list'>
+                {disorder.causes.map((cause) => <li key={cause}>{cause}</li>)}
               </ul>
-            </div>
+            </section>
           </div>
 
-          <div className="il-section">
-            <p className="il-section-label" style={{ color: d.color }}>Treatment options</p>
-            <ul className="il-list">
-              {d.treatment.map(t => <li key={t}>{t}</li>)}
+          <section className='il-section il-section--treatment'>
+            <h4 className='il-section-label'>Treatment and support</h4>
+            <ul className='il-list'>
+              {disorder.treatment.map((item) => <li key={item}>{item}</li>)}
             </ul>
-          </div>
+          </section>
 
-          <a
-            className="il-article-link"
-            href={d.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: d.color, borderColor: d.color }}
-          >
-            Read full article → {d.source}
+          <a className='il-article-link' href={disorder.sourceUrl} target='_blank' rel='noopener noreferrer'>
+            Read the source article <span aria-hidden='true'>↗</span>
+            <ExternalContext />
           </a>
         </div>
       )}
-    </div>
+    </article>
   )
 }
 
-// ─── library tab ──────────────────────────────────────────────────────────────
-
-function LibraryTab() {
+function LibraryTab({ openConditions, onToggleCondition }) {
   return (
-    <div className="il-library">
-      <div className="il-who-note">
-        <strong>8 common mental health conditions</strong>. Information sourced from Mayo Clinic and the World Health Organization (WHO).
-        Click any condition to expand its entry.
-      </div>
-      <div className="il-disorders-list">
-        {DISORDERS.map(d => <DisorderCard key={d.id} d={d} />)}
+    <div className='il-library'>
+      <aside className='il-source-note' aria-labelledby='il-source-note-title'>
+        <div className='il-source-note-copy'>
+          <strong id='il-source-note-title'>Eight mental health conditions and condition groups</strong>
+          <p>
+            Concise educational summaries based on linked Mayo Clinic condition pages and the{' '}
+            <a href={WHO_OVERVIEW_URL} target='_blank' rel='noopener noreferrer'>
+              WHO mental disorders overview
+              <ExternalContext />
+            </a>.
+          </p>
+          <p className='il-source-note-meta'>{SOURCE_CHECKED_LABEL}</p>
+        </div>
+        <div className='il-care-note'>
+          <strong>Information, not diagnosis.</strong>
+          <p>
+            These summaries and the quiz cannot diagnose a condition or replace care from a qualified professional.
+            If you may act on thoughts of suicide or self-harm, call or text 988 in the U.S. or contact local emergency services.
+          </p>
+          <a href={CRISIS_SUPPORT_URL} target='_blank' rel='noopener noreferrer'>
+            Visit the 988 Lifeline
+            <ExternalContext />
+          </a>
+        </div>
+      </aside>
+
+      <div className='il-disorders-list'>
+        {DISORDERS.map((disorder) => (
+          <DisorderCard
+            key={disorder.id}
+            disorder={disorder}
+            open={openConditions.has(disorder.id)}
+            onToggle={() => onToggleCondition(disorder.id)}
+          />
+        ))}
       </div>
     </div>
   )
 }
 
-// ─── quiz tab ─────────────────────────────────────────────────────────────────
-
-function QuizTab({ session, setSession, active }) {
+function QuizTab({ session, setSession, active, onReviewLibrary, onReviewTopic }) {
   const { questions, idx, selected, score, done, answers } = session
   const feedbackRef = useRef(null)
   const questionRef = useRef(null)
+  const resultsHeadingRef = useRef(null)
+  const pendingFeedbackFocusRef = useRef(false)
+  const pendingResultsFocusRef = useRef(false)
   const previousIdxRef = useRef(idx)
-
-  const q = questions[idx]
+  const question = questions[idx]
   const total = questions.length
 
   useEffect(() => {
-    if (!active || !selected || !feedbackRef.current) return
-
+    if (!active || !selected || !pendingFeedbackFocusRef.current || !feedbackRef.current) return
+    pendingFeedbackFocusRef.current = false
     feedbackRef.current.focus({ preventScroll: true })
     feedbackRef.current.scrollIntoView({
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
@@ -505,32 +258,42 @@ function QuizTab({ session, setSession, active }) {
     questionRef.current?.scrollIntoView({ block: 'nearest' })
   }, [active, idx])
 
-  function choose(optId) {
-    setSession(prev => {
-      if (prev.selected) return prev
+  useEffect(() => {
+    if (!active || !done || !pendingResultsFocusRef.current) return
+    pendingResultsFocusRef.current = false
+    resultsHeadingRef.current?.focus({ preventScroll: true })
+    resultsHeadingRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [active, done])
 
-      const currentQuestion = prev.questions[prev.idx]
-      const correct = optId === currentQuestion.correct
+  function choose(option) {
+    if (selected) return
+    pendingFeedbackFocusRef.current = true
+    setSession((previous) => {
+      const currentQuestion = previous.questions[previous.idx]
+      const correct = option === currentQuestion.correct
       return {
-        ...prev,
-        selected: optId,
-        score: correct ? prev.score + 1 : prev.score,
-        answers: [...prev.answers, {
+        ...previous,
+        selected: option,
+        score: correct ? previous.score + 1 : previous.score,
+        answers: [...previous.answers, {
+          disorderId: currentQuestion.disorderId,
           clue: currentQuestion.clue,
           correct: currentQuestion.correct,
-          selected: optId,
-          correctText: currentQuestion.correct,
-          selectedText: optId,
-          note: currentQuestion.note,
+          selected: option,
+          explanation: currentQuestion.explanation,
         }],
       }
     })
   }
 
   function next() {
-    setSession(prev => prev.idx + 1 >= prev.questions.length
-      ? { ...prev, done: true }
-      : { ...prev, idx: prev.idx + 1, selected: null })
+    if (idx + 1 >= total) pendingResultsFocusRef.current = true
+    setSession((previous) => {
+      if (previous.idx + 1 >= previous.questions.length) {
+        return { ...previous, done: true }
+      }
+      return { ...previous, idx: previous.idx + 1, selected: null }
+    })
   }
 
   function restart() {
@@ -538,104 +301,119 @@ function QuizTab({ session, setSession, active }) {
   }
 
   if (done) {
-    const pct = Math.round((score / total) * 100)
-    const missed = answers.filter(a => a.selected !== a.correct)
+    const percentage = Math.round((score / total) * 100)
+    const missed = answers.filter((answer) => answer.selected !== answer.correct)
+    const result = percentage >= 90
+      ? {
+          title: 'Strong understanding',
+          message: 'You identified the central ideas across these conditions and condition groups.',
+        }
+      : percentage >= 70
+        ? {
+            title: 'A solid foundation',
+            message: 'Review the explanations below, then revisit any topics that still feel unclear.',
+          }
+        : {
+            title: 'Review and revisit',
+            message: 'Use the explanations below as a guide, then return to the Library when you are ready.',
+          }
+
     return (
-      <div className="il-results" aria-labelledby="il-results-heading">
-        <div className="il-results-summary">
-          <div className="il-results-score-ring" style={{ '--pct': pct }} role="img" aria-label={score + ' out of ' + total + ' correct'}>
-            <div className="il-results-inner">
-              <span className="il-results-num">{score}<span className="il-results-total">/{total}</span></span>
-              <span className="il-results-sub">correct</span>
-            </div>
+      <div className='il-results' aria-labelledby='il-results-heading'>
+        <div className='il-results-summary'>
+          <div className='il-results-score' role='img' aria-label={`${score} out of ${total} correct`}>
+            <span className='il-results-num'>{score}<span className='il-results-total'>/{total}</span></span>
+            <span className='il-results-sub'>correct</span>
           </div>
-          <div className="il-results-copy">
-            <p className="il-results-kicker">Quiz complete</p>
-            <h3 className="il-results-heading" id="il-results-heading">
-              {pct >= 90 ? 'Excellent work!' : pct >= 70 ? 'Good effort!' : 'Keep practicing!'}
-            </h3>
-            <p className="il-results-msg">
-              {pct >= 90
-                ? 'You have a strong grasp of these mental health conditions.'
-                : pct >= 70
-                ? 'Review the conditions you missed in the Library tab.'
-                : 'Read through the Library entries, then try again.'}
-            </p>
+          <div className='il-results-copy'>
+            <p className='il-results-kicker'>Quiz complete</p>
+            <h3 className='il-results-heading' id='il-results-heading' ref={resultsHeadingRef} tabIndex='-1'>{result.title}</h3>
+            <p className='il-results-msg'>{result.message}</p>
           </div>
         </div>
 
         {missed.length > 0 && (
-          <section className="il-missed-section" aria-labelledby="il-missed-heading">
-            <h4 className="il-missed-label" id="il-missed-heading">Review missed questions</h4>
-            <div className="il-missed-list">
-              {missed.map((a, i) => (
-                <article key={a.clue + i} className="il-missed-card">
-                  <h5 className="il-missed-clue">{a.clue}</h5>
-                  <dl className="il-missed-answer-row">
-                    <div className="il-missed-answer">
+          <section className='il-missed-section' aria-labelledby='il-missed-heading'>
+            <h4 className='il-missed-label' id='il-missed-heading'>Review missed questions</h4>
+            <div className='il-missed-list'>
+              {missed.map((answer, index) => (
+                <article key={`${answer.clue}-${index}`} className='il-missed-card'>
+                  <h5 className='il-missed-clue'>{answer.clue}</h5>
+                  <dl className='il-missed-answer-row'>
+                    <div className='il-missed-answer'>
                       <dt>Your answer</dt>
-                      <dd className="il-missed-wrong">{a.selectedText}</dd>
+                      <dd className='il-missed-wrong'>{answer.selected}</dd>
                     </div>
-                    <div className="il-missed-answer">
+                    <div className='il-missed-answer'>
                       <dt>Correct answer</dt>
-                      <dd className="il-missed-right">{a.correctText}</dd>
+                      <dd className='il-missed-right'>{answer.correct}</dd>
                     </div>
                   </dl>
-                  <p className="il-missed-note">{a.note}</p>
+                  <p className='il-missed-note'>{answer.explanation}</p>
+                  <button className='il-review-link' type='button' onClick={() => onReviewTopic(answer.disorderId)}>
+                    Review {DISORDER_LABELS[answer.disorderId]}
+                  </button>
                 </article>
               ))}
             </div>
           </section>
         )}
 
-        <div className="il-results-actions">
-          <button className="il-primary-btn" onClick={restart}>Play again</button>
+        <div className='il-results-actions'>
+          <button className='il-secondary-btn' type='button' onClick={onReviewLibrary}>Review library</button>
+          <button className='il-primary-btn' type='button' onClick={restart}>Try another quiz</button>
         </div>
       </div>
     )
   }
 
+  const answeredCorrectly = selected === question.correct
+
   return (
-    <div className="il-quiz">
-      <div className="il-quiz-header">
+    <div className='il-quiz'>
+      <p className='il-quiz-guidance' id='il-quiz-guidance'>
+        Eight questions check your understanding of the Library. This quiz cannot assess or diagnose a mental health condition.
+      </p>
+
+      <div className='il-quiz-header'>
         <div
-          className="il-progress-bar"
-          role="progressbar"
-          aria-label="Quiz progress"
-          aria-valuemin="1"
+          className='il-progress-bar'
+          role='progressbar'
+          aria-label='Quiz progress'
+          aria-valuemin='1'
           aria-valuemax={total}
           aria-valuenow={idx + 1}
           aria-valuetext={`Question ${idx + 1} of ${total}`}
         >
-          <div className="il-progress-fill" style={{ width: ((idx + 1) / total) * 100 + '%' }} />
+          <div className='il-progress-fill' style={{ width: `${((idx + 1) / total) * 100}%` }} />
         </div>
-        <span className="il-progress-label" aria-hidden="true">{idx + 1} / {total}</span>
+        <span className='il-progress-label' aria-hidden='true'>{idx + 1} / {total}</span>
       </div>
 
-      <div className="il-clue-card">
-        <p className="il-clue-eyebrow">Choose the best answer.</p>
-        <h3 className="il-clue-text" id="il-quiz-question" ref={questionRef} tabIndex="-1">{q.clue}</h3>
+      <div className='il-clue-card'>
+        <p className='il-clue-eyebrow'>Choose the most accurate answer</p>
+        <h3 className='il-clue-text' id='il-quiz-question' ref={questionRef} tabIndex='-1'>{question.clue}</h3>
       </div>
 
-      <div className="il-options" role="group" aria-labelledby="il-quiz-question">
-        {q.options.map(optionText => {
-          const isSelected  = selected === optionText
-          const isCorrect   = optionText === q.correct
-          const showCorrect = selected && isCorrect
-          const showWrong   = selected && isSelected && !isCorrect
+      <div className='il-options' role='group' aria-labelledby='il-quiz-question' aria-describedby='il-quiz-guidance'>
+        {question.options.map((option) => {
+          const isSelected = selected === option
+          const isCorrect = option === question.correct
+          const showCorrect = Boolean(selected && isCorrect)
+          const showWrong = Boolean(selected && isSelected && !isCorrect)
+          const resultLabel = showCorrect ? 'Correct answer' : showWrong ? 'Your answer' : null
 
           return (
             <button
-              key={optionText}
+              key={option}
+              type='button'
               className={`il-option${showCorrect ? ' il-option--correct' : ''}${showWrong ? ' il-option--wrong' : ''}${selected && !isSelected && !isCorrect ? ' il-option--dim' : ''}`}
-              onClick={() => choose(optionText)}
-              disabled={!!selected}
+              onClick={() => choose(option)}
+              disabled={Boolean(selected)}
               aria-pressed={isSelected}
-              aria-describedby={selected ? 'il-quiz-feedback' : undefined}
             >
-              <span className="il-option-text">{optionText}</span>
-              {showCorrect && <span className="il-option-icon" aria-hidden="true">✓</span>}
-              {showWrong   && <span className="il-option-icon" aria-hidden="true">✗</span>}
+              <span className='il-option-text'>{option}</span>
+              {resultLabel && <span className='il-option-result'>{resultLabel}</span>}
             </button>
           )
         })}
@@ -643,42 +421,88 @@ function QuizTab({ session, setSession, active }) {
 
       {selected && (
         <div
-          className={`il-feedback${selected === q.correct ? ' il-feedback--correct' : ' il-feedback--wrong'}`}
+          className={`il-feedback${answeredCorrectly ? ' il-feedback--correct' : ' il-feedback--wrong'}`}
           ref={feedbackRef}
-          aria-labelledby="il-quiz-feedback-title"
-          aria-describedby="il-quiz-feedback-note"
-          tabIndex="-1"
+          role='status'
+          aria-live='polite'
+          aria-atomic='true'
+          tabIndex='-1'
         >
-          <div id="il-quiz-feedback" role="status" aria-live="polite" aria-atomic="true">
-            <strong id="il-quiz-feedback-title">{selected === q.correct ? 'Correct!' : `Not quite. The answer is ${q.correct}.`}</strong>
-            <p id="il-quiz-feedback-note">{q.note}</p>
+          <strong>{answeredCorrectly ? 'Correct' : `The most accurate answer is: ${question.correct}`}</strong>
+          <p>{question.explanation}</p>
+          <div className='il-feedback-actions'>
+            <button className='il-review-link' type='button' onClick={() => onReviewTopic(question.disorderId)}>
+              Review {DISORDER_LABELS[question.disorderId]}
+            </button>
+            <AsyncButton className='il-next-btn' onClick={next}>
+              {idx + 1 >= total ? 'See results' : 'Next question'}
+            </AsyncButton>
           </div>
-          <AsyncButton
-            className="il-next-btn"
-            onClick={next}
-          >
-            {idx + 1 >= total ? 'See results' : 'Next question →'}
-          </AsyncButton>
         </div>
       )}
     </div>
   )
 }
 
-// ─── root ─────────────────────────────────────────────────────────────────────
-
 export default function InfoLibrary() {
-  const [tab, setTab] = useState('library')
-  const [quizSession, setQuizSession] = useState(loadQuizSession)
+  const { user } = useUser()
+  const storageScope = useMemo(() => getStorageScope(user), [user?.id, user?.username])
+  const quizStorageKey = `${QUIZ_STORAGE_PREFIX}:${storageScope}`
+  const tabStorageKey = `${TAB_STORAGE_PREFIX}:${storageScope}`
+  const [tab, setTab] = useState(() => loadActiveTab(tabStorageKey))
+  const [quizSession, setQuizSession] = useState(() => loadQuizSession(quizStorageKey))
+  const [openConditions, setOpenConditions] = useState(() => new Set())
   const tabRefs = useRef({})
+  const focusFrameRef = useRef(null)
 
   useEffect(() => {
-    window.sessionStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizSession))
-  }, [quizSession])
+    try {
+      window.sessionStorage.setItem(quizStorageKey, JSON.stringify(quizSession))
+    } catch {
+      // The quiz still works when browser storage is unavailable.
+    }
+  }, [quizSession, quizStorageKey])
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(tabStorageKey, tab)
+    } catch {
+      // Tab selection remains available for the current render.
+    }
+  }, [tab, tabStorageKey])
+
+  useEffect(() => () => {
+    if (focusFrameRef.current) cancelAnimationFrame(focusFrameRef.current)
+  }, [])
 
   function selectTab(nextTab, moveFocus = false) {
     setTab(nextTab)
-    if (moveFocus) requestAnimationFrame(() => tabRefs.current[nextTab]?.focus())
+    if (!moveFocus) return
+    if (focusFrameRef.current) cancelAnimationFrame(focusFrameRef.current)
+    focusFrameRef.current = requestAnimationFrame(() => tabRefs.current[nextTab]?.focus())
+  }
+
+  function toggleCondition(disorderId) {
+    setOpenConditions((previous) => {
+      const next = new Set(previous)
+      if (next.has(disorderId)) next.delete(disorderId)
+      else next.add(disorderId)
+      return next
+    })
+  }
+
+  function reviewTopic(disorderId) {
+    setOpenConditions((previous) => new Set(previous).add(disorderId))
+    selectTab('library')
+    if (focusFrameRef.current) cancelAnimationFrame(focusFrameRef.current)
+    focusFrameRef.current = requestAnimationFrame(() => {
+      const trigger = document.getElementById(`il-condition-${disorderId}-trigger`)
+      trigger?.focus({ preventScroll: true })
+      trigger?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'start',
+      })
+    })
   }
 
   function handleTabKeyDown(event) {
@@ -697,27 +521,23 @@ export default function InfoLibrary() {
   }
 
   return (
-    <section className="page">
-      <style>{IL_STYLES}</style>
+    <section className='page il-page'>
+      <header className='il-page-header'>
+        <h2 className='il-page-title'>Mental Health Library</h2>
+        <p className='il-page-sub'>
+          Clear introductions to eight conditions and condition groups, with a quiz to reinforce what you learn.
+        </p>
+      </header>
 
-      <div className="il-page-header">
-        <div>
-          <h2 className="il-page-title">Mental Health Library</h2>
-          <p className="il-page-sub">
-            Evidence-based information on 8 common conditions, with a quiz to reinforce what you learn.
-          </p>
-        </div>
-      </div>
-
-      <div className="il-tabs" role="tablist" aria-label="Information library sections" onKeyDown={handleTabKeyDown}>
+      <div className='il-tabs' role='tablist' aria-label='Information library sections' onKeyDown={handleTabKeyDown}>
         <button
           className={`il-tab${tab === 'library' ? ' il-tab--active' : ''}`}
-          id="il-tab-library"
-          ref={node => { tabRefs.current.library = node }}
-          type="button"
-          role="tab"
+          id='il-tab-library'
+          ref={(node) => { tabRefs.current.library = node }}
+          type='button'
+          role='tab'
           aria-selected={tab === 'library'}
-          aria-controls="il-panel-library"
+          aria-controls='il-panel-library'
           tabIndex={tab === 'library' ? 0 : -1}
           onClick={() => selectTab('library')}
         >
@@ -725,12 +545,12 @@ export default function InfoLibrary() {
         </button>
         <button
           className={`il-tab${tab === 'quiz' ? ' il-tab--active' : ''}`}
-          id="il-tab-quiz"
-          ref={node => { tabRefs.current.quiz = node }}
-          type="button"
-          role="tab"
+          id='il-tab-quiz'
+          ref={(node) => { tabRefs.current.quiz = node }}
+          type='button'
+          role='tab'
           aria-selected={tab === 'quiz'}
-          aria-controls="il-panel-quiz"
+          aria-controls='il-panel-quiz'
           tabIndex={tab === 'quiz' ? 0 : -1}
           onClick={() => selectTab('quiz')}
         >
@@ -738,215 +558,18 @@ export default function InfoLibrary() {
         </button>
       </div>
 
-      <div id="il-panel-library" role="tabpanel" aria-labelledby="il-tab-library" hidden={tab !== 'library'}>
-        <LibraryTab />
+      <div id='il-panel-library' role='tabpanel' aria-labelledby='il-tab-library' hidden={tab !== 'library'}>
+        <LibraryTab openConditions={openConditions} onToggleCondition={toggleCondition} />
       </div>
-      <div id="il-panel-quiz" role="tabpanel" aria-labelledby="il-tab-quiz" hidden={tab !== 'quiz'}>
-        <QuizTab session={quizSession} setSession={setQuizSession} active={tab === 'quiz'} />
+      <div id='il-panel-quiz' role='tabpanel' aria-labelledby='il-tab-quiz' hidden={tab !== 'quiz'}>
+        <QuizTab
+          session={quizSession}
+          setSession={setQuizSession}
+          active={tab === 'quiz'}
+          onReviewLibrary={() => selectTab('library', true)}
+          onReviewTopic={reviewTopic}
+        />
       </div>
     </section>
   )
 }
-
-// ─── styles ───────────────────────────────────────────────────────────────────
-
-const IL_STYLES = `
-  /* page header */
-  .il-page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-  .il-page-title  {
-    margin: 0 0 4px;
-    font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    font-size: var(--type-page-title);
-    font-weight: var(--weight-page-title);
-    line-height: 1.15;
-    letter-spacing: -0.03em;
-  }
-  .il-page-sub    { margin: 0; color: var(--muted); font-size: var(--type-body); font-weight: 400; line-height: 1.55; }
-
-  /* tabs */
-  .il-tabs {
-    display: flex; gap: 4px;
-    background: rgba(255,255,255,0.6); border: 1px solid var(--line);
-    border-radius: 14px; padding: 4px; width: fit-content;
-  }
-  .il-tab {
-    padding: 9px 24px; border-radius: 10px; border: none;
-    background: transparent; font-size: 0.9rem; font-weight: 600;
-    color: var(--muted); transition: background 140ms, color 140ms;
-  }
-  .il-tab--active { background: var(--panel-strong); color: var(--blue-dark); box-shadow: 0 2px 8px rgba(46,42,38,0.08); border-bottom: 2px solid var(--blue); }
-
-  /* who note */
-  .il-who-note {
-    padding: 12px 16px; border-radius: 14px; font-size: 0.84rem;
-    background: var(--accent-soft); color: var(--accent);
-    border: 1px solid rgba(77,107,88,0.18); line-height: 1.55;
-  }
-
-  /* library */
-  .il-library { display: flex; flex-direction: column; gap: 14px; }
-  .il-disorders-list { display: flex; flex-direction: column; gap: 10px; }
-
-  /* disorder card */
-  .il-card {
-    background: var(--panel-strong); border: 1px solid var(--line);
-    border-radius: 18px; overflow: hidden;
-    box-shadow: 0 4px 12px rgba(46,42,38,0.06);
-    transition: box-shadow 140ms;
-  }
-  .il-card--open { box-shadow: 0 8px 24px rgba(46,42,38,0.10); }
-  .il-card-header {
-    display: flex; align-items: center; gap: 12px; width: 100%;
-    padding: 16px 18px; background: none; border: none; cursor: pointer; text-align: left;
-    transition: background 140ms;
-  }
-  .il-card-header:hover { background: rgba(0,0,0,0.02); }
-  .il-card-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .il-card-title { flex: 1; font-size: var(--type-card-title); font-weight: var(--weight-card-title); }
-  .il-chevron { font-size: 1rem; color: var(--muted); transition: transform 200ms ease; flex-shrink: 0; }
-
-  .il-card-body {
-    padding: 0 20px 20px;
-    border-top: 1px solid var(--line);
-    animation: fade-up 180ms ease;
-  }
-  .il-source-row { display: flex; justify-content: flex-end; padding: 10px 0 14px; }
-  .il-source-label { font-size: var(--type-metadata); color: var(--muted); font-style: italic; }
-
-  .il-section { margin-bottom: 16px; }
-  .il-section-label { margin: 0 0 8px; font-size: var(--type-section-title); font-weight: var(--weight-section-title); letter-spacing: 0.02em; }
-  .il-section-text  { margin: 0; font-size: 0.875rem; font-weight: 400; color: var(--muted); line-height: 1.65; }
-
-  .il-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-
-  .il-list { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 5px; }
-  .il-list li { font-size: 0.875rem; font-weight: 400; color: var(--muted); line-height: 1.5; }
-
-  .il-article-link {
-    display: inline-block; margin-top: 6px;
-    padding: 8px 16px; border-radius: 999px;
-    border: 1.5px solid; background: transparent;
-    font-size: 0.82rem; font-weight: 700; text-decoration: none;
-    transition: opacity 140ms;
-  }
-  .il-article-link:hover { opacity: 0.75; }
-
-  /* quiz */
-  .il-quiz { display: flex; flex-direction: column; gap: 18px; width: 100%; max-width: none; }
-  .il-quiz-header { display: flex; align-items: center; gap: 14px; padding-top: 2px; }
-  .il-progress-bar { flex: 1; height: 4px; background: var(--line); border-radius: var(--radius-pill); overflow: hidden; }
-  .il-progress-fill { height: 100%; background: var(--accent); border-radius: inherit; transition: width 220ms ease; }
-  .il-progress-label { min-width: 36px; font-size: var(--type-metadata); font-weight: var(--weight-medium); color: var(--muted); text-align: right; flex-shrink: 0; }
-
-  .il-clue-card {
-    background: transparent;
-    border: 0;
-    border-top: 1px solid var(--line-strong);
-    border-radius: 0;
-    padding: 22px 2px 4px;
-    box-shadow: none;
-  }
-  .il-clue-eyebrow { margin: 0 0 8px; font-size: var(--type-caption); font-weight: var(--weight-medium); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-  .il-clue-text { margin: 0; max-width: 34ch; font-size: 1.3rem; font-weight: var(--weight-card-title); line-height: 1.4; letter-spacing: -0.015em; color: var(--ink); outline: none; }
-
-  .il-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .il-option {
-    min-height: 68px; padding: 14px 16px; border-radius: var(--radius-control);
-    border: 1px solid var(--line-strong); background: transparent;
-    text-align: left; font-size: 0.9rem; font-weight: var(--weight-medium); line-height: 1.45;
-    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
-    transition: border-color 140ms ease, background 140ms ease, color 140ms ease, opacity 140ms ease;
-  }
-  .il-option:not(:disabled):hover { border-color: var(--accent); background: var(--accent-wash); }
-  .il-option:disabled { cursor: default; }
-  .il-option--correct { border-color: #9bb9a4; background: rgba(225,241,229,0.68); color: var(--accent-ink); box-shadow: inset 3px 0 0 var(--success); }
-  .il-option--wrong   { border-color: #d4aaa5; background: rgba(248,228,225,0.62); color: #74342f; box-shadow: inset 3px 0 0 var(--danger); }
-  .il-option--dim     { opacity: 0.62; }
-  .il-option-text  { flex: 1; }
-  .il-option-icon  { margin-top: 1px; font-size: 0.9rem; font-weight: 700; }
-
-  .il-feedback {
-    padding: 16px 18px; border-radius: var(--radius-small);
-    outline: none;
-  }
-  .il-feedback--correct { background: rgba(225,241,229,0.62); border: 1px solid #b6cfbd; border-left: 3px solid var(--success); }
-  .il-feedback--wrong   { background: rgba(248,228,225,0.58); border: 1px solid #dfc1bd; border-left: 3px solid var(--danger); }
-  .il-feedback strong { display: block; margin-bottom: 5px; font-size: 0.92rem; color: var(--ink); }
-  .il-feedback p { margin: 0 0 14px; max-width: 60ch; font-size: 0.86rem; color: var(--ink-soft); line-height: 1.55; }
-  .il-next-btn {
-    padding: 9px 18px; border-radius: var(--radius-control); border: 1px solid var(--accent-dark);
-    background: var(--accent); color: #fff; font-size: 0.88rem; font-weight: 700;
-    transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
-  }
-
-  /* results */
-  .il-results { display: flex; flex-direction: column; align-items: stretch; gap: 0; text-align: left; }
-  .il-results-summary {
-    display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 24px;
-    padding: 24px 2px 26px; border-bottom: 1px solid var(--line-strong);
-  }
-  .il-results-score-ring {
-    width: 116px; height: 116px; border-radius: 50%;
-    background: conic-gradient(var(--accent) calc(var(--pct) * 1%), var(--panel-soft) 0%);
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: none;
-  }
-  .il-results-inner {
-    width: 88px; height: 88px; border-radius: 50%;
-    background: var(--panel-raised); display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 2px;
-  }
-  .il-results-num   {
-    font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--accent-dark);
-    letter-spacing: -0.04em;
-    line-height: 1;
-  }
-  .il-results-total { font-size: 1rem; font-weight: var(--weight-medium); color: var(--muted); }
-  .il-results-sub   { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
-  .il-results-copy { min-width: 0; }
-  .il-results-kicker { margin: 0 0 5px; color: var(--accent); font-size: var(--type-metadata); font-weight: 650; }
-  .il-results-heading {
-    margin: 0;
-    font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 1.65rem;
-    line-height: 1.2;
-    letter-spacing: -0.02em;
-  }
-  .il-results-msg { margin: 8px 0 0; max-width: 50ch; color: var(--muted); font-size: 0.9rem; line-height: 1.55; }
-  .il-results-actions { padding-top: 24px; }
-  .il-primary-btn {
-    padding: 11px 22px; border-radius: var(--radius-control); border: 1px solid var(--accent-dark);
-    background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 700;
-    transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
-  }
-
-  .il-missed-section { width: 100%; padding-top: 28px; text-align: left; }
-  .il-missed-label { margin: 0 0 12px; font-size: 1rem; font-weight: var(--weight-card-title); line-height: 1.4; color: var(--ink); }
-  .il-missed-list { border-top: 1px solid var(--line-strong); }
-  .il-missed-card { margin: 0; padding: 20px 2px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; }
-  .il-missed-clue  { margin: 0 0 14px; max-width: 60ch; font-size: 0.92rem; font-weight: var(--weight-medium); color: var(--ink); line-height: 1.5; }
-  .il-missed-answer-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin: 0 0 10px; }
-  .il-missed-answer { min-width: 0; }
-  .il-missed-answer dt { margin: 0 0 4px; color: var(--muted); font-size: var(--type-caption); font-weight: var(--weight-medium); letter-spacing: 0.04em; text-transform: uppercase; }
-  .il-missed-answer dd { margin: 0; font-size: 0.86rem; font-weight: 650; line-height: 1.45; }
-  .il-missed-wrong { color: #74342f; text-decoration: line-through; text-decoration-thickness: 1px; }
-  .il-missed-right { color: var(--accent-ink); }
-  .il-missed-note  { margin: 0; max-width: 65ch; font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
-
-  @media (max-width: 640px) {
-    .il-page-header { flex-direction: column; }
-    .il-cols   { grid-template-columns: 1fr; }
-    .il-options { grid-template-columns: 1fr; }
-    .il-results-summary { grid-template-columns: 88px minmax(0, 1fr); gap: 16px; padding-block: 20px 22px; }
-    .il-results-score-ring { width: 88px; height: 88px; }
-    .il-results-inner { width: 66px; height: 66px; }
-    .il-results-num { font-size: 1.55rem; }
-    .il-results-total { font-size: 0.82rem; }
-    .il-results-sub { font-size: 0.6rem; }
-    .il-results-heading { font-size: 1.35rem; }
-    .il-missed-answer-row { grid-template-columns: 1fr; gap: 10px; }
-  }
-`

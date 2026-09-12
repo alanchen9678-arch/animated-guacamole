@@ -39,7 +39,7 @@ test('library uses the assigned topic palette without streak behavior', async ({
     ['Post-Traumatic Stress Disorder (PTSD)', 'rgb(185, 101, 53)'],
     ['Schizophrenia', 'rgb(165, 79, 79)'],
     ['Eating Disorders', 'rgb(168, 95, 120)'],
-    ['Disruptive Behavior Disorders (ODD)', 'rgb(77, 107, 88)'],
+    ['Oppositional Defiant Disorder (ODD)', 'rgb(77, 107, 88)'],
     ['Neurodevelopmental Disorders', 'rgb(63, 119, 115)'],
   ]
 

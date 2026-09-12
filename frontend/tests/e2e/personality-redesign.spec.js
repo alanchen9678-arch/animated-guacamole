@@ -77,7 +77,7 @@ test('initial assessment stores continuous signals without revealing a personali
     await page.getByRole('button', { name: 'Somewhat like me', exact: true }).click()
   }
 
-  await expect(page.getByRole('heading', { name: 'Thanks — your check-in is complete.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Thanks. Your check-in is complete.' })).toBeVisible()
   await expect(page.getByText(/general personalization signals, not as a diagnosis/)).toBeVisible()
   await expect(page.locator('.ci-personality-card')).toHaveCount(0)
   await expect(page.getByText(/The Architect|The Creator|The Helper/)).toHaveCount(0)
@@ -171,7 +171,7 @@ test('legacy users are locked into the new assessment without replacing wellness
     await page.getByRole('button', { name: 'It depends / somewhere in between', exact: true }).click()
   }
 
-  await expect(page.getByRole('heading', { name: 'Thanks — your check-in is complete.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Thanks. Your check-in is complete.' })).toBeVisible()
   expect(submittedPayload.type).toBe('personality')
   expect(submittedPayload.qIds).toEqual([])
   expect(submittedPayload.scores).toEqual({})

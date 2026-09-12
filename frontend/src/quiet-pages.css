@@ -235,7 +235,7 @@
 .app-root .chat-input-bar { background: var(--panel-raised); box-shadow: none; }
 
 /* Check-ins: health information is structured, not decorated. */
-.app-root .ci-page { width: min(100%, 900px); }
+.app-root .ci-page { width: min(100%, 980px); }
 .app-root .ci-hub { display: grid; gap: 28px; }
 .app-root .ci-top-row { grid-template-columns: minmax(132px, 0.28fr) minmax(0, 1fr); gap: 18px; }
 .app-root .ci-streak-card {
@@ -352,7 +352,7 @@
 
 /* Journal: a quiet writing desk with one focal surface and one true overlay layer. */
 .app-root .jn-page {
-  width: min(100%, 940px);
+  width: min(100%, 980px);
   min-height: auto;
   gap: var(--space-5);
 }
@@ -1454,6 +1454,11 @@
 }
 .app-root .ps-peer-card:hover,
 .app-root .ps-peer-card--active { transform: none; background: var(--accent-wash); box-shadow: inset 3px 0 0 var(--accent); }
+.app-root .ps-peer-card--active {
+  width: calc(100% + 24px);
+  margin-inline: -12px;
+  padding-inline: 14px;
+}
 .app-root .ps-chat-root {
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-workspace);
@@ -1598,53 +1603,6 @@
   opacity: 1;
 }
 
-/* Information Library: editorial accordion plus a calm learning flow. */
-.app-root .il-page { width: min(100%, 960px); }
-.app-root .il-tabs {
-  gap: 22px;
-  padding: 0;
-  border: 0;
-  border-bottom: 1px solid var(--line-strong);
-  border-radius: 0;
-  background: transparent;
-}
-.app-root .il-tab {
-  padding: 10px 0;
-  border-radius: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-}
-.app-root .il-tab--active { border-bottom-color: var(--accent); background: transparent; box-shadow: none; }
-.app-root .il-card {
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-.app-root .il-card:first-child { border-top: 1px solid var(--line); }
-.app-root .il-card-header { padding: 18px 2px; }
-.app-root .il-card-header:hover { background: transparent; color: var(--accent-ink); }
-.app-root .il-card-body { padding: 0 2px 22px 28px; }
-.app-root .il-quiz { width: 100%; max-width: none; margin-inline: 0; }
-.app-root .il-clue-card,
-.app-root .il-results {
-  border: 0;
-  border-top: 1px solid var(--line-strong);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-.app-root .il-option {
-  border-radius: var(--radius-control);
-  background: transparent;
-  box-shadow: none;
-}
-.app-root .il-option:not(:disabled):hover { transform: none; border-color: var(--accent); box-shadow: none; }
-.app-root .il-feedback { border-radius: var(--radius-small); box-shadow: none; }
-.app-root .il-results-score-ring { box-shadow: none; }
-.app-root .il-missed-card { border-radius: 0; border-inline: 0; box-shadow: none; }
-
 /* Settings: form sections and account facts share one vertical rhythm. */
 .app-root .grid { gap: 0 36px; }
 .app-root .card {
@@ -1717,6 +1675,10 @@
   .app-root .ci-intro-stats { grid-template-columns: 1fr; }
   .app-root .ci-stat { border-right: 0; border-bottom: 1px solid var(--line); }
   .app-root .ci-stat:last-child { border-bottom: 0; }
+  .app-root .ps-peer-card--active {
+    width: 100%;
+    margin-inline: 0;
+  }
   .app-root .jn-page { gap: var(--space-4); }
   .app-root .jn-page-header {
     align-items: flex-start;
@@ -1771,7 +1733,6 @@
   .app-root .jn-entry-detail-body { padding: var(--space-5); }
   .app-root .cp-popover { width: min(220px, calc(100vw - 64px)); }
   .app-root .tm-result-card { grid-template-columns: 1fr; }
-  .app-root .il-card-body { padding-left: 2px; }
   .app-root .mood-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .app-root .mood-chip { border-bottom: 1px solid var(--line); }
 }
