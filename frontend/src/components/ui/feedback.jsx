@@ -1,4 +1,40 @@
+import { motion, useReducedMotion } from 'motion/react'
 import './feedback.css'
+
+const loadingDotVariants = {
+  resting: { y: 0 },
+  jump: {
+    y: -9,
+    transition: {
+      duration: 0.65,
+      repeat: Infinity,
+      repeatType: 'mirror',
+      ease: 'easeInOut',
+    },
+  },
+}
+
+function LoadingDots() {
+  const shouldReduceMotion = useReducedMotion()
+
+  return (
+    <motion.div
+      className="feedback-loading__dots"
+      initial="resting"
+      animate={shouldReduceMotion ? 'resting' : 'jump'}
+      transition={{ staggerChildren: 0.12, staggerDirection: -1 }}
+      aria-hidden="true"
+    >
+      {[0, 1, 2].map((dot) => (
+        <motion.span
+          className="feedback-loading__dot"
+          variants={loadingDotVariants}
+          key={dot}
+        />
+      ))}
+    </motion.div>
+  )
+}
 
 const SYMBOLS = {
   info: 'i',
@@ -66,9 +102,9 @@ export function LoadingState({
       aria-busy="true"
     >
       <div className="feedback-loading__label">
-        <span className="feedback-spinner" aria-hidden="true" />
         <span>{label}</span>
       </div>
+      <LoadingDots />
       {skeletonLines > 0 && (
         <div className="feedback-skeleton" aria-hidden="true">
           {Array.from({ length: skeletonLines }, (_, index) => (

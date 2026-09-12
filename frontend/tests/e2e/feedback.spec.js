@@ -1,5 +1,59 @@
 import { expect, test } from '@playwright/test'
 
+test('shared loading content uses centered Aurora dots and respects reduced motion', async ({ page }) => {
+  let releaseUserRequest
+  const userGate = new Promise((resolve) => { releaseUserRequest = resolve })
+
+  await page.addInitScript(() => {
+    window.localStorage.setItem('aurora_token', 'loading-state-test-token')
+  })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.route('**/api/auth/me/', async (route) => {
+    await userGate
+    await route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Session expired.' }),
+    })
+  })
+
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/')
+
+  const loadingState = page.getByRole('status')
+  await expect(loadingState).toContainText('Loading Aurora')
+  await expect(loadingState.locator('.feedback-loading__dot')).toHaveCount(3)
+  await expect(loadingState.locator('.feedback-spinner')).toHaveCount(0)
+
+  const checkAlignment = async () => {
+    const alignment = await loadingState.evaluate((node) => {
+      const label = node.querySelector('.feedback-loading__label').getBoundingClientRect()
+      const dots = node.querySelector('.feedback-loading__dots').getBoundingClientRect()
+      const dotTransforms = [...node.querySelectorAll('.feedback-loading__dot')]
+        .map((dot) => getComputedStyle(dot).transform)
+
+      return {
+        direction: getComputedStyle(node).flexDirection,
+        centerDelta: Math.abs((label.left + label.width / 2) - (dots.left + dots.width / 2)),
+        dotTransforms,
+      }
+    })
+
+    expect(alignment.direction).toBe('column')
+    expect(alignment.centerDelta).toBeLessThan(1)
+    expect(alignment.dotTransforms.every((transform) => (
+      transform === 'none' || transform === 'matrix(1, 0, 0, 1, 0, 0)'
+    ))).toBe(true)
+  }
+
+  await checkAlignment()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await checkAlignment()
+
+  releaseUserRequest()
+  await expect(loadingState).toBeHidden()
+})
+
 test('authentication uses a disabled pending button and shared error notice', async ({ page }) => {
   let releaseLogin
   const loginGate = new Promise((resolve) => { releaseLogin = resolve })

@@ -21,9 +21,11 @@ const user = {
 
 test('dashboard pages share the home typography hierarchy and secondary color', async ({ page }) => {
   await page.addInitScript(() => {
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
     window.localStorage.setItem('aurora_token', 'typography-token')
     window.localStorage.setItem('aurora.activePage', 'settings')
-    window.localStorage.setItem('aurora.journal.daily-prompt', new Date().toISOString().slice(0, 10))
+    window.localStorage.setItem('aurora.journal.daily-prompt', today)
   })
   await page.route('**/api/**', (route) => {
     const url = new URL(route.request().url())
@@ -73,22 +75,48 @@ test('dashboard pages share the home typography hierarchy and secondary color', 
   ))).toBe(2)
   await page.getByRole('button', { name: 'Start chatting' }).click()
   await expect(page.getByText("Hi, I'm Aurora. I'm here to listen with warmth and honesty. What's on your mind today?")).toBeVisible()
-  await expect(page.locator('.chat-header-avatar')).toHaveText('A')
-  await expect(page.locator('.chat-header-avatar')).toHaveCSS('background-image', 'none')
-  await expect(page.locator('.chat-header-avatar')).toHaveCSS('background-color', 'rgb(58, 82, 68)')
-  await expect(page.locator('.chat-header-name')).toHaveText('Aurora')
+  await expect(page.locator('.chat-header-avatar')).toHaveCount(0)
+  await expect(page.locator('.chat-header-name')).toHaveCount(0)
   await expect(page.locator('.msg-avatar').first()).toHaveCSS('background-color', 'rgb(58, 82, 68)')
-  await expect(page.locator('.bubble--ai').first()).toHaveCSS('border-style', 'none')
-  await expect(page.locator('.send-btn')).toHaveCSS('background-image', 'none')
-  await expect(page.locator('.send-btn')).toHaveCSS('background-color', 'rgb(58, 82, 68)')
+  await expect(page.locator('.chat-root')).toHaveCSS('border-style', 'none')
+  await expect(page.locator('.bubble--ai').first()).toHaveCSS('border-style', 'solid')
+  const chatGeometry = await page.locator('.chat-root').evaluate((chatRoot) => {
+    const scrollRegion = chatRoot.querySelector('.chat-messages')
+    const conversation = chatRoot.querySelector('.chat-conversation')
+    const rootRect = chatRoot.getBoundingClientRect()
+    const scrollRect = scrollRegion.getBoundingClientRect()
+    const conversationRect = conversation.getBoundingClientRect()
 
-  await page.getByPlaceholder('Type a message... (Enter to send)').fill('Testing my profile avatar')
-  await page.getByPlaceholder('Type a message... (Enter to send)').press('Enter')
-  const userAvatar = page.locator('.msg-avatar--user').last()
-  await expect(userAvatar).toHaveText('AV')
-  await expect(userAvatar).toHaveAttribute('aria-label', 'Avery avatar')
-  await expect(userAvatar).toHaveCSS('background-image', 'none')
-  await expect(userAvatar).toHaveCSS('background-color', 'rgb(58, 104, 152)')
+    return {
+      overflowY: getComputedStyle(scrollRegion).overflowY,
+      rightEdgeDelta: Math.abs(rootRect.right - scrollRect.right),
+      conversationIsInset: conversationRect.width < scrollRect.width,
+    }
+  })
+  expect(chatGeometry.overflowY).toBe('auto')
+  expect(chatGeometry.rightEdgeDelta).toBeLessThan(1)
+  expect(chatGeometry.conversationIsInset).toBe(true)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  const mobileRightEdgeDelta = await page.locator('.chat-root').evaluate((chatRoot) => {
+    const rootRect = chatRoot.getBoundingClientRect()
+    const scrollRect = chatRoot.querySelector('.chat-messages').getBoundingClientRect()
+    return Math.abs(rootRect.right - scrollRect.right)
+  })
+  expect(mobileRightEdgeDelta).toBeLessThan(1)
+  await page.setViewportSize({ width: 1280, height: 720 })
+
+  await expect(page.locator('.send-btn')).toHaveCSS('background-image', 'none')
+  await expect(page.locator('.send-btn')).toBeDisabled()
+  await expect(page.locator('.send-btn')).toHaveCSS('background-color', 'rgb(216, 222, 216)')
+
+  const composer = page.getByPlaceholder(/Message Aurora/)
+  await composer.fill('Testing the quieter conversation')
+  await expect(page.locator('.send-btn')).toBeEnabled()
+  await expect(page.locator('.send-btn')).toHaveCSS('background-color', 'rgb(58, 82, 68)')
+  await composer.press('Enter')
+  await expect(page.locator('.bubble--user').last()).toContainText('Testing the quieter conversation')
+  await expect(page.locator('.msg-avatar--user')).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Check-Ins', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Check-Ins' })).toHaveCSS('font-size', '32px')

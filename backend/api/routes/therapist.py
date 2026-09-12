@@ -172,7 +172,7 @@ class TherapistMatchCollectionView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        matches = request.user.therapist_matches.order_by('created_at', 'id')
+        matches = request.user.therapist_matches.filter(is_active=True).order_by('created_at', 'id')
         serialized = TherapistMatchReadSerializer(matches, many=True).data
         return Response(
             {
@@ -189,8 +189,11 @@ class TherapistMatchCollectionView(APIView):
             user=request.user,
             therapist_id=serializer.validated_data['therapistId'],
         )
+        if not match.is_active:
+            match.is_active = True
+            match.save(update_fields=['is_active', 'updated_at'])
 
-        matches = request.user.therapist_matches.order_by('created_at', 'id')
+        matches = request.user.therapist_matches.filter(is_active=True).order_by('created_at', 'id')
         serialized = TherapistMatchReadSerializer(matches, many=True).data
         return Response(
             {
@@ -247,6 +250,9 @@ class TherapistBookingDetailView(APIView):
             )
         booking.status = TherapistBooking.Status.CANCELLED
         booking.save(update_fields=['status', 'updated_at'])
+        if match.is_active:
+            match.is_active = False
+            match.save(update_fields=['is_active', 'updated_at'])
         return Response(serialize_booking(booking))
 
 

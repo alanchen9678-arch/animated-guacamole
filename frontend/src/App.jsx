@@ -7,6 +7,8 @@ import { NavigationProvider, useNavigation } from './context/NavigationContext.j
 import { pageConfig } from './routes/AppRoutes.jsx'
 import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
+import './app.css'
+import './quiet-pages.css'
 
 const features = [
   { id: 'chatbot',   title: 'AI Chatbot',       desc: "Talk through what's on your mind with Aurora's AI, available around the clock.",          tag: '24/7'        },
@@ -53,6 +55,8 @@ function AppShell() {
   const [showDailyPrompt, setShowDailyPrompt] = useState(false)
   const [showCheckinPrompt, setShowCheckinPrompt] = useState(false)
   const contentRef = useRef(null)
+  const notifAnchorRef = useRef(null)
+  const notifButtonRef = useRef(null)
 
   const isLoggedIn = !!user
   const hasCurrentPersonalityAssessment = user?.hasCurrentPersonalityAssessment === true
@@ -61,6 +65,31 @@ function AppShell() {
 
   // dynamic notifications
   const notifications = useMemo(() => (assessmentLocked ? [] : getDynamicNotifications()), [assessmentLocked])
+  useEffect(() => {
+    if (!notifOpen) return undefined
+
+    function closeNotificationsOnOutsideClick(event) {
+      if (!notifAnchorRef.current?.contains(event.target)) {
+        setNotifOpen(false)
+      }
+    }
+
+    function closeNotificationsOnEscape(event) {
+      if (event.key === 'Escape') {
+        setNotifOpen(false)
+        notifButtonRef.current?.focus()
+      }
+    }
+
+    document.addEventListener('pointerdown', closeNotificationsOnOutsideClick)
+    document.addEventListener('keydown', closeNotificationsOnEscape)
+
+    return () => {
+      document.removeEventListener('pointerdown', closeNotificationsOnOutsideClick)
+      document.removeEventListener('keydown', closeNotificationsOnEscape)
+    }
+  }, [notifOpen])
+
 
   // daily journal prompt
   useEffect(() => {
@@ -130,645 +159,25 @@ function AppShell() {
 
   return (
     <div className={`app-root${isLoggedIn ? ' app-root--dashboard' : ''}`}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
-        /* ── reset & tokens ────────────────────────────────── */
-        *, *::before, *::after { box-sizing: border-box; }
-        body { margin: 0; }
-        button, input, textarea, select { font: inherit; cursor: pointer; }
-        a { color: inherit; }
 
-        :root {
-          font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-          line-height: 1.5;
-          font-weight: 400;
-          color: #2e2a26;
-          background:
-            radial-gradient(circle at top, rgba(77,107,88,0.10), transparent 40%),
-            linear-gradient(180deg, #faf4e8 0%, #f0e8d8 100%);
-          -webkit-font-smoothing: antialiased;
-          --ink:          #2e2a26;
-          --muted:        #5b605c;
-          --type-page-title: 2rem;
-          --type-section-title: 0.875rem;
-          --type-card-title: 1rem;
-          --type-body: 0.9375rem;
-          --type-metadata: 0.8125rem;
-          --weight-page-title: 650;
-          --weight-section-title: 650;
-          --weight-card-title: 600;
-          --line:         rgba(46,42,38,0.16);
-          --panel:        rgba(250,244,232,0.85);
-          --panel-strong: #faf4e8;
-          --accent:       #4d6b58;
-          --accent-dark:  #3a5244;
-          --accent-soft:  #d2e4dc;
-          --app-surround: #d6e2d8;
-          --blue:         #3a6898;
-          --blue-dark:    #2a5080;
-          --blue-soft:    #d6e8f5;
-          --amber:        #9a6b2a;
-          --amber-soft:   #f0e2c8;
-          --shadow:       0 8px 20px rgba(46,42,38,0.08);
-        }
-
-        /* ── root shell ────────────────────────────────────── */
-        html, body, #root { min-height: 100%; }
-
-        .app-root {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .app-root--dashboard {
-          height: 100vh;
-          overflow: hidden;
-          background-color: var(--app-surround);
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)' opacity='.16'/%3E%3C/svg%3E");
-          background-size: 180px 180px;
-          background-blend-mode: soft-light;
-        }
-
-        /* ── top bar ───────────────────────────────────────── */
-        .topbar {
-          position: sticky;
-          top: 0;
-          z-index: 50;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0 28px;
-          height: 62px;
-          font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-          background: rgba(250,244,232,0.90);
-          backdrop-filter: blur(14px);
-          border-bottom: 1px solid var(--line);
-        }
-
-        .topbar-actions {
-          position: absolute;
-          left: 28px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .btn-outline {
-          padding: 8px 18px;
-          border-radius: 999px;
-          border: 1.5px solid var(--line);
-          background: transparent;
-          color: var(--ink);
-          font-size: 0.88rem;
-          font-weight: 600;
-          transition: border-color 140ms, background 140ms, color 140ms;
-        }
-        .btn-outline:hover {
-          border-color: var(--blue);
-          background: var(--blue-soft);
-          color: var(--blue-dark);
-        }
-
-        .btn-primary {
-          padding: 8px 18px;
-          border-radius: 999px;
-          border: none;
-          background: var(--accent);
-          color: #fff;
-          font-size: 0.88rem;
-          font-weight: 600;
-          transition: background 140ms;
-        }
-        .btn-primary:hover { background: var(--accent-dark); }
-
-        .btn-blue {
-          padding: 8px 18px;
-          border-radius: 999px;
-          border: none;
-          background: var(--blue);
-          color: #fff;
-          font-size: 0.88rem;
-          font-weight: 600;
-          transition: background 140ms;
-        }
-        .btn-blue:hover { background: var(--blue-dark); }
-
-        /* ── aurora logo ────────────────────────────────────── */
-        .aurora-logo {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          user-select: none;
-        }
-
-        .logo-text {
-          font-size: 1.15rem;
-          font-weight: 800;
-          letter-spacing: -0.03em;
-          color: var(--ink);
-        }
-        .logo-reveal {
-          background: transparent;
-          border: none;
-        }
-
-        /* ── landing (not logged in) ────────────────────────── */
-        .landing {
-          flex: 1;
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 64px 24px 80px;
-          width: 100%;
-          font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .landing-hero {
-          text-align: center;
-          margin-bottom: 56px;
-        }
-
-        .eyebrow {
-          margin: 0 0 14px;
-          color: var(--accent);
-          font-size: 0.8rem;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          font-weight: 700;
-        }
-
-        .landing-hero h1 {
-          margin: 0;
-          font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-          font-size: clamp(2.2rem, 4vw, 4rem);
-          line-height: 1.05;
-          letter-spacing: -0.04em;
-        }
-
-        .landing-whisper {
-          width: min(100%, 22ch);
-          justify-content: center;
-          text-align: center;
-          margin: 0 auto;
-        }
-
-        .landing-sub {
-          margin: 18px auto 0;
-          max-width: 60ch;
-          color: var(--muted);
-          font-size: 1.05rem;
-        }
-
-        .landing-cta {
-          display: flex;
-          gap: 12px;
-          justify-content: center;
-          margin-top: 32px;
-        }
-
-        .btn-primary-lg {
-          padding: 14px 32px;
-          border-radius: 999px;
-          border: none;
-          background: var(--accent);
-          color: #fff;
-          font-size: 1rem;
-          font-weight: 700;
-          transition: background 140ms, transform 140ms;
-        }
-        .btn-primary-lg:hover { background: var(--accent-dark); transform: translateY(-1px); }
-
-        .btn-outline-lg {
-          padding: 14px 32px;
-          border-radius: 999px;
-          border: 1.5px solid var(--line);
-          background: rgba(250,244,232,0.90);
-          color: var(--ink);
-          font-size: 1rem;
-          font-weight: 600;
-          transition: border-color 140ms, color 140ms, background 140ms;
-        }
-        .btn-outline-lg:hover {
-          border-color: rgba(46,42,38,0.22);
-          background: rgba(250,244,232,0.90);
-          color: var(--ink);
-        }
-
-        .features-label {
-          text-align: center;
-          font-size: 0.78rem;
-          font-weight: 700;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: var(--muted);
-          margin: 0 0 20px;
-        }
-
-        .feature-grid-landing {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0,1fr));
-          gap: 16px;
-        }
-
-        .feature-card-landing {
-          background: rgba(250,244,232,0.90);
-          border: 1px solid var(--line);
-          border-radius: 22px;
-          padding: 24px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          box-shadow: 0 3px 10px rgba(46,42,38,0.04);
-        }
-
-        .feature-tag {
-          display: inline-block;
-          font-size: 0.98rem;
-          font-weight: 600;
-          letter-spacing: -0.02em;
-          line-height: 1.2;
-          text-transform: none;
-          color: #fff;
-          background: var(--accent);
-          padding: 9px 14px;
-          border-radius: 22px;
-          width: fit-content;
-          border: 1px solid rgba(77,107,88,0.18);
-        }
-
-        .feature-card-landing h4 {
-          margin: 0;
-          font-size: 1rem;
-        }
-
-        .feature-card-landing p {
-          margin: 0;
-          color: var(--muted);
-          font-size: 0.88rem;
-          line-height: 1.55;
-        }
-
-        /* ── logged-in shell ────────────────────────────────── */
-        .shell-body {
-          flex: 1;
-          min-height: 0;
-          padding: 28px 20px 48px;
-          font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-          overflow: hidden;
-        }
-
-        .frame {
-          height: 100%;
-          min-height: 0;
-          max-width: 1180px;
-          margin: 0 auto;
-          background: var(--panel-strong);
-          border: 1px solid var(--line);
-          border-radius: 28px;
-          backdrop-filter: blur(14px);
-          box-shadow: var(--shadow);
-          overflow: hidden;
-        }
-
-        .layout {
-          display: grid;
-          grid-template-columns: 240px minmax(0,1fr);
-          height: 100%;
-          min-height: 0;
-        }
-
-        .sidebar {
-          min-height: 0;
-          padding: 24px 18px;
-          border-right: 1px solid var(--line);
-          background: rgba(250,244,232,0.54);
-          font-family: inherit;
-        }
-
-        .sidebar h2 {
-          margin: 0 0 18px;
-          font-size: 1rem;
-          letter-spacing: -0.02em;
-        }
-
-        .nav-list {
-          display: grid;
-          gap: 6px;
-        }
-
-        .nav-item {
-          border: 1px solid transparent;
-          background: transparent;
-          color: var(--ink);
-          text-align: left;
-          padding: 12px 16px;
-          border-radius: 14px;
-          font-size: 0.92rem;
-          transition: transform 140ms, background 140ms, border-color 140ms;
-        }
-        .nav-item:hover {
-          transform: translateX(2px);
-          background: var(--blue-soft);
-          border-color: var(--blue);
-          color: var(--blue-dark);
-        }
-        .nav-item.active {
-          background: var(--accent);
-          color: white;
-          border-color: var(--accent-dark);
-          box-shadow: 0 2px 8px rgba(77,107,88,0.25);
-        }
-
-        .content {
-          min-height: 0;
-          display: flex;
-          flex-direction: column;
-          padding: 28px;
-          width: 100%;
-          font-family: inherit;
-          overflow-y: auto;
-          overscroll-behavior: contain;
-        }
-
-        .content > .chat-root,
-        .content > .tm-chat-root,
-        .content > .ps-chat-root {
-          flex: 1 1 auto;
-          min-height: 0;
-        }
-
-        /* ── page / card primitives ─────────────────────────── */
-        .page {
-          display: grid;
-          gap: 18px;
-          width: min(100%, 980px);
-          margin: 0 auto;
-          font-size: var(--type-body);
-          font-weight: 400;
-          animation: fade-up 220ms ease;
-        }
-
-        .page-header h2 {
-          margin: 0;
-          font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-          font-size: var(--type-page-title);
-          font-weight: var(--weight-page-title);
-          line-height: 1.15;
-          letter-spacing: -0.03em;
-        }
-
-        .page-header p {
-          margin: 8px 0 0;
-          color: var(--muted);
-          font-size: var(--type-body);
-          font-weight: 400;
-          line-height: 1.55;
-          max-width: 70ch;
-        }
-
-        .grid {
-          display: grid;
-          grid-template-columns: repeat(12, minmax(0,1fr));
-          gap: 16px;
-        }
-
-        .card {
-          grid-column: span 12;
-          background: var(--panel-strong);
-          border: 1px solid var(--line);
-          border-radius: 22px;
-          padding: 20px;
-          box-shadow: 0 10px 24px rgba(46,42,38,0.06);
-        }
-        .card h3 {
-          margin: 0 0 10px;
-          font-size: var(--type-card-title);
-          font-weight: var(--weight-card-title);
-          line-height: 1.3;
-        }
-        .card p, .card li {
-          color: var(--muted);
-          font-size: 0.875rem;
-          font-weight: 400;
-          line-height: 1.55;
-        }
-        .card ul { margin: 0; padding-left: 18px; }
-
-        .span-4  { grid-column: span 4; }
-        .span-5  { grid-column: span 5; }
-        .span-6  { grid-column: span 6; }
-        .span-7  { grid-column: span 7; }
-        .span-8  { grid-column: span 8; }
-
-        .pill-row { display: flex; flex-wrap: wrap; gap: 10px; }
-        .pill {
-          padding: 10px 14px;
-          border-radius: 999px;
-          background: var(--blue-soft);
-          color: var(--blue-dark);
-          font-weight: 600;
-          border: 1px solid rgba(58,104,152,0.20);
-        }
-
-        .journal-box {
-          min-height: 150px;
-          padding: 16px;
-          border-radius: 18px;
-          border: 1px dashed rgba(77,107,88,0.28);
-          background: rgba(210,228,220,0.3);
-          color: var(--muted);
-        }
-
-        .meter {
-          height: 12px;
-          border-radius: 999px;
-          background: #ede8df;
-          overflow: hidden;
-        }
-        .meter > span {
-          display: block;
-          height: 100%;
-          border-radius: inherit;
-          background: linear-gradient(90deg, #4d6b58, #7a9e8a);
-        }
-
-        .settings-list { display: grid; gap: 12px; }
-        .settings-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-          padding: 14px 16px;
-          border: 1px solid var(--line);
-          border-radius: 16px;
-        }
-        .settings-row strong { display: block; margin-bottom: 4px; }
-
-        .toggle {
-          width: 54px; height: 30px;
-          border-radius: 999px;
-          background: #d2e4dc;
-          position: relative; flex: none;
-        }
-        .toggle::after {
-          content: '';
-          position: absolute;
-          top: 4px; left: 28px;
-          width: 22px; height: 22px;
-          border-radius: 50%;
-          background: white;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-        code {
-          display: inline-block;
-          margin: 0 4px;
-          padding: 2px 8px;
-          border-radius: 999px;
-          background: var(--blue-soft);
-          color: var(--blue-dark);
-          font-family: Consolas, monospace;
-          font-size: 0.92rem;
-          border: 1px solid rgba(58,104,152,0.18);
-        }
-
-        a:not([class]) {
-          color: var(--blue);
-          text-decoration: underline;
-          text-underline-offset: 2px;
-        }
-        a:not([class]):hover { color: var(--blue-dark); }
-
-        /* ── notifications ──────────────────────────────────── */
-        .notif-anchor {
-          position: fixed;
-          bottom: 24px;
-          left: 24px;
-          z-index: 200;
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 8px;
-        }
-
-        .notif-panel {
-          background: var(--panel-strong);
-          border: 1px solid var(--line);
-          border-radius: 18px;
-          box-shadow: 0 16px 40px rgba(46,42,38,0.14);
-          padding: 16px;
-          width: 270px;
-          animation: fade-up 180ms ease;
-        }
-
-        .notif-heading {
-          margin: 0 0 12px;
-          font-size: 0.78rem;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: var(--muted);
-        }
-
-        .notif-item {
-          display: flex;
-          flex-direction: column;
-          gap: 3px;
-          padding: 10px 0;
-          border-bottom: 1px solid var(--line);
-        }
-        .notif-item:last-child { border-bottom: none; padding-bottom: 0; }
-        .notif-item--clickable {
-          width: 100%; text-align: left; background: transparent; border: none; cursor: pointer;
-          border-radius: 10px; transition: background 140ms;
-        }
-        .notif-item--clickable:hover { background: var(--accent-soft); }
-
-        .notif-text { font-size: 0.88rem; color: var(--ink); }
-        .notif-time { font-size: 0.76rem; color: var(--muted); }
-
-        .notif-btn {
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 44px;
-          height: 44px;
-          border-radius: 50%;
-          border: 1.5px solid var(--line);
-          background: var(--panel-strong);
-          color: var(--ink);
-          box-shadow: var(--shadow);
-          transition: transform 140ms, box-shadow 140ms;
-        }
-        .notif-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: var(--shadow);
-        }
-
-        .notif-badge {
-          position: absolute;
-          top: -4px;
-          right: -4px;
-          min-width: 18px;
-          height: 18px;
-          border-radius: 999px;
-          background: #dc2626;
-          color: #fff;
-          font-size: 0.68rem;
-          font-weight: 700;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0 4px;
-          border: 2px solid #fff;
-        }
-
-        /* ── animation ──────────────────────────────────────── */
-        @keyframes fade-up {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ── responsive ─────────────────────────────────────── */
-        @media (max-width: 960px) {
-          .app-root--dashboard { height: auto; overflow: visible; }
-          .shell-body { overflow: visible; }
-          .frame { height: auto; min-height: 0; }
-          .layout { grid-template-columns: 1fr; }
-          .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
-          .content { overflow-y: visible; }
-          .nav-list { grid-template-columns: repeat(2, minmax(0,1fr)); }
-          .span-4,.span-5,.span-6,.span-7,.span-8 { grid-column: span 12; }
-          .feature-grid-landing { grid-template-columns: repeat(2, minmax(0,1fr)); }
-        }
-
-        @media (max-width: 640px) {
-          .topbar { padding: 0 16px; }
-          .shell-body { padding: 12px; }
-          .nav-list { grid-template-columns: 1fr; }
-          .feature-grid-landing { grid-template-columns: 1fr; }
-          .landing { padding: 40px 16px 60px; }
-        }
-      `}</style>
 
       {showAuth && <Login initialMode={authMode} onClose={() => setShowAuth(false)} />}
 
       {/* ── top bar ── */}
       <header className="topbar">
-        <div className="topbar-actions" />
-
-        <div className="aurora-logo">
-          <TextReveal
-            as="button"
-            text="Aurora"
-            fontSize="1.15rem"
-            color="var(--ink)"
-            hoverColor="var(--blue)"
-            className="logo-reveal"
-            style={{ background: 'transparent', border: 'none' }}
-            onClick={() => navigate('home')}
-          />
+        <div className="topbar-inner">
+          <div className="aurora-logo">
+            <TextReveal
+              as="button"
+              text="Aurora"
+              fontSize="1.15rem"
+              color="var(--ink)"
+              hoverColor="var(--blue)"
+              className="logo-reveal"
+              style={{ background: 'transparent', border: 'none' }}
+              onClick={() => navigate('home')}
+            />
+          </div>
         </div>
       </header>
 
@@ -778,7 +187,6 @@ function AppShell() {
           <div className="frame">
             <div className="layout">
               <aside className="sidebar">
-                <h2>Aurora</h2>
                 <nav className="nav-list">
                   {(assessmentLocked ? pageConfig.filter((page) => page.id === 'checkins') : pageConfig).map((page) => (
                     <button
@@ -804,29 +212,51 @@ function AppShell() {
       ) : (
         /* ── public landing ── */
         <div className="landing">
-          <div className="landing-hero">
-            <h1>
-              <WhisperText
-                as="span"
-                text="Your calm, always-on mental wellness companion."
-                className="landing-whisper"
-              />
-            </h1>
-            <div className="landing-cta">
-              <button className="btn-primary-lg" onClick={() => openAuth('register')}>Get started free</button>
-              <button className="btn-outline-lg" onClick={() => openAuth('login')}>Log in</button>
-            </div>
-          </div>
-
-          <p className="features-label">Everything included</p>
-          <div className="feature-grid-landing">
-            {features.map((f) => (
-              <div key={f.id} className="feature-card-landing">
-                <span className="feature-tag">{f.title}</span>
-                <p>{f.desc}</p>
+          <section className="landing-hero">
+            <div className="landing-hero-copy">
+              <h1>
+                <WhisperText
+                  as="span"
+                  text="Your calm, always-on mental wellness companion."
+                  className="landing-whisper"
+                />
+              </h1>
+              <div className="landing-cta">
+                <button className="btn-primary-lg" onClick={() => openAuth('register')}>Get started free</button>
+                <button className="btn-outline-lg" onClick={() => openAuth('login')}>Log in</button>
               </div>
-            ))}
-          </div>
+            </div>
+
+            <div className="landing-product-visual" aria-label="Aurora daily reflection preview">
+              <div className="product-visual-header">
+                <span className="product-visual-brand">Aurora</span>
+                <span className="product-visual-date">Today</span>
+              </div>
+              <div className="product-visual-body">
+                <div>
+                  <p className="product-visual-label">Today's journal prompt</p>
+                  <p className="product-visual-prompt">What would support look like for you right now?</p>
+                </div>
+                <div className="product-visual-tools" aria-label="Aurora tools">
+                  <div className="product-visual-tool"><span>Mood</span><strong>Pick a mood</strong></div>
+                  <div className="product-visual-tool"><span>Journal</span><strong>Private</strong></div>
+                  <div className="product-visual-tool"><span>Check-in</span><strong>Due this week</strong></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="landing-capabilities" aria-labelledby="landing-features-title">
+            <p className="features-label" id="landing-features-title">Everything included</p>
+            <div className="feature-grid-landing">
+              {features.map((f) => (
+                <div key={f.id} className="feature-card-landing">
+                  <span className="feature-tag">{f.title}</span>
+                  <p>{f.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
       )}
 
@@ -961,15 +391,21 @@ function AppShell() {
       )}
 
       {/* ── bottom-left notifications ── */}
-      {isLoggedIn && <div className="notif-anchor">
+      {isLoggedIn && <div ref={notifAnchorRef} className="notif-anchor">
         {notifOpen && (
-          <div className="notif-panel">
-            <p className="notif-heading">Notifications</p>
+          <div
+            id="notifications-popover"
+            className="notif-panel"
+            role="region"
+            aria-labelledby="notifications-heading"
+          >
+            <p id="notifications-heading" className="notif-heading">Notifications</p>
             {notifications.length === 0 ? (
-              <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--muted)' }}>No new notifications</p>
+              <p className="notif-empty">You're all caught up.</p>
             ) : notifications.map((n) => (
               <button
                 key={n.id}
+                type="button"
                 className="notif-item notif-item--clickable"
                 onClick={() => { navigate(n.page); setNotifOpen(false) }}
               >
@@ -980,9 +416,13 @@ function AppShell() {
           </div>
         )}
         <button
+          ref={notifButtonRef}
+          type="button"
           className="notif-btn"
           onClick={() => setNotifOpen((o) => !o)}
           aria-label={`${notifications.length} notifications`}
+          aria-expanded={notifOpen}
+          aria-controls="notifications-popover"
         >
           <BellIcon />
           {notifications.length > 0 && (

@@ -166,10 +166,6 @@ export async function cancelTherapistAppointment(matchId, appointmentId) {
   return updateTherapistAppointment(matchId, appointmentId, { status: 'cancelled' })
 }
 
-export async function fetchTherapistSharingPreview() {
-  return apiFetch('/api/therapist/sharing-preview/')
-}
-
 // Peer
 
 export async function fetchPeerProfile() {

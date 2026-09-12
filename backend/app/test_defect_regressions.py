@@ -201,6 +201,23 @@ class TherapistPersistenceRegressionTests(AuthenticatedAPITestCase):
         self.assertEqual([item['id'] for item in listed.data['bookings']], [newer.id, older.id])
         self.assertEqual(listed.data['bookings'][0]['status'], 'cancelled')
 
+        self.match.refresh_from_db()
+        active_matches = self.client.get(reverse('therapist-matches'))
+        self.assertFalse(self.match.is_active)
+        self.assertEqual(active_matches.data['matches'], [])
+        self.assertEqual(active_matches.data['therapistIds'], [])
+
+        reactivated = self.client.post(
+            reverse('therapist-matches'),
+            {'therapistId': self.match.therapist_id},
+            format='json',
+        )
+        self.match.refresh_from_db()
+        self.assertEqual(reactivated.status_code, 200)
+        self.assertTrue(self.match.is_active)
+        self.assertEqual(reactivated.data['match']['id'], self.match.id)
+        self.assertEqual(TherapistBooking.objects.filter(match=self.match).count(), 2)
+
     def test_confirmed_booking_request_cannot_be_cancelled(self):
         booking = TherapistBooking.objects.create(
             user=self.user,

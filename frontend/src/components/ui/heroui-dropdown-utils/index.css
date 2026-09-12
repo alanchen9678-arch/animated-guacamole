@@ -1,3 +1,12 @@
+.aurora-dropdown-shell {
+  position: relative;
+  width: 100%;
+}
+
+.aurora-dropdown-shell:has(.aurora-dropdown-trigger--calendar) {
+  width: fit-content;
+}
+
 .aurora-dropdown-trigger {
   display: inline-flex;
   width: 100%;
@@ -5,7 +14,7 @@
   justify-content: space-between;
   gap: 12px;
   border: 1.5px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   background: #f8fafc;
   color: var(--ink);
   padding: 10px 12px;
@@ -17,7 +26,6 @@
 .aurora-dropdown-trigger:hover {
   border-color: rgba(77, 107, 88, 0.34);
   background: #fff;
-  transform: translateY(-1px);
 }
 
 .aurora-dropdown-trigger:focus-visible {
@@ -53,11 +61,15 @@
 }
 
 .aurora-dropdown-popover {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 100%;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--radius-small);
   background: rgba(250, 244, 232, 0.98);
-  box-shadow: 0 18px 36px rgba(46, 42, 38, 0.16);
-  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-float);
   padding: 8px;
 }
 
@@ -68,11 +80,11 @@
 }
 
 .aurora-dropdown-item {
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   padding: 0;
   background: transparent;
   color: var(--ink);
-  transition: background 140ms, color 140ms, transform 140ms;
+  transition: background 140ms, color 140ms;
 }
 
 .aurora-dropdown-item[data-focused="true"],
@@ -80,7 +92,6 @@
 .aurora-dropdown-item:hover {
   background: var(--accent-soft);
   color: var(--accent-dark);
-  transform: translateY(-1px);
 }
 
 .aurora-dropdown-item-row {

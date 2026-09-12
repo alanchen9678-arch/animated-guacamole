@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AsyncButton } from '../components/ui/feedback.jsx'
 
 // ─── disorder data ─────────────────────────────────────────────────────────────
@@ -117,8 +117,8 @@ const DISORDERS = [
     sourceUrl: 'https://www.mayoclinic.org/diseases-conditions/schizophrenia/symptoms-causes/syc-20354443',
     what: 'Schizophrenia is a serious mental disorder in which people interpret reality abnormally. It may result in some combination of hallucinations, delusions, and extremely disordered thinking and behavior. Symptoms are divided into "positive" (added experiences) and "negative" (loss of normal functioning).',
     symptoms: [
-      'Positive: delusions — false beliefs not based in reality',
-      'Positive: hallucinations — hearing or seeing things that do not exist',
+      'Positive: delusions, which are false beliefs not based in reality',
+      'Positive: hallucinations, such as hearing or seeing things that do not exist',
       'Positive: disorganized thinking and speech',
       'Negative: reduced emotional expression and social withdrawal',
       'Negative: loss of motivation and inability to function normally',
@@ -334,12 +334,12 @@ const QUESTIONS_BANK = [
   { clue: "Persistent sadness and loss of interest in once-enjoyed activities lasting weeks or longer.", correct: 'depression',    note: "Major depressive disorder causes prolonged low mood affecting thoughts, feelings, and functioning." },
   { clue: "Alternating periods of unusually high energy and elevated mood with episodes of deep sadness.", correct: 'bipolar',      note: "Bipolar disorder cycles between manic/hypomanic highs and depressive lows." },
   { clue: "Intrusive memories, nightmares, and avoidance of reminders following a terrifying event.", correct: 'ptsd',          note: "PTSD develops when trauma responses persist and interfere with daily life." },
-  { clue: "Hearing voices or holding firm false beliefs that are not based in reality.", correct: 'schizophrenia',  note: "These are 'positive symptoms' of schizophrenia — added experiences not grounded in reality." },
+  { clue: "Hearing voices or holding firm false beliefs that are not based in reality.", correct: 'schizophrenia',  note: "These are 'positive symptoms' of schizophrenia: added experiences not grounded in reality." },
   { clue: "Preoccupation with calories and body shape, combined with extreme or restrictive eating behaviors.", correct: 'eating',        note: "Eating disorders involve an unhealthy relationship with food, eating, and body image." },
   { clue: "Persistent angry mood and argumentative behavior toward authority figures in a child or adolescent.", correct: 'odd',          note: "ODD is a disruptive behavior disorder most commonly diagnosed in childhood." },
   { clue: "Delays in reaching developmental milestones and difficulties with learning or impulse control from an early age.", correct: 'neuro',        note: "Neurodevelopmental disorders emerge in early childhood and affect brain development." },
   { clue: "Reduced need for sleep, racing thoughts, and inflated self-esteem lasting at least a week.", correct: 'bipolar',      note: "These are hallmark manic episode symptoms within bipolar disorder." },
-  { clue: "Social withdrawal, reduced emotional expression, and loss of motivation even without hallucinations.", correct: 'schizophrenia',  note: "These are 'negative symptoms' of schizophrenia — loss of normal functioning." },
+  { clue: "Social withdrawal, reduced emotional expression, and loss of motivation even without hallucinations.", correct: 'schizophrenia',  note: "These are 'negative symptoms' of schizophrenia: a loss of normal functioning." },
   { clue: "Excessive worry lasting six months or more, paired with restlessness, fatigue, and poor concentration.", correct: 'anxiety',       note: "These are core features of Generalized Anxiety Disorder (GAD), a type of anxiety disorder." },
   { clue: "Genetic factors, chromosomal differences, and early brain development all contribute to this condition presenting in childhood.", correct: 'neuro', note: "Neurodevelopmental disorders have strong biological roots and typically emerge before school age." },
 ]
@@ -366,6 +366,38 @@ function buildQuizRound() {
       }
     })
   )
+}
+
+const QUIZ_STORAGE_KEY = 'aurora.infoLibrary.quizSession'
+
+function createQuizSession() {
+  return {
+    questions: buildQuizRound(),
+    idx: 0,
+    selected: null,
+    score: 0,
+    done: false,
+    answers: [],
+  }
+}
+
+function loadQuizSession() {
+  if (typeof window === 'undefined') return createQuizSession()
+
+  try {
+    const stored = JSON.parse(window.sessionStorage.getItem(QUIZ_STORAGE_KEY))
+    const isValid = stored
+      && Array.isArray(stored.questions)
+      && stored.questions.length === DISORDERS.length
+      && Number.isInteger(stored.idx)
+      && stored.idx >= 0
+      && stored.idx < stored.questions.length
+      && Array.isArray(stored.answers)
+
+    return isValid ? stored : createQuizSession()
+  } catch {
+    return createQuizSession()
+  }
 }
 
 // ─── library accordion item ────────────────────────────────────────────────────
@@ -435,7 +467,7 @@ function LibraryTab() {
   return (
     <div className="il-library">
       <div className="il-who-note">
-        <strong>8 common mental health conditions</strong> — Information sourced from Mayo Clinic and the World Health Organization (WHO).
+        <strong>8 common mental health conditions</strong>. Information sourced from Mayo Clinic and the World Health Organization (WHO).
         Click any condition to expand its entry.
       </div>
       <div className="il-disorders-list">
@@ -447,86 +479,118 @@ function LibraryTab() {
 
 // ─── quiz tab ─────────────────────────────────────────────────────────────────
 
-function QuizTab() {
-  const [questions, setQuestions] = useState(() => buildQuizRound())
-  const [idx, setIdx]             = useState(0)
-  const [selected, setSelected]   = useState(null)
-  const [score, setScore]         = useState(0)
-  const [done, setDone]           = useState(false)
-  const [answers, setAnswers]     = useState([])
+function QuizTab({ session, setSession, active }) {
+  const { questions, idx, selected, score, done, answers } = session
+  const feedbackRef = useRef(null)
+  const questionRef = useRef(null)
+  const previousIdxRef = useRef(idx)
 
   const q = questions[idx]
   const total = questions.length
 
+  useEffect(() => {
+    if (!active || !selected || !feedbackRef.current) return
+
+    feedbackRef.current.focus({ preventScroll: true })
+    feedbackRef.current.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'nearest',
+    })
+  }, [active, selected])
+
+  useEffect(() => {
+    if (!active || previousIdxRef.current === idx) return
+    previousIdxRef.current = idx
+    questionRef.current?.focus({ preventScroll: true })
+    questionRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [active, idx])
+
   function choose(optId) {
-    if (selected) return
-    const correct = optId === q.correct
-    if (correct) setScore(s => s + 1)
-    setSelected(optId)
-    setAnswers(prev => [...prev, {
-      clue: q.clue,
-      correct: q.correct,
-      selected: optId,
-      correctText: q.correct,
-      selectedText: optId,
-      note: q.note,
-    }])
+    setSession(prev => {
+      if (prev.selected) return prev
+
+      const currentQuestion = prev.questions[prev.idx]
+      const correct = optId === currentQuestion.correct
+      return {
+        ...prev,
+        selected: optId,
+        score: correct ? prev.score + 1 : prev.score,
+        answers: [...prev.answers, {
+          clue: currentQuestion.clue,
+          correct: currentQuestion.correct,
+          selected: optId,
+          correctText: currentQuestion.correct,
+          selectedText: optId,
+          note: currentQuestion.note,
+        }],
+      }
+    })
   }
 
   function next() {
-    if (idx + 1 >= total) {
-      setDone(true)
-    } else {
-      setIdx(i => i + 1)
-      setSelected(null)
-    }
+    setSession(prev => prev.idx + 1 >= prev.questions.length
+      ? { ...prev, done: true }
+      : { ...prev, idx: prev.idx + 1, selected: null })
   }
 
   function restart() {
-    setQuestions(buildQuizRound())
-    setIdx(0); setSelected(null); setScore(0); setDone(false); setAnswers([])
+    setSession(createQuizSession())
   }
 
   if (done) {
     const pct = Math.round((score / total) * 100)
     const missed = answers.filter(a => a.selected !== a.correct)
     return (
-      <div className="il-results">
-        <div className="il-results-score-ring" style={{ '--pct': pct }}>
-          <div className="il-results-inner">
-            <span className="il-results-num">{score}<span style={{ fontSize: '1.2rem' }}>/{total}</span></span>
-            <span className="il-results-sub">correct</span>
+      <div className="il-results" aria-labelledby="il-results-heading">
+        <div className="il-results-summary">
+          <div className="il-results-score-ring" style={{ '--pct': pct }} role="img" aria-label={score + ' out of ' + total + ' correct'}>
+            <div className="il-results-inner">
+              <span className="il-results-num">{score}<span className="il-results-total">/{total}</span></span>
+              <span className="il-results-sub">correct</span>
+            </div>
+          </div>
+          <div className="il-results-copy">
+            <p className="il-results-kicker">Quiz complete</p>
+            <h3 className="il-results-heading" id="il-results-heading">
+              {pct >= 90 ? 'Excellent work!' : pct >= 70 ? 'Good effort!' : 'Keep practicing!'}
+            </h3>
+            <p className="il-results-msg">
+              {pct >= 90
+                ? 'You have a strong grasp of these mental health conditions.'
+                : pct >= 70
+                ? 'Review the conditions you missed in the Library tab.'
+                : 'Read through the Library entries, then try again.'}
+            </p>
           </div>
         </div>
-        <h3 className="il-results-heading">
-          {pct >= 90 ? 'Excellent work!' : pct >= 70 ? 'Good effort!' : 'Keep practicing!'}
-        </h3>
-        <p className="il-results-msg" style={{ color: 'var(--muted)' }}>
-          {pct >= 90
-            ? 'You have a strong grasp of these mental health conditions.'
-            : pct >= 70
-            ? 'Review the conditions you missed in the Library tab.'
-            : 'Read through the Library entries, then try again.'}
-        </p>
 
         {missed.length > 0 && (
-          <div className="il-missed-section">
-            <p className="il-missed-label">Review — missed questions</p>
-            {missed.map((a, i) => (
-              <div key={i} className="il-missed-card">
-                <p className="il-missed-clue">{a.clue}</p>
-                <div className="il-missed-answer-row">
-                  <span className="il-missed-wrong">{a.selectedText}</span>
-                  <span className="il-missed-arrow">→</span>
-                  <span className="il-missed-right">{a.correctText}</span>
-                </div>
-                <p className="il-missed-note">{a.note}</p>
-              </div>
-            ))}
-          </div>
+          <section className="il-missed-section" aria-labelledby="il-missed-heading">
+            <h4 className="il-missed-label" id="il-missed-heading">Review missed questions</h4>
+            <div className="il-missed-list">
+              {missed.map((a, i) => (
+                <article key={a.clue + i} className="il-missed-card">
+                  <h5 className="il-missed-clue">{a.clue}</h5>
+                  <dl className="il-missed-answer-row">
+                    <div className="il-missed-answer">
+                      <dt>Your answer</dt>
+                      <dd className="il-missed-wrong">{a.selectedText}</dd>
+                    </div>
+                    <div className="il-missed-answer">
+                      <dt>Correct answer</dt>
+                      <dd className="il-missed-right">{a.correctText}</dd>
+                    </div>
+                  </dl>
+                  <p className="il-missed-note">{a.note}</p>
+                </article>
+              ))}
+            </div>
+          </section>
         )}
 
-        <button className="il-primary-btn" onClick={restart}>Play again</button>
+        <div className="il-results-actions">
+          <button className="il-primary-btn" onClick={restart}>Play again</button>
+        </div>
       </div>
     )
   }
@@ -534,18 +598,26 @@ function QuizTab() {
   return (
     <div className="il-quiz">
       <div className="il-quiz-header">
-        <div className="il-progress-bar">
-          <div className="il-progress-fill" style={{ width: `${(idx / total) * 100}%` }} />
+        <div
+          className="il-progress-bar"
+          role="progressbar"
+          aria-label="Quiz progress"
+          aria-valuemin="1"
+          aria-valuemax={total}
+          aria-valuenow={idx + 1}
+          aria-valuetext={`Question ${idx + 1} of ${total}`}
+        >
+          <div className="il-progress-fill" style={{ width: ((idx + 1) / total) * 100 + '%' }} />
         </div>
-        <span className="il-progress-label">{idx + 1} / {total}</span>
+        <span className="il-progress-label" aria-hidden="true">{idx + 1} / {total}</span>
       </div>
 
       <div className="il-clue-card">
         <p className="il-clue-eyebrow">Choose the best answer.</p>
-        <p className="il-clue-text">{q.clue}</p>
+        <h3 className="il-clue-text" id="il-quiz-question" ref={questionRef} tabIndex="-1">{q.clue}</h3>
       </div>
 
-      <div className="il-options">
+      <div className="il-options" role="group" aria-labelledby="il-quiz-question">
         {q.options.map(optionText => {
           const isSelected  = selected === optionText
           const isCorrect   = optionText === q.correct
@@ -558,19 +630,29 @@ function QuizTab() {
               className={`il-option${showCorrect ? ' il-option--correct' : ''}${showWrong ? ' il-option--wrong' : ''}${selected && !isSelected && !isCorrect ? ' il-option--dim' : ''}`}
               onClick={() => choose(optionText)}
               disabled={!!selected}
+              aria-pressed={isSelected}
+              aria-describedby={selected ? 'il-quiz-feedback' : undefined}
             >
               <span className="il-option-text">{optionText}</span>
-              {showCorrect && <span className="il-option-icon">✓</span>}
-              {showWrong   && <span className="il-option-icon">✗</span>}
+              {showCorrect && <span className="il-option-icon" aria-hidden="true">✓</span>}
+              {showWrong   && <span className="il-option-icon" aria-hidden="true">✗</span>}
             </button>
           )
         })}
       </div>
 
       {selected && (
-        <div className={`il-feedback${selected === q.correct ? ' il-feedback--correct' : ' il-feedback--wrong'}`}>
-          <strong>{selected === q.correct ? 'Correct!' : `Not quite — the answer is ${q.correct}.`}</strong>
-          <p>{q.note}</p>
+        <div
+          className={`il-feedback${selected === q.correct ? ' il-feedback--correct' : ' il-feedback--wrong'}`}
+          ref={feedbackRef}
+          aria-labelledby="il-quiz-feedback-title"
+          aria-describedby="il-quiz-feedback-note"
+          tabIndex="-1"
+        >
+          <div id="il-quiz-feedback" role="status" aria-live="polite" aria-atomic="true">
+            <strong id="il-quiz-feedback-title">{selected === q.correct ? 'Correct!' : `Not quite. The answer is ${q.correct}.`}</strong>
+            <p id="il-quiz-feedback-note">{q.note}</p>
+          </div>
           <AsyncButton
             className="il-next-btn"
             onClick={next}
@@ -587,6 +669,32 @@ function QuizTab() {
 
 export default function InfoLibrary() {
   const [tab, setTab] = useState('library')
+  const [quizSession, setQuizSession] = useState(loadQuizSession)
+  const tabRefs = useRef({})
+
+  useEffect(() => {
+    window.sessionStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizSession))
+  }, [quizSession])
+
+  function selectTab(nextTab, moveFocus = false) {
+    setTab(nextTab)
+    if (moveFocus) requestAnimationFrame(() => tabRefs.current[nextTab]?.focus())
+  }
+
+  function handleTabKeyDown(event) {
+    const tabs = ['library', 'quiz']
+    const currentIndex = tabs.indexOf(tab)
+    let nextIndex = null
+
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length
+    if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length
+    if (event.key === 'Home') nextIndex = 0
+    if (event.key === 'End') nextIndex = tabs.length - 1
+    if (nextIndex === null) return
+
+    event.preventDefault()
+    selectTab(tabs[nextIndex], true)
+  }
 
   return (
     <section className="page">
@@ -601,23 +709,41 @@ export default function InfoLibrary() {
         </div>
       </div>
 
-      <div className="il-tabs">
+      <div className="il-tabs" role="tablist" aria-label="Information library sections" onKeyDown={handleTabKeyDown}>
         <button
           className={`il-tab${tab === 'library' ? ' il-tab--active' : ''}`}
-          onClick={() => setTab('library')}
+          id="il-tab-library"
+          ref={node => { tabRefs.current.library = node }}
+          type="button"
+          role="tab"
+          aria-selected={tab === 'library'}
+          aria-controls="il-panel-library"
+          tabIndex={tab === 'library' ? 0 : -1}
+          onClick={() => selectTab('library')}
         >
           Library
         </button>
         <button
           className={`il-tab${tab === 'quiz' ? ' il-tab--active' : ''}`}
-          onClick={() => setTab('quiz')}
+          id="il-tab-quiz"
+          ref={node => { tabRefs.current.quiz = node }}
+          type="button"
+          role="tab"
+          aria-selected={tab === 'quiz'}
+          aria-controls="il-panel-quiz"
+          tabIndex={tab === 'quiz' ? 0 : -1}
+          onClick={() => selectTab('quiz')}
         >
           Quiz
         </button>
       </div>
 
-      {tab === 'library' && <LibraryTab />}
-      {tab === 'quiz' && <QuizTab />}
+      <div id="il-panel-library" role="tabpanel" aria-labelledby="il-tab-library" hidden={tab !== 'library'}>
+        <LibraryTab />
+      </div>
+      <div id="il-panel-quiz" role="tabpanel" aria-labelledby="il-tab-quiz" hidden={tab !== 'quiz'}>
+        <QuizTab session={quizSession} setSession={setQuizSession} active={tab === 'quiz'} />
+      </div>
     </section>
   )
 }
@@ -706,101 +832,121 @@ const IL_STYLES = `
   .il-article-link:hover { opacity: 0.75; }
 
   /* quiz */
-  .il-quiz { display: flex; flex-direction: column; gap: 20px; max-width: 620px; }
-  .il-quiz-header { display: flex; align-items: center; gap: 12px; }
-  .il-progress-bar { flex: 1; height: 8px; background: #ede8df; border-radius: 999px; overflow: hidden; }
-  .il-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #7a9e8a); border-radius: inherit; transition: width 300ms ease; }
-  .il-progress-label { font-size: 0.8rem; font-weight: 700; color: var(--muted); flex-shrink: 0; }
+  .il-quiz { display: flex; flex-direction: column; gap: 18px; width: 100%; max-width: none; }
+  .il-quiz-header { display: flex; align-items: center; gap: 14px; padding-top: 2px; }
+  .il-progress-bar { flex: 1; height: 4px; background: var(--line); border-radius: var(--radius-pill); overflow: hidden; }
+  .il-progress-fill { height: 100%; background: var(--accent); border-radius: inherit; transition: width 220ms ease; }
+  .il-progress-label { min-width: 36px; font-size: var(--type-metadata); font-weight: var(--weight-medium); color: var(--muted); text-align: right; flex-shrink: 0; }
 
   .il-clue-card {
-    background: linear-gradient(135deg, rgba(210,228,220,0.5), rgba(255,255,255,0.95));
-    border: 1px solid rgba(77,107,88,0.18); border-radius: 20px;
-    padding: 24px 26px;
-    box-shadow: var(--shadow);
+    background: transparent;
+    border: 0;
+    border-top: 1px solid var(--line-strong);
+    border-radius: 0;
+    padding: 22px 2px 4px;
+    box-shadow: none;
   }
-  .il-clue-eyebrow { margin: 0 0 10px; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
-  .il-clue-text { margin: 0; font-size: 1.05rem; line-height: 1.65; color: var(--ink); }
+  .il-clue-eyebrow { margin: 0 0 8px; font-size: var(--type-caption); font-weight: var(--weight-medium); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .il-clue-text { margin: 0; max-width: 34ch; font-size: 1.3rem; font-weight: var(--weight-card-title); line-height: 1.4; letter-spacing: -0.015em; color: var(--ink); outline: none; }
 
-  .il-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .il-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .il-option {
-    padding: 13px 16px; border-radius: 16px;
-    border: 1.5px solid var(--line); background: var(--panel-strong);
-    text-align: left; font-size: 0.9rem; font-weight: 600;
-    display: flex; justify-content: space-between; align-items: center;
-    transition: border-color 140ms, background 140ms, opacity 140ms;
+    min-height: 68px; padding: 14px 16px; border-radius: var(--radius-control);
+    border: 1px solid var(--line-strong); background: transparent;
+    text-align: left; font-size: 0.9rem; font-weight: var(--weight-medium); line-height: 1.45;
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+    transition: border-color 140ms ease, background 140ms ease, color 140ms ease, opacity 140ms ease;
   }
-  .il-option:not(:disabled):hover { border-color: var(--accent); background: var(--accent-soft); }
-  .il-option--correct { border-color: #16a34a; background: rgba(22,163,74,0.08); color: #15803d; }
-  .il-option--wrong   { border-color: #dc2626; background: rgba(220,38,38,0.08); color: #dc2626; }
-  .il-option--dim     { opacity: 0.45; }
+  .il-option:not(:disabled):hover { border-color: var(--accent); background: var(--accent-wash); }
+  .il-option:disabled { cursor: default; }
+  .il-option--correct { border-color: #9bb9a4; background: rgba(225,241,229,0.68); color: var(--accent-ink); box-shadow: inset 3px 0 0 var(--success); }
+  .il-option--wrong   { border-color: #d4aaa5; background: rgba(248,228,225,0.62); color: #74342f; box-shadow: inset 3px 0 0 var(--danger); }
+  .il-option--dim     { opacity: 0.62; }
   .il-option-text  { flex: 1; }
-  .il-option-icon  { font-size: 1rem; font-weight: 800; }
+  .il-option-icon  { margin-top: 1px; font-size: 0.9rem; font-weight: 700; }
 
   .il-feedback {
-    padding: 16px 20px; border-radius: 16px;
-    animation: fade-up 180ms ease;
+    padding: 16px 18px; border-radius: var(--radius-small);
+    outline: none;
   }
-  .il-feedback--correct { background: rgba(22,163,74,0.08); border: 1px solid rgba(22,163,74,0.25); }
-  .il-feedback--wrong   { background: rgba(220,38,38,0.06); border: 1px solid rgba(220,38,38,0.2); }
-  .il-feedback strong { display: block; margin-bottom: 5px; font-size: 0.92rem; }
-  .il-feedback p { margin: 0 0 14px; font-size: 0.86rem; color: var(--muted); line-height: 1.55; }
+  .il-feedback--correct { background: rgba(225,241,229,0.62); border: 1px solid #b6cfbd; border-left: 3px solid var(--success); }
+  .il-feedback--wrong   { background: rgba(248,228,225,0.58); border: 1px solid #dfc1bd; border-left: 3px solid var(--danger); }
+  .il-feedback strong { display: block; margin-bottom: 5px; font-size: 0.92rem; color: var(--ink); }
+  .il-feedback p { margin: 0 0 14px; max-width: 60ch; font-size: 0.86rem; color: var(--ink-soft); line-height: 1.55; }
   .il-next-btn {
-    padding: 9px 22px; border-radius: 999px; border: none;
+    padding: 9px 18px; border-radius: var(--radius-control); border: 1px solid var(--accent-dark);
     background: var(--accent); color: #fff; font-size: 0.88rem; font-weight: 700;
-    transition: opacity 140ms;
+    transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
   }
-  .il-next-btn:hover { opacity: 0.88; }
 
   /* results */
-  .il-results { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+  .il-results { display: flex; flex-direction: column; align-items: stretch; gap: 0; text-align: left; }
+  .il-results-summary {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 24px;
+    padding: 24px 2px 26px; border-bottom: 1px solid var(--line-strong);
+  }
   .il-results-score-ring {
-    width: 140px; height: 140px; border-radius: 50%;
-    background: conic-gradient(#3a6898 calc(var(--pct) * 1%), #ede8df 0%);
+    width: 116px; height: 116px; border-radius: 50%;
+    background: conic-gradient(var(--accent) calc(var(--pct) * 1%), var(--panel-soft) 0%);
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 0 0 8px var(--panel-strong);
+    box-shadow: none;
   }
   .il-results-inner {
-    width: 108px; height: 108px; border-radius: 50%;
-    background: var(--panel-strong); display: flex; flex-direction: column;
+    width: 88px; height: 88px; border-radius: 50%;
+    background: var(--panel-raised); display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 2px;
   }
   .il-results-num   {
     font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 2.2rem;
-    font-weight: 900;
-    color: var(--accent);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-dark);
     letter-spacing: -0.04em;
     line-height: 1;
   }
-  .il-results-sub   { font-size: 0.74rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+  .il-results-total { font-size: 1rem; font-weight: var(--weight-medium); color: var(--muted); }
+  .il-results-sub   { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+  .il-results-copy { min-width: 0; }
+  .il-results-kicker { margin: 0 0 5px; color: var(--accent); font-size: var(--type-metadata); font-weight: 650; }
   .il-results-heading {
-    margin: 4px 0 0;
+    margin: 0;
     font-family: "Geist", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 1.5rem;
+    font-size: 1.65rem;
+    line-height: 1.2;
     letter-spacing: -0.02em;
   }
+  .il-results-msg { margin: 8px 0 0; max-width: 50ch; color: var(--muted); font-size: 0.9rem; line-height: 1.55; }
+  .il-results-actions { padding-top: 24px; }
   .il-primary-btn {
-    padding: 12px 28px; border-radius: 999px; border: none;
+    padding: 11px 22px; border-radius: var(--radius-control); border: 1px solid var(--accent-dark);
     background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 700;
-    transition: opacity 140ms; margin-top: 6px;
+    transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
   }
-  .il-primary-btn:hover { opacity: 0.88; }
 
-  .il-missed-section { width: 100%; max-width: 580px; text-align: left; }
-  .il-missed-label { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
-  .il-missed-card { background: var(--panel-strong); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; }
-  .il-missed-clue  { margin: 0 0 8px; font-size: 0.88rem; color: var(--ink); line-height: 1.5; }
-  .il-missed-answer-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 0.84rem; }
-  .il-missed-wrong { color: #dc2626; font-weight: 700; text-decoration: line-through; }
-  .il-missed-arrow { color: var(--muted); }
-  .il-missed-right { color: #15803d; font-weight: 700; }
-  .il-missed-note  { margin: 0; font-size: 0.8rem; color: var(--muted); line-height: 1.5; font-style: italic; }
+  .il-missed-section { width: 100%; padding-top: 28px; text-align: left; }
+  .il-missed-label { margin: 0 0 12px; font-size: 1rem; font-weight: var(--weight-card-title); line-height: 1.4; color: var(--ink); }
+  .il-missed-list { border-top: 1px solid var(--line-strong); }
+  .il-missed-card { margin: 0; padding: 20px 2px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; }
+  .il-missed-clue  { margin: 0 0 14px; max-width: 60ch; font-size: 0.92rem; font-weight: var(--weight-medium); color: var(--ink); line-height: 1.5; }
+  .il-missed-answer-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin: 0 0 10px; }
+  .il-missed-answer { min-width: 0; }
+  .il-missed-answer dt { margin: 0 0 4px; color: var(--muted); font-size: var(--type-caption); font-weight: var(--weight-medium); letter-spacing: 0.04em; text-transform: uppercase; }
+  .il-missed-answer dd { margin: 0; font-size: 0.86rem; font-weight: 650; line-height: 1.45; }
+  .il-missed-wrong { color: #74342f; text-decoration: line-through; text-decoration-thickness: 1px; }
+  .il-missed-right { color: var(--accent-ink); }
+  .il-missed-note  { margin: 0; max-width: 65ch; font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
 
   @media (max-width: 640px) {
     .il-page-header { flex-direction: column; }
     .il-cols   { grid-template-columns: 1fr; }
     .il-options { grid-template-columns: 1fr; }
-    .il-results-score-ring { width: 120px; height: 120px; }
-    .il-results-inner { width: 90px; height: 90px; }
+    .il-results-summary { grid-template-columns: 88px minmax(0, 1fr); gap: 16px; padding-block: 20px 22px; }
+    .il-results-score-ring { width: 88px; height: 88px; }
+    .il-results-inner { width: 66px; height: 66px; }
+    .il-results-num { font-size: 1.55rem; }
+    .il-results-total { font-size: 0.82rem; }
+    .il-results-sub { font-size: 0.6rem; }
+    .il-results-heading { font-size: 1.35rem; }
+    .il-missed-answer-row { grid-template-columns: 1fr; gap: 10px; }
   }
 `

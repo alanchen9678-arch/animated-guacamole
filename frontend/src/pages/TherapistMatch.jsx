@@ -13,7 +13,6 @@ import {
   fetchTherapistBookings,
   fetchTherapistMatches,
   fetchTherapistMessages,
-  fetchTherapistSharingPreview,
   saveTherapistMatch,
   sendTherapistMessage,
   updateTherapistAppointment,
@@ -71,12 +70,12 @@ const CORE_THERAPISTS = [
     credentials: { license: 'PhD, LMFT', state: 'CA', location: 'San Francisco, CA' },
     expertise: ['anxiety', 'stress', 'burnout'],
     insurance: ['Aetna', 'BlueCross BlueShield', 'United Healthcare'],
-    priceRange: '$120–140 / session',
+    priceRange: '$120-140 / session',
     languages: ['English', 'Hindi'],
     mode: ['online', 'in-person'],
     rating: 4.9, reviews: 48, yearsExp: 12,
     availability: 'Next available: Tomorrow',
-    bio: 'Dr. Sharma specializes in cognitive-behavioral therapy (CBT) for anxiety and burnout, with 12 years of experience helping high-achieving professionals find sustainable balance. Her approach is warm but direct — she will tell you what you need to hear.',
+    bio: 'Dr. Sharma specializes in cognitive-behavioral therapy (CBT) for anxiety and burnout, with 12 years of experience helping high-achieving professionals find sustainable balance. Her approach is warm but direct. She will tell you what you need to hear.',
   },
   {
     id: 2, initials: 'JW', color: '#4d6b58',
@@ -84,7 +83,7 @@ const CORE_THERAPISTS = [
     credentials: { license: 'LCSW', state: 'CA', location: 'Los Angeles, CA' },
     expertise: ['loneliness', 'grief', 'anxiety'],
     insurance: ['United Healthcare', 'Cigna', 'Self-pay / Out-of-pocket'],
-    priceRange: '$95–115 / session',
+    priceRange: '$95-115 / session',
     languages: ['English'],
     mode: ['in-person'],
     rating: 4.7, reviews: 31, yearsExp: 9,
@@ -97,7 +96,7 @@ const CORE_THERAPISTS = [
     credentials: { license: 'PsyD', state: 'CA', location: 'San Diego, CA' },
     expertise: ['stress', 'burnout', 'lowConfidence'],
     insurance: ['Aetna', 'BlueCross BlueShield', 'Humana'],
-    priceRange: '$110–130 / session',
+    priceRange: '$110-130 / session',
     languages: ['English', 'Spanish'],
     mode: ['online'],
     rating: 4.8, reviews: 62, yearsExp: 15,
@@ -110,7 +109,7 @@ const CORE_THERAPISTS = [
     credentials: { license: 'PhD', state: 'NY', location: 'New York, NY' },
     expertise: ['anxiety', 'loneliness', 'stress'],
     insurance: ['BlueCross BlueShield', 'United Healthcare', 'Cigna'],
-    priceRange: '$150–175 / session',
+    priceRange: '$150-175 / session',
     languages: ['English', 'Mandarin'],
     mode: ['online', 'in-person'],
     rating: 4.9, reviews: 87, yearsExp: 11,
@@ -123,7 +122,7 @@ const CORE_THERAPISTS = [
     credentials: { license: 'LCSW', state: 'NY', location: 'Brooklyn, NY' },
     expertise: ['grief', 'burnout', 'stress'],
     insurance: ['Aetna', 'Cigna', 'Self-pay / Out-of-pocket'],
-    priceRange: '$130–150 / session',
+    priceRange: '$130-150 / session',
     languages: ['English'],
     mode: ['in-person', 'online'],
     rating: 4.8, reviews: 54, yearsExp: 14,
@@ -136,7 +135,7 @@ const CORE_THERAPISTS = [
     credentials: { license: 'LPC', state: 'TX', location: 'Austin, TX' },
     expertise: ['anxiety', 'stress', 'lowConfidence'],
     insurance: ['United Healthcare', 'BlueCross BlueShield', 'Humana'],
-    priceRange: '$90–110 / session',
+    priceRange: '$90-110 / session',
     languages: ['English', 'Spanish'],
     mode: ['online'],
     rating: 4.6, reviews: 29, yearsExp: 7,
@@ -149,7 +148,7 @@ const CORE_THERAPISTS = [
     credentials: { license: 'PhD, LMFT', state: 'TX', location: 'Houston, TX' },
     expertise: ['burnout', 'lowConfidence', 'loneliness'],
     insurance: ['Aetna', 'Cigna', 'Self-pay / Out-of-pocket'],
-    priceRange: '$85–105 / session',
+    priceRange: '$85-105 / session',
     languages: ['English'],
     mode: ['in-person', 'online'],
     rating: 4.7, reviews: 41, yearsExp: 10,
@@ -162,7 +161,7 @@ const CORE_THERAPISTS = [
     credentials: { license: 'LCSW', state: 'FL', location: 'Miami, FL' },
     expertise: ['grief', 'anxiety', 'loneliness'],
     insurance: ['BlueCross BlueShield', 'United Healthcare', 'Humana'],
-    priceRange: '$100–120 / session',
+    priceRange: '$100-120 / session',
     languages: ['English', 'Spanish'],
     mode: ['online'],
     rating: 4.8, reviews: 36, yearsExp: 8,
@@ -398,16 +397,7 @@ function clearLegacyActiveTherapistChats() {
   }
 }
 
-const THERAPIST_MESSAGES = [
-  "Hello! I've reviewed your Aurora profile. I can see some real patterns worth working through together — I'm glad you reached out. How are you feeling today?",
-  "That makes complete sense. Based on your profile, I'd like us to start by mapping out what's driving the stress peaks before we try to address them. Does that feel right?",
-  "I hear you. We'll move at a pace that feels safe. There's no pressure to get through everything at once.",
-  "I want to be direct with you — that pattern you're describing is very workable. A lot of my clients have been in exactly that spot. Let's talk about what's underneath it.",
-  "I'll also send over some brief exercises to try between sessions. Small experiments, not homework. Does that sound okay?",
-  "I'm noticing that what you're sharing connects strongly to what I see in your check-in data. Can you tell me more about what a typical morning looks like for you?",
-]
-
-// ─── scoring ──────────────────────────────────────────────────────────────────
+// scoring
 
 function getTop3(concerns) {
   return Object.entries(concerns).sort(([,a],[,b]) => b - a).slice(0, 3)
@@ -438,12 +428,17 @@ function runMatching(profile, prefs) {
 // ─── small helpers ────────────────────────────────────────────────────────────
 
 function Avatar({ initials, color, size = 44 }) {
+  const avatarColor = {
+    '#7c9eb2': '#5f7774',
+    '#c98b5f': '#806d5b',
+    '#4d6b58': '#4d6b58',
+  }[color] ?? '#637267'
+
   return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%', background: color,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: '#fff', fontWeight: 800, fontSize: size * 0.3, flexShrink: 0,
-    }}>
+    <div
+      className="tm-avatar"
+      style={{ width: size, height: size, background: avatarColor, fontSize: size * 0.3 }}
+    >
       {initials}
     </div>
   )
@@ -468,17 +463,18 @@ function ExpertiseTag({ label }) {
 
 function BackBtn({ onClick, label = 'Back' }) {
   return (
-    <button className="tm-back" onClick={onClick}>
-      ← {label}
+    <button className="tm-back tm-page-back" onClick={onClick}>
+      <span aria-hidden="true">←</span>
+      <span>{label}</span>
     </button>
   )
 }
 
 function Stars({ rating }) {
   return (
-    <span className="tm-stars">
-      {'★'.repeat(Math.round(rating))}{'☆'.repeat(5 - Math.round(rating))}
-      <span style={{ marginLeft: 4 }}>{rating}</span>
+    <span className="tm-rating" aria-label={`${rating} out of 5 rating`}>
+      <strong>{rating}</strong>
+      <span aria-hidden="true"> / 5</span>
     </span>
   )
 }
@@ -496,7 +492,7 @@ function ActiveTherapistChats({ chats, onOpen }) {
       {chats.length === 0 ? (
         <EmptyState
           title="No active therapist chats"
-          description="Therapists you message or book through Find a Therapist will appear here."
+          description="Therapists you connect with through Find a Therapist will appear here."
           compact
         />
       ) : (
@@ -508,7 +504,7 @@ function ActiveTherapistChats({ chats, onOpen }) {
                 <strong>{t.name}</strong>
                 <span>{t.credentials.license} - {t.credentials.location}</span>
               </div>
-              <button className="tm-view-btn" onClick={() => onOpen(t)}>Open chat</button>
+              <button className="tm-view-btn tm-active-chat-btn" onClick={() => onOpen(t)}>Open chat</button>
             </div>
           ))}
         </div>
@@ -517,124 +513,20 @@ function ActiveTherapistChats({ chats, onOpen }) {
   )
 }
 
-function SharingPreview({ refreshKey }) {
-  const [preview, setPreview] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [reloadKey, setReloadKey] = useState(0)
-
-  useEffect(() => {
-    let active = true
-    setLoading(true)
-    setError('')
-    fetchTherapistSharingPreview()
-      .then((data) => {
-        if (active) setPreview(data)
-      })
-      .catch((requestError) => {
-        if (active) setError(requestError.message || 'Unable to load sharing details.')
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => { active = false }
-  }, [refreshKey, reloadKey])
-
-  return (
-    <details className="tm-sharing-preview">
-      <summary>
-        <span>
-          <strong>Exactly what your therapist can see</strong>
-          <small>Review every included check-in, journal entry, and AI chat message.</small>
-        </span>
-        <span className="tm-sharing-summary-action">Review sharing</span>
-      </summary>
-
-      {loading && <LoadingState label="Loading sharing details…" compact skeletonLines={3} />}
-      {error && (
-        <FeedbackNotice
-          variant="error"
-          title="Could not load sharing details"
-          message={error}
-          onRetry={() => setReloadKey((key) => key + 1)}
-          compact
-        />
-      )}
-
-      {!loading && preview && (
-        <div className="tm-sharing-groups">
-          <section className="tm-sharing-group">
-            <div className="tm-sharing-group-head">
-              <strong>Needs profile and check-ins</strong>
-              <span className="tm-status tm-status--confirmed">Always shared</span>
-            </div>
-            <p>
-              Profile score: <strong>{preview.needsProfile?.overall ?? 'Not available'}</strong>
-              {preview.needsProfile?.basis && <> · Basis: {preview.needsProfile.basis.replaceAll('_', ' ')}</>}
-            </p>
-            {preview.checkIns.length === 0 ? (
-              <EmptyState title="No check-ins included" description="Complete an initial assessment to build your needs profile." compact />
-            ) : preview.checkIns.map((entry) => (
-              <details className="tm-shared-record" key={entry.id}>
-                <summary>{entry.type === 'initial' ? 'Initial assessment' : 'Weekly check-in'} · {entry.date}</summary>
-                <dl>
-                  {Object.entries(entry.scores).map(([name, score]) => (
-                    <div key={name}><dt>{CONCERN_LABEL[name] ?? name}</dt><dd>{score}</dd></div>
-                  ))}
-                </dl>
-              </details>
-            ))}
-          </section>
-
-          <section className="tm-sharing-group">
-            <div className="tm-sharing-group-head">
-              <strong>Journal · last {preview.journal.rangeDays} days</strong>
-              <span className={`tm-status tm-status--${preview.journal.allowed ? 'confirmed' : 'cancelled'}`}>
-                {preview.journal.allowed ? 'Shared' : 'Not shared'}
-              </span>
-            </div>
-            {preview.journal.allowed && preview.journal.entries.length === 0 && (
-              <EmptyState title="No journal entries included" description="There are no entries in the sharing window." compact />
-            )}
-            {preview.journal.entries.map((entry) => (
-              <details className="tm-shared-record" key={entry.id}>
-                <summary>{entry.date}{entry.mood ? ` · ${entry.mood}` : ''}</summary>
-                <p>{entry.content || 'Text is empty; this entry may contain only a doodle.'}</p>
-                {entry.hasDoodle && <p><strong>Includes a saved doodle.</strong></p>}
-              </details>
-            ))}
-          </section>
-
-          <section className="tm-sharing-group">
-            <div className="tm-sharing-group-head">
-              <strong>AI chat · last {preview.chat.rangeDays} days</strong>
-              <span className={`tm-status tm-status--${preview.chat.allowed ? 'confirmed' : 'cancelled'}`}>
-                {preview.chat.allowed ? 'Shared' : 'Not shared'}
-              </span>
-            </div>
-            {preview.chat.allowed && preview.chat.messages.length === 0 && (
-              <EmptyState title="No AI messages included" description="There are no messages in the sharing window." compact />
-            )}
-            {preview.chat.messages.map((message) => (
-              <div className="tm-shared-message" key={message.id}>
-                <strong>{message.role === 'user' ? 'You' : 'Aurora'}</strong>
-                <span>{new Date(message.timestamp).toLocaleString()}</span>
-                <p>{message.content}</p>
-              </div>
-            ))}
-          </section>
-        </div>
-      )}
-    </details>
-  )
-}
-
 function TherapistSharingSettings({ privacy, onUpdatePrivacy, privacySaving }) {
+  const savingChatAccess = privacySaving.includes('allowChatAccess')
+  const savingJournalAccess = privacySaving.includes('allowJournalAccess')
+
   return (
     <div className="tm-top3-card" aria-label="Global therapist privacy and data sharing">
-      <p className="tm-section-label">Privacy &amp; data sharing</p>
+      <div className="tm-privacy-heading">
+        <p className="tm-section-label">Privacy &amp; data sharing</p>
+        <span className="tm-privacy-save-status" role="status" aria-live="polite">
+          {privacySaving.length > 0 ? 'Saving changes…' : ''}
+        </span>
+      </div>
       <p className="tm-privacy-global">
-        These account-wide choices apply to every current and future therapist match and booking.
+        These account-wide choices apply to every current and future therapist connection.
       </p>
       <p className="tm-privacy-always">
         Always shared: your stored needs profile and check-in scores.
@@ -649,7 +541,8 @@ function TherapistSharingSettings({ privacy, onUpdatePrivacy, privacySaving }) {
           onClick={() => onUpdatePrivacy({ allowChatAccess: !privacy.allowChatAccess })}
           aria-label="Share AI chat logs with all therapists"
           aria-pressed={privacy.allowChatAccess}
-          disabled={privacySaving}
+          aria-busy={savingChatAccess}
+          disabled={savingChatAccess}
         >
           <span className="tm-toggle-knob" />
         </button>
@@ -664,13 +557,14 @@ function TherapistSharingSettings({ privacy, onUpdatePrivacy, privacySaving }) {
           onClick={() => onUpdatePrivacy({ allowJournalAccess: !privacy.allowJournalAccess })}
           aria-label="Share journal history with all therapists"
           aria-pressed={privacy.allowJournalAccess}
-          disabled={privacySaving}
+          aria-busy={savingJournalAccess}
+          disabled={savingJournalAccess}
         >
           <span className="tm-toggle-knob" />
         </button>
       </div>
       <p className="tm-privacy-global tm-privacy-global--footer">
-        Change these settings here at any time. Individual bookings cannot override them.
+        Change these settings here at any time. Individual connections cannot override them.
       </p>
     </div>
   )
@@ -717,7 +611,6 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind, onRefresh,
           />
         </div>
 
-        <SharingPreview refreshKey={`${privacy.allowChatAccess}-${privacy.allowJournalAccess}`} />
       </section>
     )
   }
@@ -769,8 +662,6 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind, onRefresh,
         />
       </div>
 
-      <SharingPreview refreshKey={`${privacy.allowChatAccess}-${privacy.allowJournalAccess}`} />
-
       <button className="tm-primary-btn" onClick={onFind}>
         Find a Therapist →
       </button>
@@ -780,17 +671,16 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind, onRefresh,
 
 // ─── preferences view ─────────────────────────────────────────────────────────
 
-function PreferencesView({ onBack, onMatch }) {
-  const [state, setState]         = useState('')
-  const [languages, setLanguages] = useState(['English'])
-  const [insurance, setInsurance] = useState('')
-  const [mode, setMode]           = useState('either')
-  const [error, setError]         = useState('')
+function PreferencesView({ prefs, onBack, onChange, onMatch }) {
+  const { state, languages, insurance, mode } = prefs
+  const [error, setError] = useState('')
 
   function toggleLang(lang) {
-    setLanguages(prev =>
-      prev.includes(lang) ? prev.filter(l => l !== lang) : [...prev, lang]
-    )
+    const nextLanguages = languages.includes(lang)
+      ? languages.filter((item) => item !== lang)
+      : [...languages, lang]
+    onChange({ ...prefs, languages: nextLanguages })
+    setError('')
   }
 
   function handleMatch() {
@@ -798,80 +688,80 @@ function PreferencesView({ onBack, onMatch }) {
     if (!insurance) return setError('Please select your insurance.')
     if (languages.length === 0) return setError('Select at least one language.')
     setError('')
-    onMatch({ state, languages, insurance, mode })
+    onMatch(prefs)
   }
 
   return (
     <section className="page tm-page">
       <BackBtn onClick={onBack} label="Needs Profile" />
-      <header className="page-header" style={{ marginTop: 12 }}>
+      <header className="page-header">
         <h2>Your preferences</h2>
         <p>We'll use these to filter and rank therapists for you.</p>
       </header>
 
-      <div className="tm-prefs-grid">
-        <div className="tm-pref-card">
-          <label className="tm-pref-label">State <span className="tm-req">*</span></label>
-          <AuroraDropdown
-            ariaLabel="Select state"
-            buttonClassName="tm-select tm-select--dropdown"
-            items={STATE_OPTIONS}
-            menuClassName="aurora-dropdown-menu--scrollable"
-            onSelectionChange={setState}
-            placeholder="Select state..."
-            selectedKey={state}
-          />
-        </div>
-
-        <div className="tm-pref-card">
-          <label className="tm-pref-label">Insurance <span className="tm-req">*</span></label>
-          <AuroraDropdown
-            ariaLabel="Select insurance provider"
-            buttonClassName="tm-select tm-select--dropdown"
-            items={INSURER_OPTIONS}
-            onSelectionChange={setInsurance}
-            placeholder="Select insurer..."
-            selectedKey={insurance}
-          />
-        </div>
-
-        <div className="tm-pref-card">
-          <label className="tm-pref-label">Preferred session type</label>
-          <div className="tm-radio-group">
-            {[['in-person','In-person'],['online','Online'],['either','No preference']].map(([val, lbl]) => (
-              <label key={val} className={`tm-radio${mode === val ? ' tm-radio--active' : ''}`}>
-                <input type="radio" name="mode" value={val} checked={mode === val} onChange={() => setMode(val)} />
-                {lbl}
-              </label>
-            ))}
+      <div className="tm-prefs-sections">
+        <section className="tm-pref-section" aria-labelledby="tm-location-heading">
+          <div className="tm-pref-section-heading">
+            <h3 id="tm-location-heading">Location and coverage</h3>
+            <p>Choose where you receive care and how you plan to cover it.</p>
           </div>
-        </div>
-
-        <div className="tm-pref-card">
-          <label className="tm-pref-label">Languages spoken (select all that apply)</label>
-          <div className="tm-check-group">
-            {LANGUAGES.map(lang => (
-              <label key={lang} className={`tm-check${languages.includes(lang) ? ' tm-check--active' : ''}`}>
-                <input type="checkbox" checked={languages.includes(lang)} onChange={() => toggleLang(lang)} />
-                {lang}
-              </label>
-            ))}
+          <div className="tm-pref-fields tm-pref-fields--two">
+            <div className="tm-pref-field">
+              <span className="tm-pref-label">State <span className="tm-req">*</span></span>
+              <AuroraDropdown ariaLabel="Select state" buttonClassName="tm-select tm-select--dropdown" items={STATE_OPTIONS} menuClassName="aurora-dropdown-menu--scrollable" onSelectionChange={(value) => { onChange({ ...prefs, state: value }); setError('') }} placeholder="Select state..." selectedKey={state} />
+            </div>
+            <div className="tm-pref-field">
+              <span className="tm-pref-label">Insurance <span className="tm-req">*</span></span>
+              <AuroraDropdown ariaLabel="Select insurance provider" buttonClassName="tm-select tm-select--dropdown" items={INSURER_OPTIONS} onSelectionChange={(value) => { onChange({ ...prefs, insurance: value }); setError('') }} placeholder="Select insurer..." selectedKey={insurance} />
+            </div>
           </div>
-        </div>
+        </section>
+
+        <section className="tm-pref-section" aria-labelledby="tm-session-heading">
+          <div className="tm-pref-section-heading">
+            <h3 id="tm-session-heading">Session preferences</h3>
+            <p>These choices refine the ranking without limiting your ability to explore.</p>
+          </div>
+          <div className="tm-pref-fields tm-pref-fields--session">
+            <fieldset className="tm-pref-fieldset">
+              <legend className="tm-pref-label">Preferred session type</legend>
+              <div className="tm-radio-group">
+                {[['in-person','In-person'],['online','Online'],['either','No preference']].map(([val, lbl]) => (
+                  <label key={val} className={`tm-radio${mode === val ? ' tm-radio--active' : ''}`}>
+                    <input type="radio" name="mode" value={val} checked={mode === val} onChange={() => onChange({ ...prefs, mode: val })} />
+                    <span>{lbl}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset className="tm-pref-fieldset">
+              <legend className="tm-pref-label">Languages spoken</legend>
+              <span className="tm-pref-helper">Select all that apply.</span>
+              <div className="tm-check-group">
+                {LANGUAGES.map(lang => (
+                  <label key={lang} className={`tm-check${languages.includes(lang) ? ' tm-check--active' : ''}`}>
+                    <input type="checkbox" checked={languages.includes(lang)} onChange={() => toggleLang(lang)} />
+                    <span>{lang}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </div>
+        </section>
       </div>
 
       {error && <FeedbackNotice variant="error" title="Check your preferences" message={error} compact />}
 
-      <button className="tm-primary-btn" onClick={handleMatch}>
-        Show my matches →
-      </button>
+      <div className="tm-pref-actions">
+        <button className="tm-primary-btn" onClick={handleMatch}>Show my matches →</button>
+      </div>
     </section>
   )
 }
 
 // ─── results view ─────────────────────────────────────────────────────────────
 
-function ResultsView({ matches, prefs, onSelect, onBack }) {
+function ResultsView({ matches, prefs, activeChats, onSelect, onOpenConnected, onBack }) {
   if (matches.length === 0) {
     return (
       <section className="page tm-page">
@@ -891,52 +781,59 @@ function ResultsView({ matches, prefs, onSelect, onBack }) {
   return (
     <section className="page tm-page">
       <BackBtn onClick={onBack} label="Preferences" />
-      <header className="page-header" style={{ marginTop: 12 }}>
+      <header className="page-header">
         <h2>Your top {matches.length} match{matches.length !== 1 ? 'es' : ''}</h2>
         <p>Ranked by how well each therapist aligns with your needs profile and preferences.</p>
       </header>
 
       <div className="tm-results-list">
-        {matches.map((t, idx) => (
-          <div key={t.id} className="tm-result-card">
-            <div className="tm-result-rank">#{idx + 1}</div>
+        {matches.map((t, idx) => {
+          const isConnected = activeChats.some((active) => active.id === t.id)
+          return (
+          <article key={t.id} className={`tm-result-card${isConnected ? ' tm-result-card--connected' : ''}`}>
+            <div className="tm-result-rank" aria-label={`Rank ${idx + 1}`}>
+              {String(idx + 1).padStart(2, '0')}
+            </div>
             <Avatar initials={t.initials} color={t.color} size={52} />
 
             <div className="tm-result-info">
-              <strong className="tm-result-name">{t.name}</strong>
+              <div className="tm-result-title-row">
+                <strong className="tm-result-name">{t.name}</strong>
+                {isConnected && <span className="tm-connected-label">Already connected</span>}
+              </div>
               <span className="tm-result-creds">{t.credentials.license} · {t.credentials.location}</span>
-              <div className="tm-tag-row">
+              <div className="tm-tag-row" aria-label="Specialties">
                 {t.expertise.map(e => <ExpertiseTag key={e} label={e} />)}
               </div>
               <div className="tm-result-meta">
                 <Stars rating={t.rating} />
-                <span className="tm-sep">·</span>
                 <span>{t.reviews} reviews</span>
-                <span className="tm-sep">·</span>
-                <span>{t.yearsExp} yrs exp</span>
-                <span className="tm-sep">·</span>
+                <span>{t.yearsExp} years experience</span>
                 <span>{t.availability}</span>
               </div>
               <div className="tm-result-detail-row">
                 <span>{t.languages.join(', ')}</span>
-                <span className="tm-sep">·</span>
-                <span style={{ textTransform: 'capitalize' }}>{t.mode.join(' / ')}</span>
-                <span className="tm-sep">·</span>
+                <span className="tm-session-format">{t.mode.join(' / ')}</span>
                 <span>{t.priceRange}</span>
               </div>
             </div>
 
             <div className="tm-score-block">
-              <div className="tm-score-num" style={{ color: t.score === maxScore ? '#4d6b58' : '#2e2a26' }}>
+              <div className="tm-score-label">Fit score</div>
+              <div className={`tm-score-num${t.score === maxScore ? ' tm-score-num--top' : ''}`}>
                 {t.score.toFixed(1)}
               </div>
-              <div className="tm-score-label">match score</div>
-              <button className="tm-view-btn" onClick={() => onSelect(t)}>
-                View profile
+              <button
+                className={`tm-view-btn${isConnected ? ' tm-view-btn--connected' : ''}`}
+                onClick={() => isConnected ? onOpenConnected(t) : onSelect(t)}
+                aria-label={isConnected ? `Open existing chat with ${t.name}` : `View profile for ${t.name}`}
+              >
+                {isConnected ? 'Open chat' : 'View profile'}
               </button>
             </div>
-          </div>
-        ))}
+          </article>
+          )
+        })}
       </div>
     </section>
   )
@@ -953,7 +850,7 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
 
   async function handleBook() {
     if (!insurer) {
-      setBookingError('Select an insurance provider before requesting a session.')
+      setBookingError('Select an insurance provider before connecting with this therapist.')
       return
     }
     setBooking(true)
@@ -962,7 +859,7 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
       const bookingRequest = await onBook(t, { insuranceProvider: insurer, memberId })
       setBooked(bookingRequest)
     } catch (error) {
-      setBookingError(error.message || 'Unable to request this session right now.')
+      setBookingError(error.message || 'Unable to connect with this therapist right now.')
     } finally {
       setBooking(false)
     }
@@ -980,9 +877,19 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
             <div>
               <h2 className="tm-detail-name">{t.name}</h2>
               <p className="tm-detail-creds">{t.credentials.license} · {t.credentials.location}</p>
-              <Stars rating={t.rating} />
-              <span style={{ marginLeft: 8, fontSize: '0.82rem', color: 'var(--muted)' }}>{t.reviews} reviews</span>
+              <div className="tm-detail-rating">
+                <Stars rating={t.rating} />
+                <span>{t.reviews} reviews</span>
+              </div>
             </div>
+          </div>
+
+          <div className="tm-detail-fit-summary">
+            <div>
+              <span>Fit score</span>
+              <strong>{t.score.toFixed(1)}</strong>
+            </div>
+            <p>{t.availability}</p>
           </div>
 
           <p className="tm-bio">{t.bio}</p>
@@ -992,28 +899,28 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
             <div className="tm-tag-row">{t.expertise.map(e => <ExpertiseTag key={e} label={e} />)}</div>
           </div>
 
-          <div className="tm-detail-row-group">
+          <dl className="tm-detail-row-group">
             <div className="tm-detail-row">
-              <span className="tm-dr-label">Experience</span>
-              <span>{t.yearsExp} years</span>
+              <dt className="tm-dr-label">Experience</dt>
+              <dd>{t.yearsExp} years</dd>
             </div>
             <div className="tm-detail-row">
-              <span className="tm-dr-label">Languages</span>
-              <span>{t.languages.join(', ')}</span>
+              <dt className="tm-dr-label">Languages</dt>
+              <dd>{t.languages.join(', ')}</dd>
             </div>
             <div className="tm-detail-row">
-              <span className="tm-dr-label">Session type</span>
-              <span style={{ textTransform: 'capitalize' }}>{t.mode.join(' / ')}</span>
+              <dt className="tm-dr-label">Session type</dt>
+              <dd className="tm-session-format">{t.mode.join(' / ')}</dd>
             </div>
             <div className="tm-detail-row">
-              <span className="tm-dr-label">Price</span>
-              <span>{t.priceRange}</span>
+              <dt className="tm-dr-label">Price</dt>
+              <dd>{t.priceRange}</dd>
             </div>
             <div className="tm-detail-row">
-              <span className="tm-dr-label">Availability</span>
-              <span>{t.availability}</span>
+              <dt className="tm-dr-label">Availability</dt>
+              <dd>{t.availability}</dd>
             </div>
-          </div>
+          </dl>
 
         </div>
 
@@ -1022,17 +929,18 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
 
           {/* ── insurance + booking ── */}
           <div className="tm-booking-card">
-            <p className="tm-section-label">Book a session</p>
+            <p className="tm-section-label">Connect with therapist</p>
 
             {booked ? (
               <div className="tm-booked-confirm">
                 <FeedbackNotice
                   variant="success"
-                  title="Session requested"
-                  message={`You'll receive a confirmation from ${t.name} within 24 hours.`}
+                  title="Connection requested"
+                  message={`Your request has been sent to ${t.name}. You can continue the conversation in chat.`}
                 />
                 <span className="tm-status tm-status--requested">{booked.status}</span>
-                <button className="tm-primary-btn" style={{ marginTop: 12, width: '100%' }} onClick={onChat}>
+                <p className="tm-booking-next-step">Appointments are scheduled separately after you connect.</p>
+                <button className="tm-primary-btn tm-primary-btn--full tm-primary-btn--spaced" onClick={onChat}>
                   Open chat →
                 </button>
               </div>
@@ -1041,7 +949,7 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
                 <div className="tm-form-field">
                   <label className="tm-field-label">Insurance provider</label>
                   <AuroraDropdown
-                    ariaLabel="Select booking insurance provider"
+                    ariaLabel="Select insurance provider for connection"
                     buttonClassName="tm-select tm-select--dropdown"
                     items={INSURER_OPTIONS}
                     onSelectionChange={setInsurer}
@@ -1050,9 +958,10 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
                   />
                 </div>
                 <div className="tm-form-field">
-                  <label className="tm-field-label">Member ID</label>
+                  <label className="tm-field-label" htmlFor="therapist-member-id">Member ID</label>
                   <input
                     className="tm-input"
+                    id="therapist-member-id"
                     type="text"
                     placeholder="e.g. XYZ123456789"
                     value={memberId}
@@ -1060,25 +969,24 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
                   />
                 </div>
                 <p className="tm-privacy-always">
-                  Your global Therapist Match sharing settings apply to this request. Aurora sends a booking request only; no payment is collected in this demo.
+                  Your global Therapist Match sharing settings apply to this connection request. Appointment scheduling is handled separately in chat. No payment is collected in this demo.
                 </p>
                 {bookingError && (
                   <FeedbackNotice
                     variant="error"
-                    title="Could not request a session"
+                    title="Could not connect with this therapist"
                     message={bookingError}
                     onRetry={handleBook}
                     compact
                   />
                 )}
                 <AsyncButton
-                  className="tm-primary-btn"
-                  style={{ width: '100%', marginTop: 4 }}
+                  className="tm-primary-btn tm-primary-btn--full tm-primary-btn--compact-top"
                   onClick={handleBook}
                   pending={booking}
                   pendingLabel="Sending request…"
                 >
-                  Request session
+                  Connect with therapist
                 </AsyncButton>
               </>
             )}
@@ -1133,19 +1041,6 @@ function StatusBadge({ status }) {
   )
 }
 
-function AppointmentBanner({ appt, expanded, onToggle }) {
-  return (
-    <div className="tm-appt-banner">
-      <div className="tm-appt-icon">📅</div>
-      <div>
-        <strong>{appt.title}</strong>
-        <p>{appt.date}</p>
-        {appt.desc && <p className="tm-appt-desc">{appt.desc}</p>}
-      </div>
-    </div>
-  )
-}
-
 function ActiveAppointmentBanner({ appt, expanded, onToggle }) {
   return (
     <button className={`tm-appt-banner${expanded ? ' tm-appt-banner--expanded' : ''}`} onClick={onToggle}>
@@ -1167,236 +1062,9 @@ function ActiveAppointmentBanner({ appt, expanded, onToggle }) {
   )
 }
 
-function ChatView({ therapist: t, onBack }) {
-  const [messages, setMessages] = useState([
-    { id: 0, role: 'therapist', text: "Hello! I've reviewed your Aurora profile. I can see some real patterns worth working through together — I'm glad you reached out. How are you feeling today?", time: timestamp(), type: 'text' },
-  ])
-  const [input, setInput]           = useState('')
-  const [isTyping, setIsTyping]     = useState(false)
-  const [showApptForm, setShowApptForm] = useState(false)
-  const [showProfileCard, setShowProfileCard] = useState(false)
-  const [activeAppointment, setActiveAppointment] = useState(null)
-  const [appointmentExpanded, setAppointmentExpanded] = useState(false)
-  const [apptTitle, setApptTitle]   = useState('')
-  const [apptDate, setApptDate]     = useState('')
-  const [apptDesc, setApptDesc]     = useState('')
-  const [msgIdx, setMsgIdx]         = useState(0)
-  const messagesRef                 = useRef(null)
-  const inputRef                    = useRef(null)
-  const shouldScrollRef             = useRef(false)
+// Persistent therapist conversation and care workspace
 
-  useEffect(() => {
-    const messagesEl = messagesRef.current
-    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'auto' })
-    inputRef.current?.focus()
-  }, [])
-
-  useEffect(() => {
-    if (!shouldScrollRef.current) return
-    shouldScrollRef.current = false
-    const messagesEl = messagesRef.current
-    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' })
-    if (!isTyping) inputRef.current?.focus()
-  }, [messages, isTyping])
-
-  function sendMessage() {
-    const text = input.trim()
-    if (!text || isTyping) return
-    const userMsg = { id: Date.now(), role: 'user', text, time: timestamp(), type: 'text' }
-    shouldScrollRef.current = true
-    setMessages(prev => [...prev, userMsg])
-    setInput('')
-    inputRef.current?.focus()
-    shouldScrollRef.current = true
-    setIsTyping(true)
-    setTimeout(() => {
-      shouldScrollRef.current = true
-      setIsTyping(false)
-      const reply = THERAPIST_MESSAGES[msgIdx % THERAPIST_MESSAGES.length]
-      setMsgIdx(i => i + 1)
-      setMessages(prev => [...prev, { id: Date.now()+1, role: 'therapist', text: reply, time: timestamp(), type: 'text' }])
-    }, 1100 + Math.random() * 700)
-  }
-
-  function createAppointment() {
-    if (!apptTitle || !apptDate) return
-    setActiveAppointment({ title: apptTitle, date: apptDate, desc: apptDesc, therapist: t.name })
-    setAppointmentExpanded(false)
-    setApptTitle('')
-    setApptDate('')
-    setApptDesc('')
-    setShowApptForm(false)
-  }
-
-  function cancelAppointmentForm() {
-    setApptTitle('')
-    setApptDate('')
-    setApptDesc('')
-    setShowApptForm(false)
-  }
-
-  return (
-    <div className="tm-chat-root">
-      {/* header */}
-      <div className="tm-chat-header">
-        <button className="tm-back tm-back--inline" onClick={onBack}>←</button>
-        <button
-          className={`tm-chat-profile-trigger${showProfileCard ? ' tm-chat-profile-trigger--open' : ''}`}
-          onClick={() => setShowProfileCard(v => !v)}
-          aria-expanded={showProfileCard}
-        >
-          <Avatar initials={t.initials} color={t.color} size={36} />
-          <span className="tm-chat-profile-copy">
-            <strong className="tm-chat-name">{t.name}</strong>
-            <span className="tm-chat-status">{t.credentials.license} · {t.credentials.location}</span>
-          </span>
-        </button>
-        <button
-          className="tm-appt-trigger"
-          onClick={() => setShowApptForm(v => !v)}
-          title="Schedule appointment"
-        >
-          + Appointment
-        </button>
-      </div>
-
-      {activeAppointment && (
-        <div className="tm-appt-hanger">
-          <ActiveAppointmentBanner
-            appt={activeAppointment}
-            expanded={appointmentExpanded}
-            onToggle={() => setAppointmentExpanded(v => !v)}
-          />
-        </div>
-      )}
-
-      {/* appointment form */}
-      {showApptForm && (
-        <div className="tm-appt-form">
-          <strong style={{ fontSize: '0.9rem' }}>Schedule an appointment</strong>
-          <input className="tm-input" placeholder="Title (e.g. Initial Consultation)" value={apptTitle} onChange={e => setApptTitle(e.target.value)} />
-          <input className="tm-input" type="datetime-local" value={apptDate} onChange={e => setApptDate(e.target.value)} />
-          <p className="tm-selected-date">
-            {apptDate ? `Selected: ${formatAppointmentDate(apptDate)}` : 'Choose a date before creating the appointment.'}
-          </p>
-          <input className="tm-input" placeholder="Description (optional)" value={apptDesc} onChange={e => setApptDesc(e.target.value)} />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="tm-primary-btn" style={{ flex: 1 }} onClick={createAppointment}>Create appointment</button>
-            <button className="tm-outline-btn" onClick={cancelAppointmentForm}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* messages */}
-      <div className="tm-chat-messages" ref={messagesRef}>
-        {messages.map(m => {
-          if (m.type === 'appointment') {
-            return (
-              <div key={m.id} className="tm-appt-msg">
-                <AppointmentBanner appt={m.appt} />
-                <span className="tm-appt-time">{m.time}</span>
-              </div>
-            )
-          }
-          const isUser = m.role === 'user'
-          return (
-            <div key={m.id} className={`tm-msg-row${isUser ? ' tm-msg-row--user' : ''}`}>
-              {!isUser && <Avatar initials={t.initials} color={t.color} size={30} />}
-              <div className={`tm-bubble${isUser ? ' tm-bubble--user' : ' tm-bubble--them'}`}>
-                <p className="tm-bubble-text">{m.text}</p>
-                <span className="tm-bubble-time">{m.time}</span>
-              </div>
-              {isUser && (
-                <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.6rem', fontWeight: 800, flexShrink: 0 }}>You</div>
-              )}
-            </div>
-          )
-        })}
-        {isTyping && (
-          <div className="tm-msg-row">
-            <Avatar initials={t.initials} color={t.color} size={30} />
-            <div className="tm-bubble tm-bubble--them tm-typing-bubble">
-              <span className="dot" /><span className="dot" /><span className="dot" />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* input */}
-      <div className="tm-chat-input-bar">
-        <textarea
-          ref={inputRef}
-          className="chat-textarea"
-          placeholder="Message…"
-          rows={1}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-          disabled={isTyping}
-        />
-        <button
-          className="send-btn"
-          onClick={sendMessage}
-          disabled={!input.trim() || isTyping}
-          aria-label="Send"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </button>
-      </div>
-
-      {showProfileCard && (
-        <div className="tm-profile-modal-backdrop" role="presentation" onClick={() => setShowProfileCard(false)}>
-          <div className="tm-profile-modal" role="dialog" aria-modal="true" aria-label={`${t.name} profile`} onClick={e => e.stopPropagation()}>
-            <button className="tm-profile-modal-close" onClick={() => setShowProfileCard(false)} aria-label="Close profile">x</button>
-            <div className="tm-detail-header">
-              <Avatar initials={t.initials} color={t.color} size={64} />
-              <div>
-                <h2 className="tm-detail-name">{t.name}</h2>
-                <p className="tm-detail-creds">{t.credentials.license} - {t.credentials.location}</p>
-                <Stars rating={t.rating} />
-                <span style={{ marginLeft: 8, fontSize: '0.82rem', color: 'var(--muted)' }}>{t.reviews} reviews</span>
-              </div>
-            </div>
-
-            <p className="tm-bio">{t.bio}</p>
-
-            <div className="tm-detail-section">
-              <p className="tm-section-label">Specialties</p>
-              <div className="tm-tag-row">{t.expertise.map(e => <ExpertiseTag key={e} label={e} />)}</div>
-            </div>
-
-            <div className="tm-chat-profile-grid">
-              <div className="tm-detail-row">
-                <span className="tm-dr-label">Experience</span>
-                <span>{t.yearsExp} years</span>
-              </div>
-              <div className="tm-detail-row">
-                <span className="tm-dr-label">Languages</span>
-                <span>{t.languages.join(', ')}</span>
-              </div>
-              <div className="tm-detail-row">
-                <span className="tm-dr-label">Session type</span>
-                <span style={{ textTransform: 'capitalize' }}>{t.mode.join(' / ')}</span>
-              </div>
-              <div className="tm-detail-row">
-                <span className="tm-dr-label">Price</span>
-                <span>{t.priceRange}</span>
-              </div>
-              <div className="tm-detail-row">
-                <span className="tm-dr-label">Availability</span>
-                <span>{t.availability}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── root ─────────────────────────────────────────────────────────────────────
-
-function PersistentTherapistChatView({ therapist: t, onBack }) {
+function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancelled }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoadingHistory, setIsLoadingHistory] = useState(true)
@@ -1414,7 +1082,8 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
   const [appointmentExpanded, setAppointmentExpanded] = useState(false)
   const [editingAppointmentId, setEditingAppointmentId] = useState(null)
   const [appointmentConfirming, setAppointmentConfirming] = useState(false)
-  const [cancellingBookingId, setCancellingBookingId] = useState(null)
+  const [showConnectionCancel, setShowConnectionCancel] = useState(false)
+  const [connectionLeaving, setConnectionLeaving] = useState(false)
   const [cancellingAppointmentId, setCancellingAppointmentId] = useState(null)
   const [workflowActionId, setWorkflowActionId] = useState(null)
   const [workflowNotice, setWorkflowNotice] = useState('')
@@ -1427,6 +1096,7 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
   const messagesRef = useRef(null)
   const inputRef = useRef(null)
   const shouldScrollRef = useRef(false)
+  const cancellationTimerRef = useRef(null)
 
   useEffect(() => {
     let isActive = true
@@ -1494,6 +1164,13 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
         therapist: t.name,
       }
     : null
+  const activeConnectionRequest = bookings.find((item) => item.status === 'requested') ?? null
+
+  useEffect(() => {
+    return () => {
+      if (cancellationTimerRef.current) window.clearTimeout(cancellationTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     const messagesEl = messagesRef.current
@@ -1648,16 +1325,26 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
     setShowApptForm(false)
   }
 
-  async function confirmBookingCancellation(bookingId) {
+  async function confirmConnectionCancellation() {
+    if (!activeConnectionRequest || workflowActionId) return
+
+    const bookingId = activeConnectionRequest.id
     setWorkflowActionId(`booking-${bookingId}`)
     setWorkflowError('')
+    setWorkflowNotice('')
     try {
       const updated = await cancelTherapistBooking(t.matchId, bookingId)
       setBookings((current) => current.map((item) => item.id === updated.id ? updated : item))
-      setCancellingBookingId(null)
-      setWorkflowNotice('Booking request cancelled.')
+      setShowConnectionCancel(false)
+      setConnectionLeaving(true)
+
+      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      cancellationTimerRef.current = window.setTimeout(
+        () => onConnectionCancelled?.(t.id),
+        reduceMotion ? 0 : 220,
+      )
     } catch (error) {
-      setWorkflowError(error.message || 'Unable to cancel the booking request.')
+      setWorkflowError(error.message || 'Unable to cancel the connection request.')
     } finally {
       setWorkflowActionId(null)
     }
@@ -1679,7 +1366,10 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
   }
 
   return (
-    <div className="tm-chat-root">
+    <div
+      className={`tm-chat-root${connectionLeaving ? ' tm-chat-root--leaving' : ''}`}
+      aria-busy={connectionLeaving || undefined}
+    >
       <div className="tm-chat-header">
         <button className="tm-back tm-back--inline" onClick={onBack}>Back</button>
         <button
@@ -1702,10 +1392,50 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
             Care history ({bookings.length + appointments.length})
           </button>
           <button className="tm-appt-trigger" onClick={openAppointmentForm} title="Schedule appointment">
-            + Appointment
+            Schedule appointment
           </button>
+          {activeConnectionRequest && (
+            <button
+              className="tm-appt-trigger tm-cancel-connection-trigger"
+              onClick={() => {
+                setShowConnectionCancel((value) => !value)
+                setWorkflowError('')
+                setWorkflowNotice('')
+              }}
+              aria-expanded={showConnectionCancel}
+              disabled={workflowActionId === `booking-${activeConnectionRequest.id}` || connectionLeaving}
+            >
+              Cancel connection
+            </button>
+          )}
         </div>
       </div>
+
+      {showConnectionCancel && activeConnectionRequest && (
+        <section className="tm-connection-cancel-confirm" aria-label="Cancel connection request">
+          <div>
+            <strong>Cancel connection request?</strong>
+            <p>{t.name} will be removed from Active Therapist Chats. Your conversation and care history will be kept.</p>
+          </div>
+          <div className="tm-connection-cancel-actions">
+            <AsyncButton
+              className="tm-danger-inline"
+              pending={workflowActionId === `booking-${activeConnectionRequest.id}`}
+              pendingLabel="Cancelling..."
+              onClick={confirmConnectionCancellation}
+            >
+              Confirm cancellation
+            </AsyncButton>
+            <button
+              className="tm-link-btn"
+              onClick={() => setShowConnectionCancel(false)}
+              disabled={Boolean(workflowActionId)}
+            >
+              Keep connection
+            </button>
+          </div>
+        </section>
+      )}
 
       {activeAppointment && (
         <div className="tm-appt-hanger">
@@ -1718,41 +1448,21 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
       )}
 
       {showCareHistory && (
-        <section className="tm-care-history" aria-label="Booking requests and appointments">
+        <section className="tm-care-history" aria-label="Connection requests and appointments">
           <div className="tm-care-section">
-            <h3>Booking requests</h3>
+            <h3>Connection requests</h3>
             {bookings.length === 0 ? (
-              <EmptyState title="No booking requests" description="Session requests will remain here with their latest status." compact />
+              <EmptyState title="No connection requests" description="Connection requests will remain here with their latest status." compact />
             ) : bookings.map((booking) => (
               <article className="tm-care-item" key={booking.id}>
                 <div>
                   <div className="tm-care-item-title">
-                    <strong>Session request</strong>
+                    <strong>Connection request</strong>
                     <StatusBadge status={booking.status} />
                   </div>
                   <p>{new Date(booking.createdAt).toLocaleString()} · {booking.insuranceProvider || 'No insurance listed'}</p>
                   {booking.memberId && <small>Member ID ending in {booking.memberId.slice(-4)}</small>}
                 </div>
-                {booking.status === 'requested' && (
-                  cancellingBookingId === booking.id ? (
-                    <div className="tm-confirm-actions">
-                      <span>Cancel this outstanding request?</span>
-                      <AsyncButton
-                        className="tm-danger-inline"
-                        pending={workflowActionId === `booking-${booking.id}`}
-                        pendingLabel="Cancelling…"
-                        onClick={() => confirmBookingCancellation(booking.id)}
-                      >
-                        Yes, cancel
-                      </AsyncButton>
-                      <button className="tm-link-btn" onClick={() => setCancellingBookingId(null)}>Keep request</button>
-                    </div>
-                  ) : (
-                    <button className="tm-link-btn tm-link-btn--danger" onClick={() => setCancellingBookingId(booking.id)}>
-                      Cancel request
-                    </button>
-                  )
-                )}
               </article>
             ))}
           </div>
@@ -1921,9 +1631,7 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
                 <p className="tm-bubble-text">{message.text}</p>
                 <span className="tm-bubble-time">{message.time}</span>
               </div>
-              {isUser && (
-                <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.6rem', fontWeight: 800, flexShrink: 0 }}>You</div>
-              )}
+
             </div>
           )
         })}
@@ -1954,9 +1662,7 @@ function PersistentTherapistChatView({ therapist: t, onBack }) {
           <ChatInputSubmit
             className="send-btn"
             disabled={!t.matchId || isLoadingHistory}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </ChatInputSubmit>
+          />
         </ChatInput>
       </div>
 
@@ -2014,9 +1720,15 @@ export default function TherapistMatch() {
   const { user, refreshUser } = useUser()
   const needsProfile = formatNeedsProfile(user?.needsProfile)
   const [view,     setView]     = useState('profile')   // profile | prefs | results | detail | chat
-  const [prefs,    setPrefs]    = useState(null)
+  const [prefs,    setPrefs]    = useState({
+    state: '',
+    languages: ['English'],
+    insurance: '',
+    mode: 'either',
+  })
   const [matches,  setMatches]  = useState([])
   const [selected, setSelected] = useState(null)
+  const [chatReturnView, setChatReturnView] = useState('profile')
   const [activeChats, setActiveChats] = useState([])
   const [privacy, setPrivacy] = useState({
     allowAiAccess: false,
@@ -2025,7 +1737,7 @@ export default function TherapistMatch() {
   })
   const [privacyError, setPrivacyError] = useState('')
   const [privacyLoading, setPrivacyLoading] = useState(false)
-  const [privacySaving, setPrivacySaving] = useState(false)
+  const [privacySaving, setPrivacySaving] = useState([])
   const [privacyReloadKey, setPrivacyReloadKey] = useState(0)
   const [chatsLoading, setChatsLoading] = useState(false)
   const [chatsError, setChatsError] = useState('')
@@ -2099,22 +1811,27 @@ export default function TherapistMatch() {
   function handleMatch(p) {
     if (!needsProfile) return
     setPrefs(p)
-    setMatches(runMatching(needsProfile, p).filter(t => !activeChats.some(active => active.id === t.id)))
+    setMatches(runMatching(needsProfile, p))
     setView('results')
   }
 
   async function changePrivacy(patch) {
-    if (privacySaving) return
-    setPrivacySaving(true)
+    const [setting, nextValue] = Object.entries(patch)[0] ?? []
+    if (!setting || privacySaving.includes(setting)) return
+
+    const previousValue = privacy[setting]
+    setPrivacy((current) => ({ ...current, [setting]: nextValue }))
+    setPrivacySaving((current) => [...current, setting])
     setPrivacyError('')
     try {
       const settings = await updateJournalPrivacy(patch)
-      setPrivacy(settings)
+      setPrivacy((current) => ({ ...current, [setting]: settings[setting] }))
       setPrivacyError('')
     } catch (error) {
+      setPrivacy((current) => ({ ...current, [setting]: previousValue }))
       setPrivacyError(error.message)
     } finally {
-      setPrivacySaving(false)
+      setPrivacySaving((current) => current.filter((key) => key !== setting))
     }
   }
 
@@ -2132,7 +1849,8 @@ export default function TherapistMatch() {
     return createTherapistBooking(matchId, payload)
   }
 
-  async function openChat(therapist) {
+  async function openChat(therapist, returnView = 'profile') {
+    setChatReturnView(returnView)
     let selectedTherapist = therapist
 
     setActiveChats((prev) => {
@@ -2165,11 +1883,20 @@ export default function TherapistMatch() {
     setView('chat')
   }
 
+  function handleConnectionCancelled(therapistId) {
+    setActiveChats((current) => {
+      const next = current.filter((therapist) => therapist.id !== therapistId)
+      if (!user) saveLegacyActiveTherapistChats(next)
+      return next
+    })
+    setSelected(null)
+    setView(chatReturnView === 'results' ? 'results' : 'profile')
+  }
+
   return (
     <>
       <style>{TM_STYLES}</style>
       {(privacyLoading || chatsLoading) && <LoadingState label="Loading therapist information…" compact />}
-      {privacySaving && <FeedbackNotice message="Saving your sharing preferences…" compact />}
       {privacyError && (
         <FeedbackNotice
           variant="error"
@@ -2189,11 +1916,11 @@ export default function TherapistMatch() {
           compact
         />
       )}
-      {view === 'profile'  && <NeedsProfileView profile={needsProfile} activeChats={activeChats} onOpenChat={openChat} onFind={() => setView('prefs')} onRefresh={refreshUser} privacy={privacy} onUpdatePrivacy={changePrivacy} privacySaving={privacySaving} />}
-      {view === 'prefs'    && <PreferencesView onBack={() => setView('profile')} onMatch={handleMatch} />}
-      {view === 'results'  && <ResultsView matches={matches} prefs={prefs} onSelect={t => { setSelected(t); setView('detail') }} onBack={() => setView('prefs')} />}
-      {view === 'detail'   && selected && <DetailView therapist={selected} prefs={prefs} onChat={() => openChat(selected)} onBook={requestBooking} onBack={() => setView('results')} />}
-      {view === 'chat'     && selected && <PersistentTherapistChatView therapist={selected} onBack={() => setView('profile')} />}
+      {view === 'profile'  && <NeedsProfileView profile={needsProfile} activeChats={activeChats} onOpenChat={(therapist) => openChat(therapist, 'profile')} onFind={() => setView('prefs')} onRefresh={refreshUser} privacy={privacy} onUpdatePrivacy={changePrivacy} privacySaving={privacySaving} />}
+      {view === 'prefs'    && <PreferencesView prefs={prefs} onChange={setPrefs} onBack={() => setView('profile')} onMatch={handleMatch} />}
+      {view === 'results'  && <ResultsView matches={matches} prefs={prefs} activeChats={activeChats} onSelect={t => { setSelected(t); setView('detail') }} onOpenConnected={(therapist) => openChat(therapist, 'results')} onBack={() => setView('prefs')} />}
+      {view === 'detail'   && selected && <DetailView therapist={selected} prefs={prefs} onChat={() => openChat(selected, 'results')} onBook={requestBooking} onBack={() => setView('results')} />}
+      {view === 'chat'     && selected && <PersistentTherapistChatView therapist={selected} onBack={() => setView(chatReturnView)} onConnectionCancelled={handleConnectionCancelled} />}
     </>
   )
 }
@@ -2453,6 +2180,15 @@ const TM_STYLES = `
   .tm-dr-label { color: var(--muted); font-weight: 600; }
 
   /* privacy */
+  .tm-privacy-heading {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  }
+  .tm-privacy-heading .tm-section-label { margin: 0; }
+  .tm-privacy-save-status {
+    min-width: 112px; min-height: 18px;
+    color: var(--muted); font-size: 0.76rem; font-weight: 600;
+    line-height: 1.35; text-align: right;
+  }
   .tm-privacy-global { font-size: 0.82rem; color: var(--muted); line-height: 1.5; margin: 0 0 10px; }
   .tm-privacy-global--footer { margin: 12px 0 0; }
   .tm-privacy-always { font-size: 0.8rem; color: var(--muted); margin: 0 0 14px; }
@@ -2476,37 +2212,8 @@ const TM_STYLES = `
     transition: left 200ms;
   }
   .tm-toggle--on .tm-toggle-knob { left: 23px; }
-  .tm-toggle:disabled { opacity: 0.55; cursor: not-allowed; }
+  .tm-toggle:disabled { opacity: 1; cursor: wait; }
 
-  /* exact sharing preview */
-  .tm-sharing-preview {
-    background: var(--panel-strong);
-    border: 1px solid var(--line);
-    border-radius: 20px;
-    box-shadow: var(--shadow);
-    overflow: hidden;
-  }
-  .tm-sharing-preview > summary {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 16px; padding: 18px 20px; cursor: pointer; list-style: none;
-  }
-  .tm-sharing-preview > summary::-webkit-details-marker { display: none; }
-  .tm-sharing-preview > summary span:first-child { display: grid; gap: 3px; }
-  .tm-sharing-preview > summary small { color: var(--muted); font-weight: 400; }
-  .tm-sharing-summary-action { color: var(--accent); font-size: 0.8rem; font-weight: 800; white-space: nowrap; }
-  .tm-sharing-groups { display: grid; gap: 12px; padding: 0 20px 20px; }
-  .tm-sharing-group { display: grid; gap: 9px; padding: 14px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,0.55); }
-  .tm-sharing-group p { margin: 0; color: var(--muted); font-size: 0.84rem; }
-  .tm-sharing-group-head, .tm-care-item-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .tm-shared-record { border-top: 1px solid var(--line); padding-top: 8px; }
-  .tm-shared-record summary { cursor: pointer; color: var(--accent); font-size: 0.82rem; font-weight: 700; }
-  .tm-shared-record dl { display: grid; gap: 5px; margin: 10px 0 0; }
-  .tm-shared-record dl div { display: flex; justify-content: space-between; gap: 10px; font-size: 0.8rem; }
-  .tm-shared-record dt { text-transform: capitalize; color: var(--muted); }
-  .tm-shared-record dd { margin: 0; font-weight: 800; }
-  .tm-shared-message { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; padding-top: 8px; border-top: 1px solid var(--line); }
-  .tm-shared-message span { justify-self: end; color: var(--muted); font-size: 0.7rem; }
-  .tm-shared-message p { grid-column: 1 / -1; white-space: pre-wrap; }
   .tm-status { display: inline-flex; width: fit-content; padding: 3px 9px; border-radius: 999px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: capitalize; }
   .tm-status--requested { background: #fef3c7; color: #92400e; }
   .tm-status--confirmed { background: #dcfce7; color: #166534; }
@@ -2556,6 +2263,15 @@ const TM_STYLES = `
     background: rgba(255,255,255,0.9); flex-shrink: 0;
   }
   .tm-chat-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .tm-chat-root--leaving {
+    animation: tm-connection-exit 220ms cubic-bezier(0.4, 0, 1, 1) both;
+    pointer-events: none;
+    transform-origin: top center;
+  }
+  @keyframes tm-connection-exit {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(8px) scale(0.995); }
+  }
   .tm-back { background: none; border: none; color: var(--muted); font-size: 0.9rem; font-weight: 600; padding: 0; }
   .tm-back--inline { font-size: 1.1rem; margin-right: 4px; }
   .tm-chat-profile-trigger {
@@ -2626,13 +2342,50 @@ const TM_STYLES = `
     cursor: pointer;
   }
   .tm-appt-trigger {
-    margin-left: auto; padding: 7px 14px; border-radius: 999px;
-    border: 1.5px solid var(--accent); background: transparent;
+    margin-left: auto; padding: 8px 12px; border-radius: var(--radius-control);
+    border: 1px solid var(--line-strong); background: transparent;
     color: var(--accent); font-size: 0.8rem; font-weight: 700;
     transition: background 140ms, color 140ms;
   }
   .tm-chat-actions .tm-appt-trigger { margin-left: 0; }
   .tm-appt-trigger:hover { background: var(--accent); color: #fff; }
+  .tm-cancel-connection-trigger {
+    border-color: rgba(153, 68, 57, 0.32);
+    color: #91483f;
+  }
+  .tm-cancel-connection-trigger:hover {
+    border-color: rgba(153, 68, 57, 0.46);
+    background: rgba(153, 68, 57, 0.08);
+    color: #7c3d35;
+  }
+  .tm-connection-cancel-confirm {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 18px;
+    padding: 12px 18px;
+    border-bottom: 1px solid rgba(153, 68, 57, 0.18);
+    background: rgba(153, 68, 57, 0.045);
+    animation: tm-cancel-confirm-in 160ms ease-out both;
+    flex-shrink: 0;
+  }
+  .tm-connection-cancel-confirm strong { color: var(--ink); font-size: 0.86rem; }
+  .tm-connection-cancel-confirm p {
+    margin: 3px 0 0;
+    color: var(--muted);
+    font-size: 0.76rem;
+    line-height: 1.45;
+  }
+  .tm-connection-cancel-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  @keyframes tm-cancel-confirm-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
   .tm-appt-form {
     display: grid; gap: 8px; padding: 14px 18px;
     border-bottom: 1px solid var(--line);
@@ -2716,22 +2469,23 @@ const TM_STYLES = `
   .tm-appt-banner {
     display: flex; gap: 12px; align-items: flex-start;
     text-align: left;
-    background: linear-gradient(135deg,rgba(210,228,220,0.8),rgba(255,255,255,0.9));
-    border: 1px solid rgba(77,107,88,0.2); border-radius: 16px;
+    background: var(--panel-soft);
+    border: 1px solid var(--line-strong); border-radius: var(--radius-small);
     padding: 12px 14px; width: 100%;
-    box-shadow: 0 4px 14px rgba(77,107,88,0.1);
+    box-shadow: none;
     color: var(--ink);
     cursor: pointer;
   }
   .tm-appt-banner--expanded {
-    box-shadow: 0 8px 22px rgba(77,107,88,0.14);
+    border-color: var(--accent);
+    box-shadow: none;
   }
   .tm-appt-icon {
     flex-shrink: 0;
     padding: 4px 7px;
-    border-radius: 999px;
-    background: var(--accent);
-    color: #fff;
+    border-radius: var(--radius-control);
+    background: var(--accent-wash);
+    color: var(--accent-ink);
     font-size: 0.68rem;
     font-weight: 900;
     letter-spacing: 0.05em;
@@ -2763,11 +2517,9 @@ const TM_STYLES = `
   .tm-appt-time { font-size: 0.7rem; color: var(--muted); }
   .tm-chat-input-bar {
     padding: 12px 14px; border-top: 1px solid rgba(46,42,38,0.12);
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.88), rgba(250,244,232,0.96)),
-      var(--panel-strong);
+    background: var(--panel-soft);
     flex-shrink: 0;
-    box-shadow: 0 -8px 24px rgba(46,42,38,0.04);
+    box-shadow: none;
   }
   .tm-chat-compose { width: 100%; }
   .chat-textarea {
@@ -2799,12 +2551,25 @@ const TM_STYLES = `
     .tm-result-card  { flex-wrap: wrap; }
     .tm-chat-profile-grid { grid-template-columns: 1fr; }
     .tm-chat-header { flex-wrap: wrap; }
-    .tm-chat-actions { width: 100%; margin-left: 0; }
-    .tm-chat-actions .tm-appt-trigger { flex: 1; }
+    .tm-chat-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      width: 100%;
+      margin-left: 0;
+    }
+    .tm-chat-actions .tm-appt-trigger { width: 100%; }
+    .tm-chat-actions .tm-cancel-connection-trigger { grid-column: 1 / -1; }
+    .tm-connection-cancel-confirm { grid-template-columns: 1fr; gap: 10px; }
+    .tm-connection-cancel-actions { justify-content: flex-start; }
     .tm-care-history { max-height: 62%; }
     .tm-care-item { grid-template-columns: 1fr; }
     .tm-care-item-actions, .tm-confirm-actions { justify-content: flex-start; }
     .tm-confirm-actions span { text-align: left; }
-    .tm-sharing-preview > summary { align-items: flex-start; }
+    .tm-privacy-heading { align-items: flex-start; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tm-chat-root--leaving,
+    .tm-connection-cancel-confirm { animation: none; }
   }
 `

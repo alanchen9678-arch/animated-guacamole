@@ -31,13 +31,12 @@ export function AuroraDropdown({
   triggerLabelClassName = "",
   renderItemLabel,
   renderTriggerLabel,
-  placement = "bottom start",
   disabled = false,
 }) {
   const [isOpen, setIsOpen] = useState(false)
+  const rootRef = useRef(null)
   const triggerRef = useRef(null)
-  const popoverRef = useRef(null)
-  const suppressNextOpenRef = useRef(false)
+  const menuRef = useRef(null)
   const selectedItem = items.find((item) => item.value === selectedKey) ?? null
   const triggerLabel = renderTriggerLabel
     ? renderTriggerLabel(selectedItem)
@@ -46,66 +45,71 @@ export function AuroraDropdown({
   useEffect(() => {
     if (!isOpen) return undefined
 
-    function isInsideDropdown(target) {
-      return (
-        triggerRef.current?.contains(target) ||
-        popoverRef.current?.contains(target)
-      )
-    }
-
     function handlePointerDown(event) {
-      if (!isInsideDropdown(event.target)) {
-        setIsOpen(false)
-      }
-    }
-
-    function handleFocusIn(event) {
-      if (!isInsideDropdown(event.target)) {
-        setIsOpen(false)
-      }
+      if (!rootRef.current?.contains(event.target)) setIsOpen(false)
     }
 
     function handleKeyDown(event) {
       if (event.key === "Escape") {
         setIsOpen(false)
+        triggerRef.current?.focus()
       }
     }
 
     document.addEventListener("mousedown", handlePointerDown, true)
-    document.addEventListener("focusin", handleFocusIn, true)
     window.addEventListener("keydown", handleKeyDown)
-
     return () => {
       document.removeEventListener("mousedown", handlePointerDown, true)
-      document.removeEventListener("focusin", handleFocusIn, true)
       window.removeEventListener("keydown", handleKeyDown)
     }
   }, [isOpen])
 
+  function focusItem(index) {
+    const options = menuRef.current?.querySelectorAll('[role="option"]')
+    if (!options?.length) return
+    options[Math.max(0, Math.min(index, options.length - 1))]?.focus()
+  }
+
+  function handleOptionKeyDown(event, index) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault()
+      focusItem(index + 1)
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault()
+      focusItem(index - 1)
+    } else if (event.key === "Home") {
+      event.preventDefault()
+      focusItem(0)
+    } else if (event.key === "End") {
+      event.preventDefault()
+      focusItem(items.length - 1)
+    }
+  }
+
+  function selectItem(value) {
+    onSelectionChange?.(String(value))
+    setIsOpen(false)
+    triggerRef.current?.focus()
+  }
+
   return (
-    <Dropdown
-      isOpen={isOpen}
-      onOpenChange={(nextOpen) => {
-        if (suppressNextOpenRef.current && nextOpen) {
-          suppressNextOpenRef.current = false
-          return
-        }
-        suppressNextOpenRef.current = false
-        setIsOpen(nextOpen)
-      }}
-    >
-      <Button
+    <div className="aurora-dropdown-shell" ref={rootRef}>
+      <button
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
         aria-label={ariaLabel}
         className={cn("aurora-dropdown-trigger", buttonClassName)}
-        isDisabled={disabled}
-        onPointerDownCapture={(event) => {
-          if (isOpen) {
-            suppressNextOpenRef.current = true
+        disabled={disabled}
+        onClick={() => setIsOpen((open) => !open)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown") {
             event.preventDefault()
-            setIsOpen(false)
+            setIsOpen(true)
+            requestAnimationFrame(() => focusItem(0))
           }
         }}
         ref={triggerRef}
+        type="button"
       >
         <span
           className={cn(
@@ -116,54 +120,50 @@ export function AuroraDropdown({
         >
           {triggerLabel}
         </span>
-        <span className="aurora-dropdown-trigger-icon" aria-hidden="true">
-          ▾
-        </span>
-      </Button>
-      <Dropdown.Popover
-        className={cn("aurora-dropdown-popover", popoverClassName)}
-        isNonModal
-        placement={placement}
-        shouldCloseOnInteractOutside={() => true}
-        ref={popoverRef}
-      >
-        <Dropdown.Menu
-          aria-label={ariaLabel}
-          className={cn("aurora-dropdown-menu", menuClassName)}
-          onAction={(key) => {
-            onSelectionChange?.(String(key))
-            setIsOpen(false)
-          }}
-        >
-          {items.map((item) => {
-            const isSelected = item.value === selectedKey
-            return (
-              <Dropdown.Item
-                key={item.value}
-                id={item.value}
-                className={cn("aurora-dropdown-item", itemClassName)}
-                textValue={item.label}
-              >
-                <div className="aurora-dropdown-item-row">
-                  <span className="aurora-dropdown-item-copy">
-                    {renderItemLabel ? renderItemLabel(item) : item.label}
+        <span className="aurora-dropdown-trigger-icon" aria-hidden="true">{"\u25BE"}</span>
+      </button>
+
+      {isOpen && (
+        <div className={cn("aurora-dropdown-popover", popoverClassName)}>
+          <div
+            aria-label={ariaLabel}
+            className={cn("aurora-dropdown-menu", menuClassName)}
+            ref={menuRef}
+            role="listbox"
+          >
+            {items.map((item, index) => {
+              const isSelected = item.value === selectedKey
+              return (
+                <button
+                  aria-selected={isSelected}
+                  className={cn("aurora-dropdown-item", itemClassName)}
+                  key={item.value}
+                  onClick={() => selectItem(item.value)}
+                  onKeyDown={(event) => handleOptionKeyDown(event, index)}
+                  role="option"
+                  type="button"
+                >
+                  <span className="aurora-dropdown-item-row">
+                    <span className="aurora-dropdown-item-copy">
+                      {renderItemLabel ? renderItemLabel(item) : item.label}
+                    </span>
+                    <span
+                      className={cn(
+                        "aurora-dropdown-item-check",
+                        isSelected && "aurora-dropdown-item-check--selected",
+                      )}
+                      aria-hidden="true"
+                    >
+                      {"\u2713"}
+                    </span>
                   </span>
-                  <span
-                    className={cn(
-                      "aurora-dropdown-item-check",
-                      isSelected && "aurora-dropdown-item-check--selected",
-                    )}
-                    aria-hidden="true"
-                  >
-                    ✓
-                  </span>
-                </div>
-              </Dropdown.Item>
-            )
-          })}
-        </Dropdown.Menu>
-      </Dropdown.Popover>
-    </Dropdown>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 

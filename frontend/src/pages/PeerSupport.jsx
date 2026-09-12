@@ -113,14 +113,6 @@ function AnonAvatar({ name, color, size = 36 }) {
   )
 }
 
-function SendIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-    </svg>
-  )
-}
-
 function ModAlert({ rule, onDismiss }) {
   return (
     <div className="ps-mod-alert" style={{ background: rule.bg, borderColor: rule.border }}>
@@ -198,7 +190,6 @@ function OnboardingView({ onDone, loading, error }) {
         <button
           className="ps-primary-btn"
           disabled={!agreed}
-          style={{ opacity: agreed ? 1 : 0.45, cursor: agreed ? 'pointer' : 'not-allowed' }}
           onClick={() => setStep(2)}
         >
           Continue
@@ -318,11 +309,6 @@ function HubView({ profile, rooms, peers, setPeers, onRoom, onDM, loadingPeers }
         </div>
       </div>
 
-      <div className="ps-hub-pills">
-        <span className="ps-pill">All chats anonymous</span>
-        <span className="ps-pill">AI-moderated 24/7</span>
-        <span className="ps-pill">Messages saved securely</span>
-      </div>
     </section>
   )
 }
@@ -417,12 +403,14 @@ function RoomView({ profile, room, onBack }) {
     <div className="ps-chat-root">
       <div className="ps-chat-header">
         <button className="ps-back-btn" onClick={onBack}>Back</button>
-        <div className="ps-room-badge">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        </div>
-        <div>
-          <strong className="ps-chat-name">{room.name}</strong>
-          <span className="ps-chat-sub">{room.memberCount} {room.memberCount === 1 ? 'member' : 'members'}</span>
+        <div className="ps-chat-identity">
+          <div className="ps-room-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div className="ps-chat-profile-copy">
+            <strong className="ps-chat-name">{room.name}</strong>
+            <span className="ps-chat-sub">{room.memberCount} {room.memberCount === 1 ? 'member' : 'members'}</span>
+          </div>
         </div>
         <div className="ps-leave-wrap">
           <button className="ps-leave-btn" onClick={() => setConfirmLeave(true)}>Leave room</button>
@@ -498,9 +486,7 @@ function RoomView({ profile, room, onBack }) {
             placeholder="Send a message to the room"
             disabled={sending || initialLoading}
           />
-          <ChatInputSubmit className="send-btn" disabled={initialLoading}>
-            <SendIcon />
-          </ChatInputSubmit>
+          <ChatInputSubmit className="send-btn" disabled={initialLoading} />
         </ChatInput>
       </div>
     </div>
@@ -597,10 +583,12 @@ function DMView({ peer, profile, onBack, onLeave }) {
     <div className="ps-chat-root">
       <div className="ps-chat-header">
         <button className="ps-back-btn" onClick={onBack}>Back</button>
-        <AnonAvatar name={peer.name} color={peer.color} size={34} />
-        <div>
-          <strong className="ps-chat-name">{peer.name}</strong>
-          <span className="ps-chat-sub">Anonymous - updates every 5s</span>
+        <div className="ps-chat-identity">
+          <AnonAvatar name={peer.name} color={peer.color} size={34} />
+          <div className="ps-chat-profile-copy">
+            <strong className="ps-chat-name">{peer.name}</strong>
+            <span className="ps-chat-sub">Anonymous {"\u00b7"} 5s updates</span>
+          </div>
         </div>
         <div className="ps-leave-wrap">
           <button className="ps-leave-btn" onClick={() => setConfirmLeave(true)}>Leave chat</button>
@@ -615,7 +603,7 @@ function DMView({ peer, profile, onBack, onLeave }) {
       </div>
 
       <div className="ps-anon-notice">
-        Anonymous chat — Do not share personal info, contact details, or social media handles
+        Anonymous chat. Do not share personal info, contact details, or social media handles.
       </div>
 
       {modAlert && <ModAlert rule={modAlert} onDismiss={() => setModAlert(null)} />}
@@ -682,9 +670,7 @@ function DMView({ peer, profile, onBack, onLeave }) {
             placeholder="Message"
             disabled={sending || initialLoading}
           />
-          <ChatInputSubmit className="send-btn" disabled={initialLoading}>
-            <SendIcon />
-          </ChatInputSubmit>
+          <ChatInputSubmit className="send-btn" disabled={initialLoading} />
         </ChatInput>
       </div>
     </div>
@@ -887,9 +873,6 @@ const PS_STYLES = `
   .ps-hub-card-text strong { display: block; font-size: 0.95rem; margin-bottom: 3px; }
   .ps-hub-card-text p { margin: 0; font-size: 0.8rem; color: var(--muted); }
   .ps-hub-arrow { font-size: 1.1rem; color: var(--muted); }
-  .ps-hub-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-  .ps-pill { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 0.76rem; color: var(--muted); background: rgba(255,255,255,0.7); }
-
   /* peers */
   .ps-section-heading {
     display: flex; align-items: center; justify-content: space-between;

@@ -136,9 +136,8 @@ export default function Home() {
   const checkInLabel = user?.checkInDueThisWeek === false ? 'Up to date' : 'Due this week'
 
   return (
-    <section className="page">
+    <section className="page home-page">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
 
         .page {
           font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -282,7 +281,7 @@ export default function Home() {
         <div className="today-stat">
           <div className="label">Mood</div>
           <div className="value" style={{ textTransform: 'capitalize' }}>
-            {user?.mood || '—'}
+            {user?.mood || '-'}
           </div>
         </div>
         <div className="today-stat">
@@ -307,7 +306,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section aria-labelledby="aurora-tools-heading">
+      <section className="home-tools" aria-labelledby="aurora-tools-heading">
         <div className="home-section-head">
           <h3 className="home-section-title" id="aurora-tools-heading">Aurora tools</h3>
         </div>

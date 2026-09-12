@@ -42,6 +42,8 @@ const TextReveal = memo(function TextReveal({
   }, [text]);
 
   const sign = direction === "up" ? 1 : -1;
+  const motionDisabled = typeof window !== "undefined"
+    && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
   const rootProps = {
     className,
@@ -56,6 +58,8 @@ const TextReveal = memo(function TextReveal({
     },
     onMouseEnter: () => setHovered(true),
     onMouseLeave: () => setHovered(false),
+    onFocus: () => setHovered(true),
+    onBlur: () => setHovered(false),
     onClick,
     "aria-label": text,
   };
@@ -85,9 +89,9 @@ const TextReveal = memo(function TextReveal({
               position: "relative",
               willChange: "transform",
               textShadow: `0 ${sign}em currentColor`,
-              transition: `transform ${duration}ms ${easing}`,
-              transitionDelay: `${index * staggerDelay}ms`,
-              transform: hovered ? `translateY(${-sign}em)` : "translateY(0)",
+              transition: motionDisabled ? "none" : `transform ${duration}ms ${easing}`,
+              transitionDelay: motionDisabled ? "0ms" : `${index * staggerDelay}ms`,
+              transform: !motionDisabled && hovered ? `translateY(${-sign}em)` : "translateY(0)",
             }}
           >
             {char === " " ? "\u00A0" : char}

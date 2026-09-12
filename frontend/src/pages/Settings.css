@@ -1,0 +1,486 @@
+.app-root .settings-page {
+  width: min(100%, 1020px);
+  gap: var(--space-8);
+}
+
+.app-root .settings-page-header {
+  max-width: none;
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.app-root .settings-page-header p {
+  max-width: 46ch;
+}
+
+.app-root .settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.72fr) minmax(250px, 0.8fr);
+  align-items: start;
+  gap: 0 44px;
+}
+
+.app-root .settings-section {
+  min-width: 0;
+  padding: 28px 0;
+  border-top: 1px solid var(--line-strong);
+}
+
+.app-root .settings-profile,
+.app-root .settings-account {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.app-root .settings-profile {
+  grid-column: 1;
+}
+
+.app-root .settings-rail {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.app-root .settings-mood {
+  grid-column: 1 / -1;
+  margin-top: var(--space-2);
+  padding-bottom: 0;
+}
+
+.app-root .settings-section-header {
+  display: grid;
+  gap: var(--space-1);
+  margin-bottom: var(--space-5);
+}
+
+.app-root .settings-section-header h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--type-card-title);
+  font-weight: var(--weight-card-title);
+  line-height: 1.35;
+  letter-spacing: -0.012em;
+}
+
+.app-root .settings-section-header p,
+.app-root .settings-session-copy {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.app-root .settings-profile-form {
+  display: grid;
+  gap: 18px;
+}
+
+.app-root .settings-avatar-fieldset,
+.app-root .settings-mood-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.app-root .settings-avatar-fieldset {
+  padding: 12px 0 12px 18px;
+  border-left: 2px solid var(--accent);
+}
+
+.app-root .settings-avatar-fieldset legend {
+  margin-bottom: var(--space-3);
+  padding: 0;
+  color: var(--ink-soft);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.app-root .settings-avatar-control {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.app-root .settings-avatar-preview {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid rgba(46, 42, 38, 0.2);
+  border-radius: 50%;
+  color: #fffdf8;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  transition: background-color var(--motion-base) var(--ease-standard);
+}
+
+.app-root .settings-color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.app-root .settings-color-choice,
+.app-root .settings-mood-choice {
+  position: relative;
+  display: block;
+}
+
+.app-root .settings-color-swatch {
+  display: block;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--panel-raised);
+  border-radius: 50%;
+  background: var(--settings-swatch);
+  box-shadow: 0 0 0 1px var(--line-strong);
+  cursor: pointer;
+  transition: box-shadow var(--motion-fast) ease, transform var(--motion-fast) ease;
+}
+
+.app-root .settings-color-swatch:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 2px var(--muted-soft);
+}
+
+.app-root .settings-color-choice input:checked + .settings-color-swatch {
+  box-shadow: 0 0 0 2px var(--panel-raised), 0 0 0 4px var(--accent-ink);
+}
+
+.app-root .settings-color-choice input:focus-visible + .settings-color-swatch,
+.app-root .settings-mood-choice input:focus-visible + label {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.app-root .settings-field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.app-root .settings-field label {
+  color: var(--ink-soft);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.app-root .settings-field-help {
+  margin: -3px 0 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.app-root .settings-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  background: var(--panel-raised);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  transition: border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+}
+
+.app-root .settings-input:hover {
+  border-color: rgba(46, 42, 38, 0.36);
+}
+
+.app-root .settings-input:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.app-root .settings-input::placeholder {
+  color: var(--muted-soft);
+  opacity: 1;
+}
+
+.app-root .settings-textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+
+.app-root .settings-save-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  min-height: 44px;
+}
+
+.app-root .settings-save-button {
+  min-height: 42px;
+  padding: 9px 18px;
+  border-radius: var(--radius-control);
+  font-size: 0.875rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.app-root .settings-save-hint {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.app-root .settings-feedback-slot {
+  min-height: 0;
+}
+
+.app-root .settings-feedback-slot:empty {
+  display: none;
+}
+
+.app-root .settings-feedback-slot .feedback-notice {
+  max-width: 540px;
+}
+
+.app-root .settings-account-list {
+  margin: 0;
+}
+
+.app-root .settings-account-row {
+  display: grid;
+  grid-template-columns: minmax(76px, 0.72fr) minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.app-root .settings-account-row:first-child {
+  padding-top: 0;
+}
+
+.app-root .settings-account-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.app-root .settings-account-row dt,
+.app-root .settings-account-row dd {
+  margin: 0;
+}
+
+.app-root .settings-account-row dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 550;
+  line-height: 1.45;
+}
+
+.app-root .settings-account-row dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.app-root .settings-peer-name {
+  color: var(--accent-ink);
+}
+
+.app-root .settings-session {
+  margin-top: 28px;
+  padding-bottom: 0;
+}
+
+.app-root .settings-session .settings-section-header {
+  margin-bottom: var(--space-2);
+}
+
+.app-root .settings-session-copy {
+  margin-bottom: var(--space-4);
+}
+
+.app-root .settings-signout-button {
+  min-height: 40px;
+  padding: 8px 15px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  color: var(--ink-soft);
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: color var(--motion-fast) ease, border-color var(--motion-fast) ease, background var(--motion-fast) ease;
+}
+
+.app-root .settings-signout-button:hover {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  background: var(--accent-wash);
+}
+
+.app-root .settings-mood-header {
+  margin-bottom: var(--space-4);
+}
+
+.app-root .settings-mood-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.app-root .settings-mood-choice label {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 46px;
+  padding: 10px 12px;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  color: var(--ink-soft);
+  background: rgba(255, 253, 248, 0.46);
+  font-size: 0.875rem;
+  font-weight: 550;
+  line-height: 1.3;
+  text-transform: capitalize;
+  cursor: pointer;
+  transition: color var(--motion-fast) ease, border-color var(--motion-fast) ease, background var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+}
+
+.app-root .settings-mood-choice label:hover {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  background: var(--accent-wash);
+}
+
+.app-root .settings-mood-choice input:checked + label {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  box-shadow: inset 0 -3px 0 var(--accent);
+  font-weight: 650;
+}
+
+.app-root .settings-mood-fieldset:disabled .settings-mood-choice label {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.app-root .settings-mood-feedback {
+  margin-top: var(--space-3);
+}
+
+.app-root .settings-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+@media (max-width: 959px) {
+  .app-root .settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .app-root .settings-profile,
+  .app-root .settings-rail,
+  .app-root .settings-mood {
+    grid-column: 1;
+  }
+
+  .app-root .settings-rail,
+  .app-root .settings-mood {
+    border-top: 1px solid var(--line-strong);
+  }
+
+  .app-root .settings-account {
+    padding-top: 28px;
+  }
+
+  .app-root .settings-session {
+    padding-bottom: 28px;
+  }
+
+  .app-root .settings-mood {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 639px) {
+  .app-root .settings-page {
+    gap: var(--space-6);
+  }
+
+  .app-root .settings-page-header {
+    padding-bottom: var(--space-4);
+  }
+
+  .app-root .settings-section {
+    padding-block: 24px;
+  }
+
+  .app-root .settings-profile {
+    padding-top: 0;
+  }
+
+  .app-root .settings-avatar-fieldset {
+    padding-left: 14px;
+  }
+
+  .app-root .settings-avatar-control {
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  .app-root .settings-avatar-preview {
+    width: 52px;
+    height: 52px;
+    font-size: 1rem;
+  }
+
+  .app-root .settings-color-swatches {
+    display: grid;
+    grid-template-columns: repeat(4, 30px);
+    gap: 11px 12px;
+  }
+
+  .app-root .settings-color-swatch {
+    width: 30px;
+    height: 30px;
+  }
+
+  .app-root .settings-mood-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-root .settings-mood-choice label {
+    min-height: 48px;
+  }
+
+  .app-root .settings-save-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (forced-colors: active) {
+  .app-root .settings-color-choice input:checked + .settings-color-swatch,
+  .app-root .settings-mood-choice input:checked + label {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+}

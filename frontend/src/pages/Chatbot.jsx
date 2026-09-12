@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/chat-input.jsx'
-import { useUser } from '../context/UserContext.jsx'
 import { fetchChatHistory, sendChatMessage } from '../services/api.js'
 import { FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
 
@@ -45,8 +44,8 @@ function defaultGreeting() {
 
 function TypingIndicator() {
   return (
-    <div className="msg-row msg-row--ai">
-      <div className="msg-avatar">A</div>
+    <div className="msg-row msg-row--ai" role="status" aria-live="polite" aria-label="Aurora is typing">
+      <div className="msg-avatar" aria-hidden="true">A</div>
       <div className="bubble bubble--ai typing-bubble">
         <span className="dot" />
         <span className="dot" />
@@ -56,26 +55,17 @@ function TypingIndicator() {
   )
 }
 
-function Message({ msg, userAvatar }) {
+function Message({ msg }) {
   const isUser = msg.role === 'user'
 
   return (
     <div className={`msg-row${isUser ? ' msg-row--user' : ' msg-row--ai'}`}>
-      {!isUser && <div className="msg-avatar">A</div>}
+      <span className="chat-speaker-label">{isUser ? 'You' : 'Aurora'}</span>
+      {!isUser && <div className="msg-avatar" aria-hidden="true">A</div>}
       <div className={`bubble${isUser ? ' bubble--user' : ' bubble--ai'}`}>
         <p className="bubble-text">{msg.text}</p>
         <span className="bubble-time">{msg.time}</span>
       </div>
-      {isUser && (
-        <div
-          className="msg-avatar msg-avatar--user"
-          style={{ backgroundColor: userAvatar.color }}
-          aria-label={`${userAvatar.name} avatar`}
-          title={userAvatar.name}
-        >
-          {userAvatar.initials}
-        </div>
-      )}
     </div>
   )
 }
@@ -113,7 +103,6 @@ function ChatbotIntro({ onStart }) {
 }
 
 function ChatbotChat() {
-  const { user } = useUser()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoadingHistory, setIsLoadingHistory] = useState(true)
@@ -122,12 +111,6 @@ function ChatbotChat() {
   const [reloadKey, setReloadKey] = useState(0)
   const messagesRef = useRef(null)
   const inputRef = useRef(null)
-  const userAvatarName = user?.displayName || user?.firstName || user?.username || 'You'
-  const userAvatar = {
-    name: userAvatarName,
-    initials: userAvatarName.slice(0, 2).toUpperCase(),
-    color: user?.avatarColor || 'var(--accent)',
-  }
 
   useEffect(() => {
     let isActive = true
@@ -217,30 +200,24 @@ function ChatbotChat() {
 
   return (
     <div className="chat-root">
-      <div className="chat-header">
-        <div className="chat-header-avatar">A</div>
-        <div>
-          <strong className="chat-header-name">Aurora</strong>
-          <span className="chat-header-status">{chatError ? 'Connection issue' : 'Online · backend connected'}</span>
-        </div>
-      </div>
-
       <div className="chat-messages" ref={messagesRef}>
-        {isLoadingHistory && <LoadingState label="Loading your conversation…" compact skeletonLines={3} />}
-        {messages.map((message) => <Message key={message.id} msg={message} userAvatar={userAvatar} />)}
-        {isTyping && <TypingIndicator />}
-        {chatError && (
-          <FeedbackNotice
-            variant="error"
-            title={chatError.type === 'history' ? 'Could not load your conversation' : 'Message not sent'}
-            message={chatError.message}
-            onRetry={chatError.type === 'history'
-              ? () => setReloadKey((key) => key + 1)
-              : () => deliverMessage(chatError.lastText)}
-            retryLabel={chatError.type === 'history' ? 'Reload conversation' : 'Retry message'}
-            compact
-          />
-        )}
+        <div className="chat-conversation">
+          {isLoadingHistory && <LoadingState label="Loading your conversation…" compact skeletonLines={3} />}
+          {messages.map((message) => <Message key={message.id} msg={message} />)}
+          {isTyping && <TypingIndicator />}
+          {chatError && (
+            <FeedbackNotice
+              variant="error"
+              title={chatError.type === 'history' ? 'Could not load your conversation' : 'Message not sent'}
+              message={chatError.message}
+              onRetry={chatError.type === 'history'
+                ? () => setReloadKey((key) => key + 1)
+                : () => deliverMessage(chatError.lastText)}
+              retryLabel={chatError.type === 'history' ? 'Reload conversation' : 'Retry message'}
+              compact
+            />
+          )}
+        </div>
       </div>
 
       <div className="chat-input-bar">
@@ -254,7 +231,7 @@ function ChatbotChat() {
           <ChatInputTextArea
             ref={inputRef}
             className="chat-textarea"
-            placeholder="Type a message... (Enter to send)"
+            placeholder={'Message Aurora\u2026'}
             disabled={isTyping || isLoadingHistory}
           />
           <ChatInputSubmit
@@ -349,6 +326,7 @@ const styles = `
   }
   .start-btn:hover { opacity: 0.88; transform: translateY(-1px); }
   .chat-root {
+    --chat-column-width: 840px;
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -360,16 +338,6 @@ const styles = `
     overflow: hidden;
     box-sizing: border-box;
   }
-  .chat-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.9);
-    flex: none;
-  }
-  .chat-header-avatar,
   .msg-avatar {
     width: 38px;
     height: 38px;
@@ -383,21 +351,21 @@ const styles = `
     font-size: 0.9rem;
     flex: none;
   }
-  .chat-header-name {
-    display: block;
-    font-size: 1.18rem;
-    letter-spacing: -0.02em;
-  }
-  .chat-header-status { display: none; }
   .chat-messages {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    scrollbar-gutter: stable;
+    scroll-behavior: smooth;
+  }
+  .chat-conversation {
+    width: 100%;
+    min-height: 100%;
     padding: 20px 20px 8px;
     display: flex;
     flex-direction: column;
     gap: 16px;
-    scroll-behavior: smooth;
+    box-sizing: border-box;
   }
   .msg-row {
     display: flex;
@@ -472,7 +440,7 @@ const styles = `
   .chat-input-bar {
     padding: 12px 14px;
     border-top: 1px solid rgba(46, 42, 38, 0.12);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(250, 244, 232, 0.96)), var(--panel-strong);
+    background: transparent;
     flex: none;
     box-shadow: 0 -8px 24px rgba(46, 42, 38, 0.04);
   }
@@ -496,6 +464,129 @@ const styles = `
     background: var(--accent-dark);
     border-color: rgba(58, 82, 68, 0.22);
     opacity: 0.42;
+  }
+  /* Quiet Care Workspace: the app shell is the chat container. */
+  .app-root .chat-root {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .app-root .chat-messages {
+    width: 100%;
+    margin-inline: 0;
+    padding: 0;
+  }
+  .app-root .chat-conversation {
+    width: min(100%, var(--chat-column-width));
+    margin-inline: auto;
+    padding: 24px 8px 20px;
+    gap: 18px;
+  }
+  .app-root .msg-row {
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .chat-speaker-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .app-root .msg-row--user {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+  .app-root .msg-avatar {
+    width: 28px;
+    height: 28px;
+    margin: 2px 0 0;
+    font-size: 0.62rem;
+  }
+  .app-root .bubble {
+    padding: 12px 14px 9px;
+    border-radius: 14px;
+    gap: 5px;
+  }
+  .app-root .bubble--ai {
+    max-width: 75%;
+    border: 1px solid var(--line);
+    border-bottom-left-radius: 14px;
+    background: var(--panel-soft);
+  }
+  .app-root .bubble--user {
+    max-width: 70%;
+    border-bottom-right-radius: 14px;
+    background: var(--accent-dark);
+  }
+  .app-root .bubble-text {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+  .app-root .bubble-time {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 0.6875rem;
+    line-height: 1.2;
+  }
+  .app-root .bubble--user .bubble-time {
+    color: rgba(255, 255, 255, 0.72);
+  }
+  .app-root .typing-bubble {
+    padding: 12px 14px;
+  }
+  .app-root .chat-conversation > .feedback-notice {
+    width: min(560px, calc(100% - 38px));
+    margin-left: 38px;
+  }
+  .app-root .chat-input-bar {
+    width: min(100%, var(--chat-column-width));
+    margin-inline: auto;
+    padding: 10px 8px 2px;
+    border-top: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .app-root .chat-compose.aurora-chat-input--default {
+    min-height: 52px;
+    padding: 6px 7px 6px 14px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    background: var(--panel-raised);
+  }
+  .app-root .chat-compose.aurora-chat-input--default:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(77, 107, 88, 0.14);
+  }
+  .app-root .chat-textarea {
+    min-height: 22px;
+    max-height: 128px;
+    padding: 0;
+    line-height: 1.5;
+  }
+  .app-root .chat-textarea::placeholder {
+    color: var(--muted);
+  }
+  .app-root .send-btn.aurora-chat-input__submit {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border-color: var(--accent-dark);
+    background: var(--accent-dark);
+    color: var(--panel-raised);
+  }
+  .app-root .send-btn.aurora-chat-input__submit:disabled {
+    border-color: var(--line);
+    background: #d8ded8;
+    color: var(--muted-soft);
+    opacity: 1;
   }
   @media (max-width: 720px) {
     .intro-wrap { padding-top: 8px; }

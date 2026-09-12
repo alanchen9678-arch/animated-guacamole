@@ -9,13 +9,13 @@ import { AsyncButton, EmptyState, FeedbackNotice, LoadingState } from '../compon
 // ─── mood config ───────────────────────────────────────────────────────────────
 
 const MOODS = [
-  { id: 'happy',   label: 'Happy',      gentleLabel: 'Happy',       color: '#fbbf24' },
-  { id: 'calm',    label: 'Calm',       gentleLabel: 'Calm',        color: '#34d399' },
-  { id: 'neutral', label: 'Neutral',    gentleLabel: 'Neutral',     color: '#6b7a8d' },
-  { id: 'sad',     label: 'Sad',        gentleLabel: 'Reflective',  color: '#60a5fa' },
-  { id: 'anxious', label: 'Anxious',    gentleLabel: 'Processing',  color: '#f87171' },
-  { id: 'tired',   label: 'Tired',      gentleLabel: 'Low Energy',  color: '#7c5ea8' },
-  { id: 'angry',   label: 'Angry',      gentleLabel: 'Charged',     color: '#fb923c' },
+  { id: 'happy',   label: 'Happy',      gentleLabel: 'Happy',       color: '#d8b84e' },
+  { id: 'calm',    label: 'Calm',       gentleLabel: 'Calm',        color: '#86a58f' },
+  { id: 'neutral', label: 'Neutral',    gentleLabel: 'Neutral',     color: '#c9cecb', calendarColor: '#c9cecb' },
+  { id: 'sad',     label: 'Sad',        gentleLabel: 'Reflective',  color: '#82a5c0' },
+  { id: 'anxious', label: 'Anxious',    gentleLabel: 'Processing',  color: '#76638d' },
+  { id: 'tired',   label: 'Tired',      gentleLabel: 'Low Energy',  color: '#596a78' },
+  { id: 'angry',   label: 'Angry',      gentleLabel: 'Charged',     color: '#a6534e' },
 ]
 const MOOD_MAP = Object.fromEntries(MOODS.map(m => [m.id, m]))
 
@@ -116,24 +116,24 @@ const NEGATIVE_TERMS = ['sad','anxious','stressed','exhausted','overwhelmed','dr
 const AI_RESPONSES = {
   crisis: {
     tone: 'crisis',
-    text: "I'm very concerned about what you've written. Please reach out for support right now — you don't have to face this alone. Call or text 988 (Suicide & Crisis Lifeline, available 24/7) or connect with a licensed therapist through Aurora's Therapist Match.",
+    text: "I'm very concerned about what you've written. Please reach out for support right now. You don't have to face this alone. Call or text 988 (Suicide & Crisis Lifeline, available 24/7) or connect with a licensed therapist through Aurora's Therapist Match.",
   },
   alert: {
     tone: 'alert',
-    text: "I noticed some patterns in your entry that I want to gently check in about. It's okay to not be okay — but if these feelings are persisting, speaking with a therapist might really help. Aurora's Therapist Match can connect you with someone suited to exactly what you're going through.",
+    text: "I noticed some patterns in your entry that I want to gently check in about. It's okay to not be okay. If these feelings are persisting, speaking with a therapist might really help. Aurora's Therapist Match can connect you with someone suited to exactly what you're going through.",
   },
   positive: [
-    "I love reading this. It sounds like you're building some real momentum — hold onto that feeling.",
+    "I love reading this. It sounds like you're building some real momentum. Hold onto that feeling.",
     "This is wonderful. Remember what contributed to today, so you can come back to it when things feel harder.",
     "There's something genuinely grounding about a good day. Thank you for writing it down.",
   ],
   negative: [
-    "It sounds like today was heavy. What you're feeling is real and valid — you don't have to minimize it.",
+    "It sounds like today was heavy. What you're feeling is real and valid. You don't have to minimize it.",
     "Some days just feel like that, and it's okay to let them. What's one small thing that brought even a moment of relief today?",
     "Thank you for writing this down instead of keeping it inside. That takes courage. I'm here.",
   ],
   neutral: [
-    "Thank you for taking the time to reflect today. The act of writing — even about ordinary things — builds self-awareness over time.",
+    "Thank you for taking the time to reflect today. The act of writing, even about ordinary things, builds self-awareness over time.",
     "Every entry is a step toward understanding yourself better. Keep going, even on the quiet days.",
     "There's value in capturing a regular day. Patterns only become visible when you write them down.",
   ],
@@ -168,6 +168,20 @@ function pickResponse(tone) {
 function findMoodByColor(color) {
   const normalized = color.toUpperCase()
   return MOODS.find((mood) => mood.color.toUpperCase() === normalized) ?? null
+}
+
+function getContrastText(hexColor) {
+  const hex = hexColor.replace('#', '')
+  const channels = [0, 2, 4].map((offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255)
+  const [red, green, blue] = channels.map((channel) => (
+    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+  ))
+  const luminance = (0.2126 * red) + (0.7152 * green) + (0.0722 * blue)
+  const darkLuminance = 0.033
+  const lightLuminance = 0.984
+  const darkContrast = (luminance + 0.05) / (darkLuminance + 0.05)
+  const lightContrast = (lightLuminance + 0.05) / (luminance + 0.05)
+  return darkContrast > lightContrast ? '#29332d' : '#fffdf7'
 }
 
 // ─── calendar ─────────────────────────────────────────────────────────────────
@@ -246,7 +260,7 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
   return (
     <div className="jn-cal-wrap">
       <div className="jn-cal-nav">
-        <button className="jn-cal-nav-btn" onClick={prevMonth} aria-label="Previous month">&lt;</button>
+        <button type="button" className="jn-cal-nav-btn" onClick={prevMonth} aria-label="Previous month">&lt;</button>
         <div className="jn-cal-selects">
           <div className="jn-cal-picker">
             <AuroraDropdown
@@ -281,7 +295,7 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
             />
           </div>
         </div>
-        <button className="jn-cal-nav-btn" onClick={nextMonth} aria-label="Next month">&gt;</button>
+        <button type="button" className="jn-cal-nav-btn" onClick={nextMonth} aria-label="Next month">&gt;</button>
       </div>
 
       <div className="jn-cal-daynames">
@@ -296,6 +310,7 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
           if (!day) return <div className="jn-cal-cell jn-cal-cell--empty" key={`e-${i}`} aria-hidden="true" />
           const k = makeDayKey(year, month, day)
           const mood = moodData[k]
+          const moodColor = mood ? MOOD_MAP[mood]?.calendarColor ?? MOOD_MAP[mood]?.color : null
           const isToday = isCurrent && day === now.getDate()
           const isSel   = selectedDate === k
           const isFuture = isFutureDay(year, month, day, now)
@@ -303,10 +318,17 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
             <button
               key={k}
               className={`jn-cal-day${isToday ? ' jn-cal-day--today' : ''}${isSel ? ' jn-cal-day--sel' : ''}${isFuture ? ' jn-cal-day--future' : ''}`}
-              style={mood ? { background: MOOD_MAP[mood]?.color, color: '#fff', borderColor: MOOD_MAP[mood]?.color } : {}}
+              style={mood ? {
+                background: moodColor,
+                color: getContrastText(moodColor),
+                borderColor: moodColor,
+              } : {}}
               onClick={() => !isFuture && onSelectDate(k)}
               disabled={isFuture}
               title={mood ? `${MOOD_MAP[mood]?.gentleLabel}` : 'No mood logged'}
+              aria-label={`${formatDateKey(k)}. ${mood ? MOOD_MAP[mood]?.gentleLabel : 'No mood logged'}`}
+              aria-current={isToday ? 'date' : undefined}
+              aria-pressed={isSel}
             >
               {day}
             </button>
@@ -331,7 +353,7 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
             <strong>{selectedMood ? MOOD_MAP[selectedMood]?.gentleLabel : 'No mood logged'}</strong>
           </div>
           {(selectedEntry?.text || selectedEntry?.doodleData) ? (
-            <button className="jn-history-open" onClick={() => onOpenEntry(selectedDate)}>
+            <button type="button" className="jn-history-open" onClick={() => onOpenEntry(selectedDate)}>
               {selectedEntry?.text && <p>{selectedEntry.text}</p>}
               {selectedEntry?.doodleData && (
                 <img className="jn-history-doodle" src={selectedEntry.doodleData} alt="Saved doodle" />
@@ -362,7 +384,7 @@ function DoodleCanvas({ bgColor, value, onChange, disabled = false }) {
   const lastPos     = useRef(null)
   const currentSnapshot = useRef(value ?? null)
   const [brushColor, setBrushColor] = useState('#111827')
-  const [brushSize, setBrushSize]   = useState(3)
+  const [brushSize, setBrushSize]   = useState(4)
   const [eraser, setEraser]         = useState(false)
   const [undoStack, setUndoStack]   = useState([])
 
@@ -467,7 +489,7 @@ function DoodleCanvas({ bgColor, value, onChange, disabled = false }) {
 
   return (
     <div className="jn-doodle-wrap">
-      <div className="jn-doodle-toolbar">
+      <div className="jn-doodle-toolbar" role="toolbar" aria-label="Doodle tools">
         <div className="jn-color-row">
           <ColorSwatchPicker
             value={brushColor}
@@ -502,26 +524,32 @@ function DoodleCanvas({ bgColor, value, onChange, disabled = false }) {
           />
         </div>
         <div className="jn-toolbar-right">
-          <div className="jn-size-row">
+          <div className="jn-size-row" role="group" aria-label="Brush size">
             {BRUSH_SIZES.map(s => (
               <button
+                type="button"
                 key={s}
                 className={`jn-size-btn${brushSize === s ? ' jn-size-btn--active' : ''}`}
                 onClick={() => setBrushSize(s)}
                 disabled={disabled}
+                aria-label={`Brush size ${s} pixels`}
+                aria-pressed={brushSize === s}
+                title={`Brush size ${s} pixels`}
               >
                 <div style={{ width: Math.min(s * 1.5, 16), height: Math.min(s * 1.5, 16), borderRadius: '50%', background: 'currentColor', margin: 'auto' }} />
               </button>
             ))}
           </div>
-          <button className="jn-tool-btn" onClick={undo} disabled={disabled || !undoStack.length}>Undo</button>
-          <button className={`jn-tool-btn${eraser ? ' jn-tool-btn--active' : ''}`} onClick={() => setEraser(v => !v)} disabled={disabled}>Eraser</button>
-          <button className="jn-tool-btn jn-tool-btn--danger" onClick={clear} disabled={disabled || !value}>Clear</button>
+          <button type="button" className="jn-tool-btn" onClick={undo} disabled={disabled || !undoStack.length}>Undo</button>
+          <button type="button" className={`jn-tool-btn${eraser ? ' jn-tool-btn--active' : ''}`} onClick={() => setEraser(v => !v)} disabled={disabled} aria-pressed={eraser}>Eraser</button>
+          <button type="button" className="jn-tool-btn jn-tool-btn--danger" onClick={clear} disabled={disabled || !value}>Clear</button>
         </div>
       </div>
       <canvas
         ref={canvasRef}
         className="jn-canvas"
+        role="img"
+        aria-label="Doodle canvas. Use pointer or touch to draw."
         width={800} height={220}
         onMouseDown={onStart} onMouseMove={onMove} onMouseUp={onEnd} onMouseLeave={onEnd}
         onTouchStart={onStart} onTouchMove={onMove} onTouchEnd={onEnd}
@@ -560,6 +588,11 @@ export default function Journal() {
   const [saveSuccess, setSaveSuccess] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
   const [aiResponse, setAiResponse] = useState(null)
+  const calendarButtonRef = useRef(null)
+  const calendarDialogRef = useRef(null)
+  const entryDialogRef = useRef(null)
+  const entryReturnFocusRef = useRef(null)
+  const skipCalendarAutofocusRef = useRef(false)
 
   const todayMood = moodData[todayKey]
   const marginColor = todayMood ? MOOD_MAP[todayMood]?.color : '#ffffff'
@@ -570,15 +603,83 @@ export default function Journal() {
   useEffect(() => {
     if (!calendarOpen && !expandedEntryDate) return
 
+    const dialog = expandedEntryDate ? entryDialogRef.current : calendarDialogRef.current
+    const dialogHeading = dialog?.querySelector('[data-dialog-heading]')
+    const focusableSelector = [
+      'button:not([disabled])',
+      '[href]',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(',')
+    const shouldAutofocus = expandedEntryDate || !skipCalendarAutofocusRef.current
+    if (!expandedEntryDate) skipCalendarAutofocusRef.current = false
+    const focusFrame = shouldAutofocus
+      ? window.requestAnimationFrame(() => dialogHeading?.focus())
+      : null
+
     function handleKeyDown(e) {
-      if (e.key !== 'Escape') return
-      if (expandedEntryDate) setExpandedEntryDate(null)
-      else setCalendarOpen(false)
+      if (e.key === 'Escape') {
+        if (expandedEntryDate) {
+          skipCalendarAutofocusRef.current = true
+          setExpandedEntryDate(null)
+          window.requestAnimationFrame(() => entryReturnFocusRef.current?.focus())
+        } else {
+          setCalendarOpen(false)
+          window.requestAnimationFrame(() => calendarButtonRef.current?.focus())
+        }
+        return
+      }
+
+      if (e.key !== 'Tab' || !dialog) return
+      const focusable = [...dialog.querySelectorAll(focusableSelector)]
+      if (!focusable.length) {
+        e.preventDefault()
+        return
+      }
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === dialogHeading)) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      if (focusFrame !== null) window.cancelAnimationFrame(focusFrame)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
   }, [calendarOpen, expandedEntryDate])
+
+  function closeCalendar() {
+    setExpandedEntryDate(null)
+    setCalendarOpen(false)
+    window.requestAnimationFrame(() => calendarButtonRef.current?.focus())
+  }
+
+  function openHistoryEntry(dateKey) {
+    entryReturnFocusRef.current = document.activeElement
+    setExpandedEntryDate(dateKey)
+  }
+
+  function closeHistoryEntry() {
+    skipCalendarAutofocusRef.current = true
+    setExpandedEntryDate(null)
+    window.requestAnimationFrame(() => entryReturnFocusRef.current?.focus())
+  }
+
+  function handleModeKeyDown(event) {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+    event.preventDefault()
+    const nextTab = tab === 'write' ? 'doodle' : 'write'
+    setTab(nextTab)
+    window.requestAnimationFrame(() => document.getElementById(`journal-${nextTab}-tab`)?.focus())
+  }
 
   useEffect(() => {
     saveJournalEntries(entryHistory)
@@ -710,22 +811,28 @@ export default function Journal() {
           <h2>Thought Journal</h2>
           <p>Track your mood, write freely, and doodle.</p>
         </div>
-        <button className="jn-calendar-btn" onClick={() => setCalendarOpen(true)}>
+        <button
+          ref={calendarButtonRef}
+          type="button"
+          className="jn-calendar-btn"
+          onClick={() => setCalendarOpen(true)}
+          aria-haspopup="dialog"
+        >
           View calendar
         </button>
       </header>
 
-      {loadingEntries && <LoadingState label="Syncing your journal…" compact skeletonLines={2} />}
-      {saveError && (
-        <FeedbackNotice
-          variant="error"
-          title={feedbackContext === 'load' ? 'Could not load your journal' : feedbackContext === 'mood' ? 'Could not save your mood' : 'Could not save your entry'}
-          message={saveError}
-          onRetry={feedbackContext === 'load' ? () => setReloadKey((key) => key + 1) : feedbackContext === 'mood' ? () => setTodayMood(todayMood) : submit}
-        />
-      )}
-      {savingMood && <FeedbackNotice message="Saving your mood…" compact />}
-      {saveSuccess && <FeedbackNotice variant="success" message={saveSuccess} compact />}
+      <div className="jn-status-region">
+        {loadingEntries && <LoadingState label="Syncing your journal…" compact skeletonLines={2} />}
+        {saveError && (
+          <FeedbackNotice
+            variant="error"
+            title={feedbackContext === 'load' ? 'Could not load your journal' : feedbackContext === 'mood' ? 'Could not save your mood' : 'Could not save your entry'}
+            message={saveError}
+            onRetry={feedbackContext === 'load' ? () => setReloadKey((key) => key + 1) : feedbackContext === 'mood' ? () => setTodayMood(todayMood) : submit}
+          />
+        )}
+      </div>
 
       {/* main journal editor */}
       <section className="jn-entry-focus">
@@ -733,12 +840,19 @@ export default function Journal() {
         <div className="jn-entry-topline">
           <div>
             <div className="jn-section-label">Today's entry</div>
-            <strong>{formatDateKey(todayKey)}</strong>
+            <h3 id="journal-entry-date">{formatDateKey(todayKey)}</h3>
+          </div>
+          <div
+            className={`jn-entry-status${saveSuccess ? ' jn-entry-status--success' : ''}`}
+            role="status"
+            aria-live="polite"
+          >
+            {savingMood ? 'Saving your mood…' : saveSuccess}
           </div>
         </div>
 
         <div className="jn-color-controls">
-        <label className="jn-color-ctrl jn-mood-marker-ctrl">
+        <div className="jn-color-ctrl jn-mood-marker-ctrl" role="group" aria-label="Today's mood">
           <span>Mood</span>
           <div className="jn-mood-picker-inline">
             <ColorSwatchPicker
@@ -766,32 +880,60 @@ export default function Journal() {
               {todayMood ? MOOD_MAP[todayMood]?.label : 'Pick a mood'}
             </strong>
           </div>
-        </label>
-        <div className="jn-tab-toggle">
-          <button className={`jn-tab-btn${tab === 'write' ? ' jn-tab-btn--on' : ''}`} onClick={() => setTab('write')}>Write</button>
-          <button className={`jn-tab-btn${tab === 'doodle' ? ' jn-tab-btn--on' : ''}`} onClick={() => setTab('doodle')}>Doodle</button>
+        </div>
+        <div className="jn-tab-toggle" role="tablist" aria-label="Journal entry mode">
+          <button
+            type="button"
+            id="journal-write-tab"
+            role="tab"
+            aria-selected={tab === 'write'}
+            aria-controls="journal-write-panel"
+            tabIndex={tab === 'write' ? 0 : -1}
+            className={`jn-tab-btn${tab === 'write' ? ' jn-tab-btn--on' : ''}`}
+            onClick={() => setTab('write')}
+            onKeyDown={handleModeKeyDown}
+          >
+            Write
+          </button>
+          <button
+            type="button"
+            id="journal-doodle-tab"
+            role="tab"
+            aria-selected={tab === 'doodle'}
+            aria-controls="journal-doodle-panel"
+            tabIndex={tab === 'doodle' ? 0 : -1}
+            className={`jn-tab-btn${tab === 'doodle' ? ' jn-tab-btn--on' : ''}`}
+            onClick={() => setTab('doodle')}
+            onKeyDown={handleModeKeyDown}
+          >
+            Doodle
+          </button>
         </div>
         </div>
 
       {tab === 'write' && (
-        <div className="jn-notebook" style={{ background: JOURNAL_PAGE_COLOR }}>
-          <div className="jn-margin" style={{ background: marginColor }} />
-          <div
-            className="jn-lines-overlay"
-            style={{ backgroundImage: `repeating-linear-gradient(transparent, transparent 31px, rgba(0,0,0,0.09) 31px, rgba(0,0,0,0.09) 32px)` }}
-          />
-          <textarea
-            className="jn-textarea"
-            placeholder="Write anything — your thoughts, feelings, what happened today, what you're looking forward to…"
-            value={entryText}
-            onChange={e => setEntryText(e.target.value)}
-            disabled={submitted}
-          />
+        <div id="journal-write-panel" role="tabpanel" aria-labelledby="journal-write-tab">
+          <label className="jn-visually-hidden" htmlFor="journal-entry-text">Journal entry</label>
+          <div className="jn-notebook" style={{ background: JOURNAL_PAGE_COLOR }}>
+            <div className="jn-margin" style={{ background: marginColor }} />
+            <div
+              className="jn-lines-overlay"
+              style={{ backgroundImage: `repeating-linear-gradient(transparent, transparent 31px, rgba(0,0,0,0.09) 31px, rgba(0,0,0,0.09) 32px)` }}
+            />
+            <textarea
+              id="journal-entry-text"
+              className="jn-textarea"
+              placeholder="Write anything: your thoughts, feelings, what happened today, what you're looking forward to…"
+              value={entryText}
+              onChange={e => setEntryText(e.target.value)}
+              disabled={submitted}
+            />
+          </div>
         </div>
       )}
 
       {tab === 'doodle' && (
-        <div className="jn-doodle-section">
+        <div id="journal-doodle-panel" role="tabpanel" aria-labelledby="journal-doodle-tab" className="jn-doodle-section">
           <DoodleCanvas
             bgColor={JOURNAL_PAGE_COLOR}
             value={doodleData}
@@ -801,28 +943,30 @@ export default function Journal() {
         </div>
       )}
 
-      {!submitted ? (
-        <AsyncButton
-          className="jn-submit-btn"
-          onClick={submit}
-          disabled={!hasEntryContent || savingEntry}
-          pending={savingEntry}
-          pendingLabel="Saving entry…"
-          style={{ opacity: hasEntryContent ? 1 : 0.45, cursor: hasEntryContent ? 'pointer' : 'not-allowed' }}
-        >
-          Submit entry →
-        </AsyncButton>
-      ) : (
-        <button className="jn-new-btn" onClick={editEntry}>Edit entry</button>
-      )}
+      <div className="jn-entry-actions">
+        {!submitted ? (
+          <AsyncButton
+            className="jn-submit-btn"
+            onClick={submit}
+            disabled={!hasEntryContent || savingEntry}
+            pending={savingEntry}
+            pendingLabel="Saving entry…"
+            style={{ opacity: hasEntryContent ? 1 : 0.45, cursor: hasEntryContent ? 'pointer' : 'not-allowed' }}
+          >
+            Submit entry →
+          </AsyncButton>
+        ) : (
+          <button type="button" className="jn-new-btn" onClick={editEntry}>Edit entry</button>
+        )}
+      </div>
 
       {/* ── AI response ── */}
       {aiResponse && (
         <div
           className="jn-ai-response"
           style={{
-            background: TONE_STYLE[aiResponse.tone]?.bg,
-            borderColor: TONE_STYLE[aiResponse.tone]?.border,
+            '--jn-tone': TONE_STYLE[aiResponse.tone]?.ic,
+            '--jn-tone-soft': TONE_STYLE[aiResponse.tone]?.bg,
           }}
         >
           <div className="jn-ai-avatar" style={{ background: TONE_STYLE[aiResponse.tone]?.ic }}>
@@ -833,7 +977,7 @@ export default function Journal() {
             <p className="jn-ai-text">{aiResponse.text}</p>
             {(aiResponse.tone === 'crisis' || aiResponse.tone === 'alert') && (
               <div className="jn-ai-links">
-                <span>988 Suicide &amp; Crisis Lifeline — call or text <strong>988</strong></span>
+                <span>988 Suicide &amp; Crisis Lifeline. Call or text <strong>988</strong></span>
                 <span className="jn-ai-sep">·</span>
                 <span>Or visit <strong>Therapist Match</strong> in the sidebar</span>
               </div>
@@ -844,14 +988,14 @@ export default function Journal() {
       </section>
 
       {calendarOpen && (
-        <div className="jn-modal-backdrop" onClick={() => setCalendarOpen(false)}>
-          <div className="jn-calendar-modal" role="dialog" aria-modal="true" aria-labelledby="journal-calendar-title" onClick={e => e.stopPropagation()}>
+        <div className="jn-modal-backdrop" onClick={closeCalendar}>
+          <div ref={calendarDialogRef} className="jn-calendar-modal" role="dialog" aria-modal="true" aria-labelledby="journal-calendar-title" onClick={e => e.stopPropagation()}>
             <div className="jn-modal-header">
               <div>
-                <h3 id="journal-calendar-title">Journal calendar</h3>
+                <h3 id="journal-calendar-title" tabIndex="-1" data-dialog-heading>Journal calendar</h3>
                 <p>Saved days are view-only.</p>
               </div>
-              <button className="jn-modal-close" onClick={() => setCalendarOpen(false)} aria-label="Close calendar">
+              <button type="button" className="jn-modal-close" onClick={closeCalendar} aria-label="Close calendar">
                 x
               </button>
             </div>
@@ -860,21 +1004,21 @@ export default function Journal() {
               entryHistory={entryHistory}
               selectedDate={selectedHistoryDate}
               onSelectDate={setSelectedHistoryDate}
-              onOpenEntry={setExpandedEntryDate}
+              onOpenEntry={openHistoryEntry}
             />
           </div>
         </div>
       )}
 
       {expandedEntryDate && expandedEntry && (
-        <div className="jn-modal-backdrop jn-detail-backdrop" onClick={() => setExpandedEntryDate(null)}>
-          <div className="jn-entry-detail-modal" role="dialog" aria-modal="true" aria-labelledby="journal-entry-detail-title" onClick={e => e.stopPropagation()}>
+        <div className="jn-modal-backdrop jn-detail-backdrop" onClick={closeHistoryEntry}>
+          <div ref={entryDialogRef} className="jn-entry-detail-modal" role="dialog" aria-modal="true" aria-labelledby="journal-entry-detail-title" onClick={e => e.stopPropagation()}>
             <div className="jn-modal-header">
               <div>
-                <h3 id="journal-entry-detail-title">{formatDateKey(expandedEntryDate)}</h3>
+                <h3 id="journal-entry-detail-title" tabIndex="-1" data-dialog-heading>{formatDateKey(expandedEntryDate)}</h3>
                 <p>{expandedMood ? MOOD_MAP[expandedMood]?.gentleLabel : 'No mood logged'}</p>
               </div>
-              <button className="jn-modal-close" onClick={() => setExpandedEntryDate(null)} aria-label="Close entry">
+              <button type="button" className="jn-modal-close" onClick={closeHistoryEntry} aria-label="Close entry">
                 x
               </button>
             </div>
@@ -1250,7 +1394,7 @@ const JN_STYLES = `
     flex: 1; resize: none; border: none; background: transparent;
     padding: 8px 16px; font-size: 0.9rem; line-height: 28px;
     color: var(--ink); outline: none; min-height: 250px;
-    font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-family: inherit;
   }
   .jn-textarea:disabled { opacity: 0.7; }
   .jn-textarea::placeholder { color: rgba(46,42,38,0.3); }
@@ -1319,7 +1463,6 @@ const JN_STYLES = `
     background: rgba(250,244,232,0.98); border: 1px solid var(--line);
     box-shadow: 0 18px 44px rgba(46,42,38,0.18);
     display: flex; flex-direction: column; gap: 10px;
-    backdrop-filter: blur(10px);
   }
   .cp-square {
     position: relative; width: 100%; height: 132px;

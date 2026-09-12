@@ -1,297 +1,334 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useUser } from '../context/UserContext.jsx'
 import { AsyncButton, FeedbackNotice } from '../components/ui/feedback.jsx'
+import './Settings.css'
 
 const MOODS = ['calm', 'anxious', 'sad', 'happy', 'stressed', 'grateful', 'tired', 'hopeful']
-const AVATAR_COLORS = ['#4d6b58', '#3a6898', '#b45309', '#15803d', '#be185d', '#0891b2', '#9333ea', '#c2410c']
+
+const AVATAR_COLORS = [
+  { value: '#4d6b58', label: 'Forest sage' },
+  { value: '#5c6f68', label: 'Eucalyptus' },
+  { value: '#55707a', label: 'Blue grey' },
+  { value: '#6a7482', label: 'Slate' },
+  { value: '#6d6578', label: 'Muted plum' },
+  { value: '#7b665f', label: 'Soft clay' },
+  { value: '#7a6f63', label: 'Warm taupe' },
+  { value: '#756a52', label: 'Quiet olive' },
+]
+
+function getInitials(displayName, user) {
+  const source = displayName.trim() || user?.firstName || user?.username || '?'
+  const words = source.split(/\s+/).filter(Boolean)
+  if (words.length > 1) return `${words[0][0]}${words[1][0]}`.toUpperCase()
+  return source.slice(0, 2).toUpperCase()
+}
+
+function getStreakLabel(streak) {
+  const count = streak ?? 0
+  return `${count} ${count === 1 ? 'week' : 'weeks'}`
+}
 
 export default function Settings() {
   const { user, updateProfile, logout } = useUser()
 
-  const [mood, setMood]               = useState(user?.mood || '')
+  const [mood, setMood] = useState(user?.mood || '')
   const [displayName, setDisplayName] = useState(user?.displayName || '')
-  const [bio, setBio]                 = useState(user?.bio || '')
-  const [email, setEmail]             = useState(user?.email || '')
+  const [bio, setBio] = useState(user?.bio || '')
+  const [email, setEmail] = useState(user?.email || '')
   const [avatarColor, setAvatarColor] = useState(user?.avatarColor || '#4d6b58')
 
-  const [saving, setSaving]   = useState(false)
-  const [saved, setSaved]     = useState(false)
-  const [error, setError]     = useState(null)
-  const [feedbackContext, setFeedbackContext] = useState('')
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileSaved, setProfileSaved] = useState(false)
+  const [profileError, setProfileError] = useState(null)
+  const [moodSaving, setMoodSaving] = useState(false)
+  const [moodSaved, setMoodSaved] = useState(false)
+  const [moodError, setMoodError] = useState(null)
+  const [failedMood, setFailedMood] = useState(null)
 
-  async function save(fields, context) {
-    setSaving(true)
-    setSaved(false)
-    setError(null)
-    setFeedbackContext(context)
+  const profileFeedbackTimer = useRef(null)
+  const moodFeedbackTimer = useRef(null)
+
+  useEffect(() => () => {
+    window.clearTimeout(profileFeedbackTimer.current)
+    window.clearTimeout(moodFeedbackTimer.current)
+  }, [])
+
+  const initials = getInitials(displayName, user)
+  const profileDirty = (
+    displayName !== (user?.displayName || '')
+    || bio !== (user?.bio || '')
+    || email !== (user?.email || '')
+    || avatarColor !== (user?.avatarColor || '#4d6b58')
+  )
+
+  const avatarColors = AVATAR_COLORS.some(({ value }) => value === avatarColor)
+    ? AVATAR_COLORS
+    : [{ value: avatarColor, label: 'Current color' }, ...AVATAR_COLORS]
+
+  async function saveProfile(event) {
+    event?.preventDefault()
+    setProfileSaving(true)
+    setProfileSaved(false)
+    setProfileError(null)
+    window.clearTimeout(profileFeedbackTimer.current)
+
     try {
-      await updateProfile(fields)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2500)
-    } catch (e) {
-      setError(e.message)
+      const updated = await updateProfile({ displayName, bio, email, avatarColor })
+      setDisplayName(updated?.displayName ?? displayName)
+      setBio(updated?.bio ?? bio)
+      setEmail(updated?.email ?? email)
+      setAvatarColor(updated?.avatarColor ?? avatarColor)
+      setProfileSaved(true)
+      profileFeedbackTimer.current = window.setTimeout(() => setProfileSaved(false), 2500)
+    } catch (error) {
+      setProfileError(error.message)
     } finally {
-      setSaving(false)
+      setProfileSaving(false)
     }
   }
 
-  async function saveProfile(e) {
-    e?.preventDefault()
-    await save({ displayName, bio, email, avatarColor }, 'profile')
-  }
+  async function saveMood(selectedMood) {
+    const previousMood = mood
+    setMood(selectedMood)
+    setMoodSaving(true)
+    setMoodSaved(false)
+    setMoodError(null)
+    setFailedMood(null)
+    window.clearTimeout(moodFeedbackTimer.current)
 
-  async function saveMood(selected) {
-    setMood(selected)
-    await save({ mood: selected }, 'mood')
+    try {
+      await updateProfile({ mood: selectedMood })
+      setMoodSaved(true)
+      moodFeedbackTimer.current = window.setTimeout(() => setMoodSaved(false), 2500)
+    } catch (error) {
+      setMood(previousMood)
+      setFailedMood(selectedMood)
+      setMoodError(error.message)
+    } finally {
+      setMoodSaving(false)
+    }
   }
-
-  const initials = (user?.displayName || user?.firstName || user?.username || '?').slice(0, 2).toUpperCase()
 
   return (
-    <section className="page">
-      <style>{`
-        .mood-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
-        .mood-chip {
-          padding: 8px 16px; border-radius: 999px; border: 1.5px solid var(--line);
-          background: transparent; color: var(--ink);
-          font-size: 0.86rem; font-weight: 600; cursor: pointer;
-          transition: border-color 140ms, background 140ms, color 140ms; text-transform: capitalize;
-        }
-        .mood-chip:hover { border-color: var(--accent); background: var(--accent-soft); }
-        .mood-chip.selected { border-color: var(--accent); background: var(--accent); color: #fff; }
-
-        .color-swatches { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
-        .color-swatch {
-          width: 36px; height: 36px; border-radius: 50%; border: 3px solid transparent;
-          cursor: pointer; transition: transform 140ms;
-        }
-        .color-swatch:hover { transform: scale(1.12); }
-        .color-swatch.selected { border-color: var(--ink); }
-
-        .account-card {
-          display: grid;
-          gap: 10px;
-          align-content: start;
-        }
-        .account-row {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 8px;
-          padding: 14px 16px;
-          border: 1px solid var(--line);
-          border-radius: 16px;
-          background: rgba(255,255,255,0.52);
-          font-size: 0.92rem;
-        }
-        .account-row--stack {
-          align-items: flex-start;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .account-row .key {
-          color: var(--muted);
-          font-weight: 600;
-          font-size: 0.76rem;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-        .account-row .val {
-          color: var(--ink);
-          font-weight: 600;
-          text-align: left;
-        }
-        .plan-badge {
-          display: inline-block; padding: 3px 12px; border-radius: 999px;
-          background: var(--accent-soft); color: var(--accent);
-          font-size: 0.76rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-        }
-        .anon-badge {
-          display: inline-flex; align-items: center; gap: 8px;
-          padding: 6px 14px; border-radius: 999px;
-          background: rgba(58,104,152,0.08); border: 1px solid rgba(58,104,152,0.18);
-          font-size: 0.82rem; font-weight: 700; color: #3a6898;
-        }
-        .settings-field { display: grid; gap: 6px; }
-        .settings-field label { font-size: 0.8rem; font-weight: 600; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
-        .settings-input {
-          width: 100%; padding: 10px 14px; border-radius: 12px;
-          border: 1.5px solid var(--line); background: rgba(255,255,255,0.7);
-          color: var(--ink); font-size: 0.92rem; outline: none;
-          transition: border-color 140ms, box-shadow 140ms;
-          box-sizing: border-box;
-        }
-        .settings-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-        .settings-textarea { min-height: 80px; resize: vertical; }
-        .save-row { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
-        .save-btn {
-          padding: 10px 24px; border-radius: 999px; border: none;
-          background: var(--accent); color: #fff; font-size: 0.9rem; font-weight: 700;
-          transition: opacity 140ms; cursor: pointer;
-        }
-        .save-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-        .save-status { font-size: 0.82rem; color: var(--accent); font-weight: 600; }
-        .save-error  { font-size: 0.82rem; color: #dc2626; font-weight: 600; }
-        .danger-btn {
-          padding: 10px 20px; border-radius: 999px;
-          border: 1.5px solid #f5b7b7; background: transparent; color: #b91c1c;
-          font-size: 0.86rem; font-weight: 600; cursor: pointer;
-          transition: background 140ms, color 140ms;
-        }
-        .danger-btn:hover { background: #fde8e8; }
-        .avatar-preview {
-          width: 64px; height: 64px; border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
-          color: #fff; font-size: 1.4rem; font-weight: 800; margin-bottom: 10px;
-          transition: background 200ms;
-        }
-      `}</style>
-
-      <header className="page-header">
+    <section className="page settings-page">
+      <header className="page-header settings-page-header">
         <h2>Settings</h2>
         <p>Manage your account, profile, and mood.</p>
       </header>
 
-      <div className="grid">
+      <div className="settings-layout">
+        <article className="settings-section settings-profile" aria-labelledby="settings-profile-heading">
+          <header className="settings-section-header">
+            <h3 id="settings-profile-heading">Profile</h3>
+            <p>Choose how your name and profile appear across Aurora.</p>
+          </header>
 
-        {/* Profile editor */}
-        <article className="card span-8">
-          <h3>Profile</h3>
-          <div style={{ marginBottom: 16 }}>
-            <div className="avatar-preview" style={{ background: avatarColor }}>{initials}</div>
-            <div className="color-swatches">
-              {AVATAR_COLORS.map(c => (
-                <button
-                  key={c}
-                  type="button"
-                  className={`color-swatch${avatarColor === c ? ' selected' : ''}`}
-                  style={{ background: c }}
-                  onClick={() => setAvatarColor(c)}
-                  aria-label={`Color ${c}`}
-                />
-              ))}
-            </div>
-          </div>
-          <form onSubmit={saveProfile} style={{ display: 'grid', gap: 14 }}>
+          <form className="settings-profile-form" onSubmit={saveProfile}>
+            <fieldset className="settings-avatar-fieldset">
+              <legend>Avatar color</legend>
+              <div className="settings-avatar-control">
+                <div
+                  className="settings-avatar-preview"
+                  style={{ backgroundColor: avatarColor }}
+                  aria-hidden="true"
+                >
+                  {initials}
+                </div>
+                <div className="settings-color-swatches">
+                  {avatarColors.map(({ value, label }) => {
+                    const id = `settings-avatar-${value.slice(1)}`
+                    return (
+                      <span className="settings-color-choice" key={value}>
+                        <input
+                          className="settings-visually-hidden"
+                          id={id}
+                          name="avatarColor"
+                          type="radio"
+                          value={value}
+                          checked={avatarColor === value}
+                          onChange={() => setAvatarColor(value)}
+                        />
+                        <label
+                          className="settings-color-swatch"
+                          htmlFor={id}
+                          style={{ '--settings-swatch': value }}
+                          title={label}
+                        >
+                          <span className="settings-visually-hidden">{label}</span>
+                        </label>
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            </fieldset>
+
             <div className="settings-field">
-              <label>Display name</label>
+              <label htmlFor="settings-display-name">Display name</label>
               <input
                 className="settings-input"
+                id="settings-display-name"
+                name="displayName"
                 placeholder={user?.firstName || user?.username || 'Your name'}
                 value={displayName}
                 maxLength={50}
-                onChange={e => setDisplayName(e.target.value)}
+                onChange={(event) => setDisplayName(event.target.value)}
               />
             </div>
+
             <div className="settings-field">
-              <label>Email</label>
+              <label htmlFor="settings-email">Email</label>
               <input
                 className="settings-input"
+                id="settings-email"
+                name="email"
                 type="email"
+                autoComplete="email"
                 placeholder="your@email.com"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(event) => setEmail(event.target.value)}
               />
             </div>
+
             <div className="settings-field">
-              <label>Bio <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional — shared with your therapist if privacy allows)</span></label>
+              <label htmlFor="settings-bio">Bio</label>
+              <p className="settings-field-help" id="settings-bio-help">
+                Optional. Shared with your therapist if privacy allows.
+              </p>
               <textarea
                 className="settings-input settings-textarea"
+                id="settings-bio"
+                name="bio"
+                aria-describedby="settings-bio-help"
                 placeholder="A little about yourself..."
                 value={bio}
                 maxLength={500}
-                onChange={e => setBio(e.target.value)}
+                onChange={(event) => setBio(event.target.value)}
               />
             </div>
-            <div className="save-row">
+
+            <div className="settings-save-row">
               <AsyncButton
-                className="save-btn"
+                className="save-btn settings-save-button"
                 type="submit"
-                pending={saving && feedbackContext === 'profile'}
-                pendingLabel="Saving…"
-                disabled={saving}
+                pending={profileSaving}
+                pendingLabel="Saving..."
+                disabled={profileSaving || !profileDirty}
               >
                 Save profile
               </AsyncButton>
+              {!profileDirty && !profileSaving && !profileSaved && !profileError && (
+                <span className="settings-save-hint">Your profile is up to date.</span>
+              )}
             </div>
-            {saved && feedbackContext === 'profile' && <FeedbackNotice variant="success" message="Your changes were saved." compact />}
-            {error && feedbackContext === 'profile' && (
-              <FeedbackNotice
-                variant="error"
-                title="Could not save changes"
-                message={error}
-                onRetry={saveProfile}
-                compact
-              />
-            )}
+
+            <div className="settings-feedback-slot">
+              {profileSaved && (
+                <FeedbackNotice variant="success" message="Your changes were saved." compact />
+              )}
+              {profileError && (
+                <FeedbackNotice
+                  variant="error"
+                  title="Could not save changes"
+                  message={profileError}
+                  onRetry={saveProfile}
+                  compact
+                />
+              )}
+            </div>
           </form>
         </article>
 
-        {/* Account info */}
-        <article className="card span-4 account-card">
-          <h3>Account</h3>
-          <div className="account-row">
-            <span className="key">Username</span>
-            <span className="val">{user?.username}</span>
-          </div>
-          <div className="account-row">
-            <span className="key">Plan</span>
-            <span className="plan-badge">{user?.plan || 'Free'}</span>
-          </div>
-          <div className="account-row">
-            <span className="key">Streak</span>
-            <span className="val">{user?.streak ?? 0} weeks</span>
-          </div>
-          {user?.anonymousName && (
-            <div className="account-row account-row--stack">
-              <span className="key">Peer identity</span>
-              <span className="anon-badge">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
-                {user.anonymousName}
-              </span>
+        <aside className="settings-rail" aria-label="Account and session">
+          <section className="settings-section settings-account" aria-labelledby="settings-account-heading">
+            <header className="settings-section-header">
+              <h3 id="settings-account-heading">Account</h3>
+              <p>Your Aurora account details.</p>
+            </header>
+            <dl className="settings-account-list">
+              <div className="settings-account-row">
+                <dt>Username</dt>
+                <dd>{user?.username}</dd>
+              </div>
+              <div className="settings-account-row">
+                <dt>Plan</dt>
+                <dd>{user?.plan || 'Free'}</dd>
+              </div>
+              <div className="settings-account-row">
+                <dt>Streak</dt>
+                <dd>{getStreakLabel(user?.streak)}</dd>
+              </div>
+              {user?.anonymousName && (
+                <div className="settings-account-row">
+                  <dt>Peer identity</dt>
+                  <dd className="settings-peer-name">{user.anonymousName}</dd>
+                </div>
+              )}
+            </dl>
+          </section>
+
+          <section className="settings-section settings-session" aria-labelledby="settings-session-heading">
+            <header className="settings-section-header">
+              <h3 id="settings-session-heading">Session</h3>
+            </header>
+            <p className="settings-session-copy">
+              Signed in as <strong>{user?.username}</strong>.
+            </p>
+            <button className="settings-signout-button" type="button" onClick={logout}>
+              Sign out
+            </button>
+          </section>
+        </aside>
+
+        <article className="settings-section settings-mood" aria-labelledby="settings-mood-heading">
+          <header className="settings-section-header settings-mood-header">
+            <h3 id="settings-mood-heading">How are you feeling?</h3>
+            <p id="settings-mood-help">Set your current mood. It appears on your home dashboard.</p>
+          </header>
+
+          <fieldset
+            className="settings-mood-fieldset"
+            aria-labelledby="settings-mood-heading"
+            aria-describedby="settings-mood-help"
+            aria-busy={moodSaving || undefined}
+            disabled={moodSaving}
+          >
+            <legend className="settings-visually-hidden">Current mood</legend>
+            <div className="settings-mood-grid">
+              {MOODS.map((moodOption) => {
+                const id = `settings-mood-${moodOption}`
+                return (
+                  <span className="settings-mood-choice" key={moodOption}>
+                    <input
+                      className="settings-visually-hidden"
+                      id={id}
+                      name="currentMood"
+                      type="radio"
+                      value={moodOption}
+                      checked={mood === moodOption}
+                      onChange={() => saveMood(moodOption)}
+                    />
+                    <label htmlFor={id}>{moodOption}</label>
+                  </span>
+                )
+              })}
             </div>
-          )}
-        </article>
+          </fieldset>
 
-        {/* Mood picker */}
-        <article className="card span-12">
-          <h3>How are you feeling?</h3>
-          <p style={{ marginTop: 0, marginBottom: 12 }}>
-            Set your current mood — it shows on your home dashboard.
-          </p>
-          <div className="mood-grid">
-            {MOODS.map((m) => (
-              <button
-                key={m}
-                type="button"
-                className={`mood-chip${mood === m ? ' selected' : ''}`}
-                onClick={() => saveMood(m)}
-                disabled={saving}
-              >
-                {m}
-              </button>
-            ))}
+          <div className="settings-feedback-slot settings-mood-feedback">
+            {moodSaving && <FeedbackNotice message="Saving your mood..." compact />}
+            {moodSaved && <FeedbackNotice variant="success" message="Your mood was saved." compact />}
+            {moodError && (
+              <FeedbackNotice
+                variant="error"
+                title="Could not save your mood"
+                message={moodError}
+                onRetry={() => saveMood(failedMood)}
+                compact
+              />
+            )}
           </div>
-          {saving && feedbackContext === 'mood' && <FeedbackNotice message="Saving your mood…" compact />}
-          {saved && feedbackContext === 'mood' && <FeedbackNotice variant="success" message="Your mood was saved." compact />}
-          {error && feedbackContext === 'mood' && (
-            <FeedbackNotice
-              variant="error"
-              title="Could not save your mood"
-              message={error}
-              onRetry={() => saveMood(mood)}
-              compact
-            />
-          )}
         </article>
-
-        {/* Sign out */}
-        <article className="card span-12">
-          <h3>Session</h3>
-          <p style={{ marginTop: 0 }}>You are signed in as <strong>{user?.username}</strong>.</p>
-          <button className="danger-btn" onClick={logout}>Sign out</button>
-        </article>
-
       </div>
     </section>
   )

@@ -20,6 +20,11 @@ export default function WhisperText({
     const ctx = gsap.context(() => {
       const targets = gsap.utils.toArray('[data-word]')
 
+      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+        gsap.set(targets, { opacity: 1, x: 0, y: 0 })
+        return
+      }
+
       gsap.set(targets, { opacity: 0, x, y })
 
       gsap.to(targets, {
