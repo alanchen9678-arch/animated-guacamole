@@ -1451,9 +1451,11 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+  transition: background-color var(--motion-fast), box-shadow var(--motion-fast);
 }
 .app-root .ps-peer-card:hover,
 .app-root .ps-peer-card--active { transform: none; background: var(--accent-wash); box-shadow: inset 3px 0 0 var(--accent); }
+.app-root .ps-peer-card:hover,
 .app-root .ps-peer-card--active {
   width: calc(100% + 24px);
   margin-inline: -12px;
@@ -1675,6 +1677,8 @@
   .app-root .ci-intro-stats { grid-template-columns: 1fr; }
   .app-root .ci-stat { border-right: 0; border-bottom: 1px solid var(--line); }
   .app-root .ci-stat:last-child { border-bottom: 0; }
+  .app-root .ps-peer-card { padding-inline: 14px; }
+  .app-root .ps-peer-card:hover,
   .app-root .ps-peer-card--active {
     width: 100%;
     margin-inline: 0;

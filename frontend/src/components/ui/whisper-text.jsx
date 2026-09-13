@@ -1,50 +1,11 @@
-import React, { useLayoutEffect, useRef } from 'react'
-import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-
-gsap.registerPlugin(ScrollTrigger)
+import React, { useRef } from 'react'
 
 export default function WhisperText({
   text,
   className = '',
-  delay = 80,
-  duration = 0.4,
-  x = 0,
-  y = 0,
-  triggerStart = 'top 90%',
   as: Component = 'div',
 }) {
   const containerRef = useRef(null)
-
-  useLayoutEffect(() => {
-    const ctx = gsap.context(() => {
-      const targets = gsap.utils.toArray('[data-word]')
-
-      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-        gsap.set(targets, { opacity: 1, x: 0, y: 0 })
-        return
-      }
-
-      gsap.set(targets, { opacity: 0, x, y })
-
-      gsap.to(targets, {
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: triggerStart,
-          toggleActions: 'play none none none',
-          once: true,
-        },
-        opacity: 1,
-        x: 0,
-        y: 0,
-        duration,
-        ease: 'power2.out',
-        stagger: delay / 1000,
-      })
-    }, containerRef)
-
-    return () => ctx.revert()
-  }, [text, delay, duration, x, y, triggerStart])
 
   return (
     <Component

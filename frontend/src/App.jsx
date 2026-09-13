@@ -2,6 +2,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { TextReveal } from './components/ui/cascade-text.jsx'
 import WhisperText from './components/ui/whisper-text.jsx'
 import { LoadingState } from './components/ui/feedback.jsx'
+import FeatureStories from './components/landing/FeatureStories.jsx'
 import { UserProvider, useUser } from './context/UserContext.jsx'
 import { NavigationProvider, useNavigation } from './context/NavigationContext.jsx'
 import { pageConfig } from './routes/AppRoutes.jsx'
@@ -16,7 +17,7 @@ const features = [
   { id: 'journal',   title: 'Thought Journal',   desc: "A private, open-ended space to process your feelings and daily experiences.",             tag: 'Private'     },
   { id: 'therapist', title: 'Therapist Match',   desc: 'Get paired with a licensed professional whose style and focus suit your needs.',          tag: 'Licensed'    },
   { id: 'community', title: 'Peer Support',      desc: "Connect anonymously with others who understand what you're going through.",               tag: 'Anonymous'   },
-  { id: 'library',   title: 'Info Library',      desc: 'Learn about mental health through interactive content and daily learning streaks.',       tag: 'Interactive' },
+  { id: 'library',   title: 'Info Library',      desc: 'Explore clear guides to common mental health conditions, then test your understanding with a short quiz.', tag: 'Interactive' },
 ]
 
 function getDynamicNotifications() {
@@ -246,16 +247,14 @@ function AppShell() {
             </div>
           </section>
 
-          <section className="landing-capabilities" aria-labelledby="landing-features-title">
-            <p className="features-label" id="landing-features-title">Everything included</p>
-            <div className="feature-grid-landing">
-              {features.map((f) => (
-                <div key={f.id} className="feature-card-landing">
-                  <span className="feature-tag">{f.title}</span>
-                  <p>{f.desc}</p>
-                </div>
-              ))}
+          <FeatureStories features={features} />
+
+          <section className={'landing-endcap'} aria-labelledby={'landing-endcap-title'}>
+            <div className={'landing-endcap-copy'}>
+              <h2 id={'landing-endcap-title'}>Ready when you are.</h2>
+              <p>Create your private Aurora space.</p>
             </div>
+            <button className={'btn-primary-lg'} onClick={() => openAuth('register')}>Get started free</button>
           </section>
         </div>
       )}
