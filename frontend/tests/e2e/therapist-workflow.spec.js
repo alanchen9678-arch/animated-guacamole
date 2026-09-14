@@ -188,6 +188,46 @@ test('global therapist sharing and care history persist through the therapist wo
   await page.getByRole('button', { name: /Needs Profile/ }).click()
   await page.getByRole('button', { name: 'Open chat' }).click()
 
+  const chatLayout = await page.locator('.tm-chat-root').evaluate((root) => {
+    const header = root.querySelector('.tm-chat-header').getBoundingClientRect()
+    const headerStyles = getComputedStyle(root.querySelector('.tm-chat-header'))
+    const messages = root.querySelector('.tm-chat-messages').getBoundingClientRect()
+    const messageStyles = getComputedStyle(root.querySelector('.tm-chat-messages'))
+    const rootBounds = root.getBoundingClientRect()
+    const contentBounds = root.closest('.content').getBoundingClientRect()
+    const styles = getComputedStyle(root)
+    const headerContentLeft = header.left + parseFloat(headerStyles.paddingLeft)
+    const headerContentRight = header.right - parseFloat(headerStyles.paddingRight)
+    const messageContentLeft = messages.left + parseFloat(messageStyles.paddingLeft)
+    const messageContentRight = messages.right - parseFloat(messageStyles.paddingRight)
+    return {
+      borderTopWidth: styles.borderTopWidth,
+      borderRadius: styles.borderRadius,
+      backgroundColor: styles.backgroundColor,
+      headerTopDelta: Math.abs(header.top - contentBounds.top),
+      headerLeftDelta: Math.abs(header.left - contentBounds.left),
+      headerRightDelta: Math.abs(header.right - contentBounds.right),
+      headerHeight: header.height,
+      headerPaddingTop: headerStyles.paddingTop,
+      headerContentLeftDelta: Math.abs(headerContentLeft - messageContentLeft),
+      headerContentRightDelta: Math.abs(headerContentRight - messageContentRight),
+      messageInset: root.querySelector('.tm-chat-messages').getBoundingClientRect().left - rootBounds.left,
+    }
+  })
+  expect(chatLayout.borderTopWidth).toBe('0px')
+  expect(chatLayout.borderRadius).toBe('0px')
+  expect(chatLayout.backgroundColor).toBe('rgba(0, 0, 0, 0)')
+  expect(chatLayout.headerTopDelta).toBeLessThan(1)
+  expect(chatLayout.headerLeftDelta).toBeLessThan(1)
+  expect(chatLayout.headerRightDelta).toBeLessThan(1)
+  expect(chatLayout.headerHeight).toBeGreaterThanOrEqual(76)
+  expect(chatLayout.headerPaddingTop).toBe('20px')
+  expect(chatLayout.headerContentLeftDelta).toBeLessThan(1)
+  expect(chatLayout.headerContentRightDelta).toBeLessThan(1)
+  expect(chatLayout.messageInset).toBeLessThan(1)
+  await expect(page.locator('.tm-chat-messages')).toHaveCSS('padding-left', '8px')
+  await expect(page.locator('.tm-chat-input-bar')).toHaveCSS('padding-left', '8px')
+
   await page.getByRole('button', { name: /Care history/ }).click()
   const careHistory = page.getByRole('region', { name: 'Connection requests and appointments' })
   await expect(page.getByRole('heading', { name: 'Connection requests' })).toBeVisible()

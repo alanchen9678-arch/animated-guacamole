@@ -1335,16 +1335,63 @@
   line-height: 1.55;
 }
 .app-root .tm-chat-root {
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-workspace);
-  background: var(--panel-raised);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+.app-root .tm-chat-header {
+  width: auto;
+  margin: -36px calc(-1 * clamp(32px, 3.7vw, 46px)) 0;
+  padding: 20px calc(clamp(32px, 3.7vw, 46px) + 8px);
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-soft);
   box-shadow: none;
 }
-.app-root .tm-chat-header,
-.app-root .tm-chat-input-bar { background: var(--panel-soft); box-shadow: none; }
-.app-root .tm-bubble { border-radius: var(--radius-small); }
-.app-root .tm-bubble--them { border: 1px solid rgba(58, 104, 152, 0.14); background: var(--blue-soft); }
-.app-root .tm-bubble--user { background: var(--accent-dark); }
+.app-root .tm-chat-messages {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 24px 8px 20px;
+  gap: 18px;
+}
+.app-root .tm-msg-row {
+  align-items: flex-start;
+  gap: 10px;
+}
+.app-root .tm-msg-row--user {
+  flex-direction: row;
+  justify-content: flex-end;
+}
+.app-root .tm-bubble {
+  padding: 12px 14px 9px;
+  border-radius: var(--radius-small);
+  gap: 5px;
+}
+.app-root .tm-bubble--them {
+  max-width: 75%;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+}
+.app-root .tm-bubble--user {
+  max-width: 70%;
+  background: var(--accent-dark);
+}
+.app-root .tm-bubble-text {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+.app-root .tm-bubble-time {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+.app-root .tm-bubble--user .tm-bubble-time {
+  color: rgba(255, 255, 255, 0.72);
+}
+.app-root .tm-chat-input-bar { background: transparent; box-shadow: none; }
 .app-root .tm-care-item {
   border: 0;
   border-top: 1px solid var(--line);
@@ -1352,6 +1399,20 @@
   background: transparent;
 }
 .app-root .tm-profile-modal { border-radius: var(--radius-workspace); box-shadow: var(--shadow-overlay); }
+
+@media (max-width: 959px) {
+  .app-root .tm-chat-header {
+    margin: -32px -30px 0;
+    padding: 18px 38px;
+  }
+}
+
+@media (max-width: 639px) {
+  .app-root .tm-chat-header {
+    margin: -26px -18px 0;
+    padding: 16px 26px;
+  }
+}
 
 /* Peer Support: hub and people become readable lists, chat remains a workspace. */
 .app-root .ps-center-wrap { width: min(100%, 820px); }
@@ -1462,17 +1523,21 @@
   padding-inline: 14px;
 }
 .app-root .ps-chat-root {
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-workspace);
-  background: var(--panel-raised);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
+  overflow: visible;
 }
 .app-root .ps-chat-header {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  width: auto;
+  margin: -36px calc(-1 * clamp(32px, 3.7vw, 46px)) 0;
+  padding: 20px calc(clamp(32px, 3.7vw, 46px) + 8px);
+  box-sizing: border-box;
   border-bottom: 1px solid var(--line);
   background: var(--panel-soft);
   box-shadow: none;
@@ -1534,21 +1599,37 @@
   font-weight: 650;
 }
 .app-root .ps-anon-notice {
-  padding: 9px 18px;
+  padding: 9px 8px;
   background: var(--panel-soft);
   color: var(--muted);
   line-height: 1.45;
   text-align: left;
 }
 .app-root .ps-messages {
-  gap: 14px;
-  padding: 18px;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 18px;
+  padding: 24px 8px 20px;
 }
 .app-root .ps-input-bar { background: var(--panel-soft); box-shadow: none; }
 .app-root .ps-bubble { border-radius: var(--radius-small); }
 .app-root .ps-bubble--peer { border: 1px solid rgba(58, 104, 152, 0.14); background: var(--blue-soft); }
 .app-root .ps-bubble--self { background: var(--accent-dark); }
 .app-root .ps-mod-alert { border-radius: 0; border-inline: 0; box-shadow: none; }
+
+@media (max-width: 959px) {
+  .app-root .ps-chat-header {
+    margin: -32px -30px 0;
+    padding: 18px 38px;
+  }
+}
+
+@media (max-width: 639px) {
+  .app-root .ps-chat-header {
+    margin: -26px -18px 0;
+    padding: 16px 26px;
+  }
+}
 
 /* Keep human-care conversations visually aligned with Aurora's compact composer. */
 .app-root .tm-chat-input-bar,

@@ -29,7 +29,9 @@ def _user_payload(user):
         'hasInitialAssessment': checkin_summary['has_initial_assessment'],
         'hasCurrentPersonalityAssessment': checkin_summary['has_current_personality_assessment'],
         'lastCheckInDate': checkin_summary['last_check_in_date'],
+        'lastWeeklyCheckInDate': checkin_summary['last_weekly_check_in_date'],
         'checkInDueThisWeek': checkin_summary['due_this_week'],
+        'weeklyCheckInDueSince': checkin_summary['weekly_due_since'],
     }
 
 

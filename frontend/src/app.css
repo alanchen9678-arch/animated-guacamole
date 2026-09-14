@@ -564,7 +564,7 @@ a:not([class]):hover { color: var(--blue); }
   position: fixed;
   top: 7px;
   right: max(16px, calc((100vw - 1240px) / 2 + 16px));
-  z-index: 200;
+  z-index: 60;
   width: 44px;
   height: 44px;
 }
@@ -608,6 +608,10 @@ a:not([class]):hover { color: var(--blue); }
 
 .notif-item:last-child { padding-bottom: 0; border-bottom: 0; }
 .notif-item--clickable:hover { color: var(--accent-ink); }
+.notif-item--clickable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
 .notif-text { display: block; font-size: 0.875rem; }
 .notif-time { display: block; margin-top: 2px; color: var(--muted); font-size: var(--type-caption); }
 

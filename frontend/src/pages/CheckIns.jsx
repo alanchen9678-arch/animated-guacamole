@@ -907,7 +907,6 @@ export default function CheckIns() {
       setSaveError('')
     }
 
-    localStorage.setItem('aurora.checkin.last-completed', formatDateKey(new Date()))
     submittingRef.current = false
     setSubmitting(false)
     setView('results')

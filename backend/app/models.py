@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -500,11 +502,20 @@ def get_user_checkin_summary(user, today=None):
                     break
 
     due_this_week = latest_weekly_entry is None or latest_weekly_entry.week_start_date != start_of_week(today)
+    weekly_due_since = None
+    if due_this_week:
+        weekly_due_since = (
+            latest_weekly_entry.week_start_date + timedelta(days=7)
+            if latest_weekly_entry
+            else today
+        )
 
     return {
         'streak': streak,
         'last_check_in_date': latest_entry.check_in_date if latest_entry else None,
+        'last_weekly_check_in_date': latest_weekly_entry.check_in_date if latest_weekly_entry else None,
         'due_this_week': due_this_week,
+        'weekly_due_since': weekly_due_since,
         'has_initial_assessment': has_initial_assessment,
         'has_current_personality_assessment': has_current_personality_assessment,
     }

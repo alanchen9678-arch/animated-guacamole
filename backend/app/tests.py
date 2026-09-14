@@ -206,6 +206,8 @@ class CheckInModelTests(TestCase):
         self.assertEqual(summary['streak'], 3)
         self.assertFalse(summary['due_this_week'])
         self.assertEqual(summary['last_check_in_date'], date(2026, 6, 22))
+        self.assertEqual(summary['last_weekly_check_in_date'], date(2026, 6, 22))
+        self.assertIsNone(summary['weekly_due_since'])
 
     def test_missing_entire_week_resets_streak(self):
         # Missing a full week should break the streak and mark the next check-in as due.
@@ -224,6 +226,8 @@ class CheckInModelTests(TestCase):
 
         self.assertEqual(summary['streak'], 0)
         self.assertTrue(summary['due_this_week'])
+        self.assertEqual(summary['last_weekly_check_in_date'], date(2026, 6, 15))
+        self.assertEqual(summary['weekly_due_since'], date(2026, 6, 22))
 
 
 class TherapistMatchModelTests(TestCase):
@@ -403,6 +407,8 @@ class AuthAPITests(TestCase):
         self.assertIn('needsProfile', response.data)
         self.assertFalse(response.data['hasInitialAssessment'])
         self.assertFalse(response.data['hasCurrentPersonalityAssessment'])
+        self.assertIsNone(response.data['lastWeeklyCheckInDate'])
+        self.assertIsNotNone(response.data['weeklyCheckInDueSince'])
 
     def test_me_patch_updates_user_and_profile_fields(self):
         # Profile edits should persist both built-in user fields and custom profile metadata.
@@ -479,6 +485,8 @@ class CheckInAPITests(TestCase):
         self.assertEqual(response.data['history'][0]['qIds'], [1, 2])
         self.assertTrue(response.data['hasInitialAssessment'])
         self.assertFalse(response.data['hasCurrentPersonalityAssessment'])
+        self.assertIsNone(response.data['lastWeeklyCheckInDate'])
+        self.assertIsNotNone(response.data['weeklyDueSince'])
 
     def test_post_initial_checkin_creates_entry_and_updates_history(self):
         # Posting an initial assessment should create a new entry and include it in the response.

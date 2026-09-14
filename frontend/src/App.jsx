@@ -20,14 +20,28 @@ const features = [
   { id: 'library',   title: 'Info Library',      desc: 'Explore clear guides to common mental health conditions, then test your understanding with a short quiz.', tag: 'Interactive' },
 ]
 
-function getDynamicNotifications() {
-  const notes = []
-  const lastCompleted = localStorage.getItem('aurora.checkin.last-completed')
-  if (lastCompleted) {
-    const days = Math.floor((new Date() - new Date(lastCompleted)) / (1000 * 60 * 60 * 24))
-    if (days >= 7) notes.push({ id: 'checkin', text: 'Your weekly check-in is ready', time: days === 7 ? 'Today' : `${days - 7}d overdue`, page: 'checkins' })
-  }
-  return notes
+function calendarDaysSince(dateKey, today = new Date()) {
+  if (!dateKey) return null
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey)
+  if (!match) return null
+
+  const [, year, month, day] = match.map(Number)
+  const dateValue = Date.UTC(year, month - 1, day)
+  const todayValue = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
+  return Math.floor((todayValue - dateValue) / (24 * 60 * 60 * 1000))
+}
+
+function getDynamicNotifications(user, assessmentLocked) {
+  if (!user || assessmentLocked || !user.checkInDueThisWeek) return []
+
+  const daysDue = calendarDaysSince(user.weeklyCheckInDueSince)
+  const time = daysDue === 0
+    ? 'Due today'
+    : daysDue > 0
+      ? String(daysDue) + 'd overdue'
+      : 'Due this week'
+
+  return [{ id: 'checkin', text: 'Your weekly check-in is ready', time, page: 'checkins' }]
 }
 
 function BellIcon() {
@@ -65,7 +79,20 @@ function AppShell() {
   const activeShellPage = assessmentLocked && activePage !== 'checkins' ? 'checkins' : activePage
 
   // dynamic notifications
-  const notifications = useMemo(() => (assessmentLocked ? [] : getDynamicNotifications()), [assessmentLocked])
+  const notifications = useMemo(
+    () => getDynamicNotifications(user, assessmentLocked),
+    [assessmentLocked, user],
+  )
+  const notificationButtonLabel = notifications.length === 0
+    ? 'Notifications, none active'
+    : notifications.length === 1
+      ? 'Notifications, 1 active'
+      : 'Notifications, ' + notifications.length + ' active'
+
+  useEffect(() => {
+    setNotifOpen(false)
+  }, [activePage, user?.id])
+
   useEffect(() => {
     if (!notifOpen) return undefined
 
@@ -104,17 +131,21 @@ function AppShell() {
     setShowDailyPrompt(true)
   }, [isLoggedIn, assessmentLocked])
 
-  // auto-show check-in prompt after 2 days of ignoring (7 days due + 2 days grace = 9)
+  // Auto-show after the server says the weekly check-in has been due for two days.
   useEffect(() => {
-    if (!isLoggedIn || assessmentLocked) return
-    const lastCompleted = localStorage.getItem('aurora.checkin.last-completed')
-    if (!lastCompleted) return // no history, initial assessment handles this
-    const days = Math.floor((new Date() - new Date(lastCompleted)) / (1000 * 60 * 60 * 24))
-    if (days < 9) return // 7 days due + 2 days grace
+    if (!isLoggedIn || assessmentLocked || !user?.checkInDueThisWeek) {
+      setShowCheckinPrompt(false)
+      return
+    }
+    const daysDue = calendarDaysSince(user.weeklyCheckInDueSince)
+    if (daysDue === null || daysDue < 2) {
+      setShowCheckinPrompt(false)
+      return
+    }
     const todayKey = getTodayKey()
-    if (localStorage.getItem('aurora.checkin.prompt-shown') === todayKey) return
+    if (localStorage.getItem(`aurora.checkin.prompt-shown.${user.id}`) === todayKey) return
     setShowCheckinPrompt(true)
-  }, [isLoggedIn, assessmentLocked])
+  }, [isLoggedIn, assessmentLocked, user?.checkInDueThisWeek, user?.weeklyCheckInDueSince])
 
   useEffect(() => {
     if (assessmentLocked && activePage !== 'checkins') {
@@ -134,7 +165,7 @@ function AppShell() {
   }
 
   function dismissCheckinPrompt(goToCheckins = false) {
-    localStorage.setItem('aurora.checkin.prompt-shown', getTodayKey())
+    localStorage.setItem(`aurora.checkin.prompt-shown.${user.id}`, getTodayKey())
     setShowCheckinPrompt(false)
     if (goToCheckins) navigate('checkins')
   }
@@ -391,12 +422,28 @@ function AppShell() {
 
       {/* ── bottom-left notifications ── */}
       {isLoggedIn && <div ref={notifAnchorRef} className="notif-anchor">
+        <button
+          ref={notifButtonRef}
+          type="button"
+          className="notif-btn"
+          onClick={() => setNotifOpen((o) => !o)}
+          aria-label={notificationButtonLabel}
+          aria-expanded={notifOpen}
+          aria-controls="notifications-popover"
+          aria-haspopup="true"
+        >
+          <BellIcon />
+          {notifications.length > 0 && (
+            <span className="notif-badge" aria-hidden="true">{notifications.length}</span>
+          )}
+        </button>
         {notifOpen && (
           <div
             id="notifications-popover"
             className="notif-panel"
             role="region"
             aria-labelledby="notifications-heading"
+            aria-live="polite"
           >
             <p id="notifications-heading" className="notif-heading">Notifications</p>
             {notifications.length === 0 ? (
@@ -414,20 +461,6 @@ function AppShell() {
             ))}
           </div>
         )}
-        <button
-          ref={notifButtonRef}
-          type="button"
-          className="notif-btn"
-          onClick={() => setNotifOpen((o) => !o)}
-          aria-label={`${notifications.length} notifications`}
-          aria-expanded={notifOpen}
-          aria-controls="notifications-popover"
-        >
-          <BellIcon />
-          {notifications.length > 0 && (
-            <span className="notif-badge">{notifications.length}</span>
-          )}
-        </button>
       </div>}
     </div>
   )

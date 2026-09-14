@@ -1,5 +1,50 @@
 import { expect, test } from '@playwright/test'
 
+async function expectPeerChatLayout(page) {
+  const layout = await page.locator('.ps-chat-root').evaluate((root) => {
+    const headerElement = root.querySelector('.ps-chat-header')
+    const messagesElement = root.querySelector('.ps-messages')
+    const header = headerElement.getBoundingClientRect()
+    const messages = messagesElement.getBoundingClientRect()
+    const rootBounds = root.getBoundingClientRect()
+    const contentBounds = root.closest('.content').getBoundingClientRect()
+    const rootStyles = getComputedStyle(root)
+    const headerStyles = getComputedStyle(headerElement)
+    const messageStyles = getComputedStyle(messagesElement)
+    const headerContentLeft = header.left + parseFloat(headerStyles.paddingLeft)
+    const headerContentRight = header.right - parseFloat(headerStyles.paddingRight)
+    const messageContentLeft = messages.left + parseFloat(messageStyles.paddingLeft)
+    const messageContentRight = messages.right - parseFloat(messageStyles.paddingRight)
+
+    return {
+      borderTopWidth: rootStyles.borderTopWidth,
+      borderRadius: rootStyles.borderRadius,
+      backgroundColor: rootStyles.backgroundColor,
+      headerTopDelta: Math.abs(header.top - contentBounds.top),
+      headerLeftDelta: Math.abs(header.left - contentBounds.left),
+      headerRightDelta: Math.abs(header.right - contentBounds.right),
+      headerHeight: header.height,
+      headerPaddingTop: headerStyles.paddingTop,
+      headerContentLeftDelta: Math.abs(headerContentLeft - messageContentLeft),
+      headerContentRightDelta: Math.abs(headerContentRight - messageContentRight),
+      messageInset: messages.left - rootBounds.left,
+    }
+  })
+
+  expect(layout.borderTopWidth).toBe('0px')
+  expect(layout.borderRadius).toBe('0px')
+  expect(layout.backgroundColor).toBe('rgba(0, 0, 0, 0)')
+  expect(layout.headerTopDelta).toBeLessThan(1)
+  expect(layout.headerLeftDelta).toBeLessThan(1)
+  expect(layout.headerRightDelta).toBeLessThan(1)
+  expect(layout.headerHeight).toBeGreaterThanOrEqual(74)
+  expect(layout.headerPaddingTop).toBe('20px')
+  expect(layout.headerContentLeftDelta).toBeLessThan(1)
+  expect(layout.headerContentRightDelta).toBeLessThan(1)
+  expect(layout.messageInset).toBeLessThan(1)
+  await expect(page.locator('.ps-input-bar')).toHaveCSS('padding-left', '8px')
+}
+
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     const now = new Date()
@@ -15,7 +60,10 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/api/peer/profile/', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
     isOnboarded: true, anonymousName: 'Quiet Cedar', avatarColor: '#627967',
   }) }))
-  await page.route('**/api/peer/rooms/', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }))
+  await page.route('**/api/peer/rooms/', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
+    { id: 5, name: 'Grounding Together', memberCount: 12 },
+  ]) }))
+  await page.route('**/api/peer/rooms/5/messages/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }))
   await page.route('**/api/peer/peers/', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
     { userId: 11, name: 'Silver Fern', color: '#6f7f76', status: 'connected' },
     { userId: 12, name: 'Calm Harbor', color: '#687790', status: 'none' },
@@ -64,4 +112,19 @@ test('peer match hover stays contained on mobile', async ({ page }) => {
   expect(cardBox.x).toBeGreaterThanOrEqual(pageBox.x)
   expect(cardBox.x + cardBox.width).toBeLessThanOrEqual(pageBox.x + pageBox.width + 1)
   expect(overflow).toBeLessThanOrEqual(1)
+})
+
+test('group and direct peer chats share the full-width chat workspace', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+
+  await page.getByRole('button', { name: /Grounding Together/ }).click()
+  await expect(page.locator('.ps-chat-name')).toHaveText('Grounding Together')
+  await expectPeerChatLayout(page)
+
+  await page.getByRole('button', { name: 'Back' }).click()
+  const activeChat = page.locator('.ps-peer-card--active').filter({ hasText: 'Silver Fern' })
+  await activeChat.getByRole('button', { name: 'Message' }).click()
+  await expect(page.locator('.ps-chat-name')).toHaveText('Silver Fern')
+  await expectPeerChatLayout(page)
 })

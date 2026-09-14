@@ -94,14 +94,6 @@ export default function Login({ initialMode = 'login', onClose }) {
           gap: 10px;
           margin-bottom: 28px;
         }
-        .auth-logo-mark {
-          width: 28px;
-          height: 28px;
-          border-radius: 8px;
-          background: linear-gradient(135deg, #4d6b58 0%, #3a6898 100%);
-          flex: none;
-          box-shadow: 0 4px 10px rgba(58,104,152,0.28);
-        }
         .auth-logo-text {
           background: transparent;
           border: none;
@@ -234,7 +226,6 @@ export default function Login({ initialMode = 'login', onClose }) {
         <div className="auth-card-wrap">
           <div className="auth-card">
             <div className="auth-logo">
-              <div className="auth-logo-mark" />
               <TextReveal
                 as="span"
                 text="Aurora"
