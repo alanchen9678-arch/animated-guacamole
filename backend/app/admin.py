@@ -19,19 +19,41 @@ from .models import (
     UserProfile,
 )
 
-admin.site.register(UserProfile)
-admin.site.register(CheckIn)
-admin.site.register(Conversation)
-admin.site.register(Message)
-admin.site.register(JournalPrivacySettings)
-admin.site.register(ThoughtJournalEntry)
-admin.site.register(JournalDoodle)
-admin.site.register(ChatUsage)
-admin.site.register(LibraryProgress)
-admin.site.register(TherapistMatch)
-admin.site.register(TherapistBooking)
-admin.site.register(TherapistAppointment)
-admin.site.register(PeerRoom)
-admin.site.register(PeerRoomMessage)
-admin.site.register(PeerDM)
-admin.site.register(PeerConnection)
+class SensitiveModelAdmin(admin.ModelAdmin):
+    """Keep mental-health records out of delegated staff accounts."""
+
+    def has_module_permission(self, request):
+        return request.user.is_superuser
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+
+for model in (
+    UserProfile,
+    CheckIn,
+    Conversation,
+    Message,
+    JournalPrivacySettings,
+    ThoughtJournalEntry,
+    JournalDoodle,
+    ChatUsage,
+    LibraryProgress,
+    TherapistMatch,
+    TherapistBooking,
+    TherapistAppointment,
+    PeerRoom,
+    PeerRoomMessage,
+    PeerDM,
+    PeerConnection,
+):
+    admin.site.register(model, SensitiveModelAdmin)

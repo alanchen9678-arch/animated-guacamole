@@ -185,7 +185,12 @@ function getCheckInDraftStorageKey(user) {
 
 function loadCheckInDraft(storageKey) {
   try {
-    const raw = localStorage.getItem(storageKey)
+    const legacyRaw = localStorage.getItem(storageKey)
+    localStorage.removeItem(storageKey)
+    if (legacyRaw && !sessionStorage.getItem(storageKey)) {
+      sessionStorage.setItem(storageKey, legacyRaw)
+    }
+    const raw = sessionStorage.getItem(storageKey)
     if (!raw) return null
     const draft = JSON.parse(raw)
     if (
@@ -221,7 +226,7 @@ function loadCheckInDraft(storageKey) {
 
 function saveCheckInDraft(storageKey, { surveyType, questions, answers, currentIndex }) {
   try {
-    localStorage.setItem(storageKey, JSON.stringify({
+    sessionStorage.setItem(storageKey, JSON.stringify({
       version: CHECKIN_DRAFT_VERSION,
       surveyType,
       personalityInstrument: surveyType !== 'weekly' ? 'aurora-personality-v2' : null,
@@ -237,6 +242,7 @@ function saveCheckInDraft(storageKey, { surveyType, questions, answers, currentI
 
 function clearCheckInDraft(storageKey) {
   try {
+    sessionStorage.removeItem(storageKey)
     localStorage.removeItem(storageKey)
   } catch {
     // Browser storage can be unavailable in private browsing modes.

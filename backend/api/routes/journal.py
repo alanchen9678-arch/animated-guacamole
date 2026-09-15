@@ -1,3 +1,5 @@
+import logging
+
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
@@ -7,6 +9,8 @@ from rest_framework.views import APIView
 
 from api.serializers.journal import JournalEntryReadSerializer, JournalEntryWriteSerializer
 from app.models import JournalDoodle, JournalPrivacySettings, ThoughtJournalEntry
+
+security_logger = logging.getLogger('aurora.security')
 
 
 class JournalEntryCollectionView(APIView):
@@ -104,4 +108,9 @@ class JournalPrivacyView(APIView):
 
         if updated_fields:
             privacy.save(update_fields=[*updated_fields, 'updated_at'])
+            security_logger.info(
+                'privacy.updated user_id=%s fields=%s',
+                request.user.id,
+                ','.join(updated_fields),
+            )
         return Response(self.serialize(privacy))

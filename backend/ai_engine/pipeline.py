@@ -39,6 +39,7 @@ def generate_chat_reply(message: str, history=None, style_context: str | None = 
     response = client.responses.create(
         model=settings.OPENAI_MODEL,
         input=input_messages,
+        store=False,
     )
     return response.output_text.strip()
 

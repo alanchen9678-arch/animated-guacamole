@@ -4,7 +4,7 @@ test('journal calendar keeps navigation fixed and uses smooth month transitions'
   await page.addInitScript(() => {
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    window.localStorage.setItem('aurora_token', 'journal-calendar-token')
+    window.sessionStorage.setItem('aurora_token', 'journal-calendar-token')
     window.localStorage.setItem('aurora.activePage', 'journal')
     window.localStorage.setItem('aurora.journal.daily-prompt', today)
   })

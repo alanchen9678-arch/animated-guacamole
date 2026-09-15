@@ -40,6 +40,8 @@ htmlcov/
 .pytest_cache/
 coverage/
 *.cover
+frontend/playwright-report/
+frontend/test-results/
 
 # Package manager logs
 npm-debug.log*

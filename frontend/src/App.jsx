@@ -54,7 +54,6 @@ function BellIcon() {
 }
 
 const DAILY_PROMPT_KEY   = 'aurora.journal.daily-prompt'
-const JOURNAL_ENTRIES_KEY = 'aurora.journal.entries'
 
 function getTodayKey() {
   const now = new Date()
@@ -124,12 +123,9 @@ function AppShell() {
     if (!isLoggedIn || assessmentLocked) return
     const todayKey = getTodayKey()
     if (localStorage.getItem(DAILY_PROMPT_KEY) === todayKey) return
-    try {
-      const entries = JSON.parse(localStorage.getItem(JOURNAL_ENTRIES_KEY) || '{}')
-      if (entries[todayKey]?.text || entries[todayKey]?.doodleData) return
-    } catch {}
+    if (user?.lastJournalEntryDate === todayKey) return
     setShowDailyPrompt(true)
-  }, [isLoggedIn, assessmentLocked])
+  }, [isLoggedIn, assessmentLocked, user?.lastJournalEntryDate])
 
   // Auto-show after the server says the weekly check-in has been due for two days.
   useEffect(() => {

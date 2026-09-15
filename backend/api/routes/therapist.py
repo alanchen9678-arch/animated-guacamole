@@ -69,12 +69,13 @@ def get_user_match(request, match_id):
 
 
 def serialize_booking(booking):
+    member_id_last_four = booking.member_id[-4:] if booking.member_id else ''
     return {
         'id': booking.id,
         'matchId': booking.match_id,
         'therapistId': booking.therapist_id,
         'insuranceProvider': booking.insurance_provider,
-        'memberId': booking.member_id,
+        'memberId': member_id_last_four,
         'status': booking.status,
         'createdAt': booking.created_at.isoformat(),
         'updatedAt': booking.updated_at.isoformat(),

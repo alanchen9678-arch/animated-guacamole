@@ -5,7 +5,7 @@ test('shared loading content uses centered Aurora dots and respects reduced moti
   const userGate = new Promise((resolve) => { releaseUserRequest = resolve })
 
   await page.addInitScript(() => {
-    window.localStorage.setItem('aurora_token', 'loading-state-test-token')
+    window.sessionStorage.setItem('aurora_token', 'loading-state-test-token')
   })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.route('**/api/auth/me/', async (route) => {
@@ -91,7 +91,7 @@ test('failed check-in loading presents a working retry action', async ({ page })
   await page.addInitScript(() => {
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    window.localStorage.setItem('aurora_token', 'feedback-test-token')
+    window.sessionStorage.setItem('aurora_token', 'feedback-test-token')
     window.localStorage.setItem('aurora.activePage', 'checkins')
     window.localStorage.setItem('aurora.journal.daily-prompt', today)
   })

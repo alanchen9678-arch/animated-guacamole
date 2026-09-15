@@ -20,7 +20,7 @@ test('global therapist sharing and care history persist through the therapist wo
   await page.addInitScript(() => {
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    window.localStorage.setItem('aurora_token', 'therapist-workflow-token')
+    window.sessionStorage.setItem('aurora_token', 'therapist-workflow-token')
     window.localStorage.setItem('aurora.activePage', 'therapist')
     window.localStorage.setItem('aurora.journal.daily-prompt', today)
   })

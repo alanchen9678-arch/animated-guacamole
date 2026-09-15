@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 test('library uses the assigned topic palette without streak behavior', async ({ page }) => {
   await page.addInitScript(() => {
-    window.localStorage.setItem('aurora_token', 'library-theme-token')
+    window.sessionStorage.setItem('aurora_token', 'library-theme-token')
     window.localStorage.setItem('aurora.activePage', 'library')
   })
   await page.route('**/api/auth/me/', (route) => route.fulfill({

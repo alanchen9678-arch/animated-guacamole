@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from ai_engine.pipeline import generate_chat_reply
 from api.serializers.chat import ChatRequestSerializer
 from app.models import ChatUsage, Conversation, Message, UserProfile
+from app.throttles import AiChatThrottle
 
 WEEKLY_MESSAGE_LIMIT = 200
 WEEK_IN_SECONDS = 60 * 60 * 24 * 7
@@ -146,6 +147,9 @@ def build_style_context(user):
 
 
 class ChatView(APIView):
+    throttle_classes = [AiChatThrottle]
+    throttle_scope = 'ai_chat'
+
     def get(self, request):
         conversation = (
             request.user.conversations.filter(type=Conversation.ConversationType.AI)

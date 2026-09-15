@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     window.localStorage.removeItem('aurora_token')
+    window.sessionStorage.removeItem('aurora_token')
   })
 })
 
@@ -91,7 +92,7 @@ test('restored sessions show a loading state instead of flashing logged-out cont
   let releaseProfile
   const profileGate = new Promise((resolve) => { releaseProfile = resolve })
   await page.addInitScript(() => {
-    window.localStorage.setItem('aurora_token', 'restored-test-token')
+    window.sessionStorage.setItem('aurora_token', 'restored-test-token')
   })
   await page.route('**/api/auth/me/', async (route) => {
     await profileGate

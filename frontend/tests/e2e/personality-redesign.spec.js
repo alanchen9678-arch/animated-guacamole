@@ -6,7 +6,7 @@ test('initial assessment stores continuous signals without revealing a personali
   await page.addInitScript(() => {
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    window.localStorage.setItem('aurora_token', 'personality-v2-token')
+    window.sessionStorage.setItem('aurora_token', 'personality-v2-token')
     window.localStorage.setItem('aurora.activePage', 'checkins')
     window.localStorage.setItem('aurora.journal.daily-prompt', today)
   })
@@ -106,7 +106,7 @@ test('legacy users are locked into the new assessment without replacing wellness
   await page.addInitScript(() => {
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    window.localStorage.setItem('aurora_token', 'legacy-upgrade-token')
+    window.sessionStorage.setItem('aurora_token', 'legacy-upgrade-token')
     window.localStorage.setItem('aurora.activePage', 'home')
     window.localStorage.setItem('aurora.journal.daily-prompt', today)
   })

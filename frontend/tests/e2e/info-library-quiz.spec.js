@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 async function openLibrary(page) {
   await page.addInitScript(() => {
-    window.localStorage.setItem('aurora_token', 'library-quiz-token')
+    window.sessionStorage.setItem('aurora_token', 'library-quiz-token')
     window.localStorage.setItem('aurora.activePage', 'library')
     const now = new Date()
     const today = [

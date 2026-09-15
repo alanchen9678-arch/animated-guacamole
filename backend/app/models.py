@@ -1,9 +1,11 @@
 from datetime import timedelta
+import uuid
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
+from django.db.models.functions import Greatest, Least
 from django.utils import timezone
 
 
@@ -21,6 +23,7 @@ class UserProfile(models.Model):
     avatar_color = models.CharField(max_length=7, default='#4d6b58')
     anonymous_name = models.CharField(max_length=50, blank=True, unique=True, null=True, default=None)
     is_peer_onboarded = models.BooleanField(default=False)
+    peer_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     personality = models.JSONField(default=dict, blank=True)
     needs_profile = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -576,6 +579,17 @@ class PeerConnection(models.Model):
 
     class Meta:
         unique_together = [['requester', 'recipient']]
+        constraints = [
+            models.CheckConstraint(
+                condition=~Q(requester=models.F('recipient')),
+                name='peer_connection_not_self',
+            ),
+            models.UniqueConstraint(
+                Least('requester_id', 'recipient_id'),
+                Greatest('requester_id', 'recipient_id'),
+                name='unique_unordered_peer_connection',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.requester_id} -> {self.recipient_id} ({self.status})"

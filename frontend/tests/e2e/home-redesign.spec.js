@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 test('home uses one daily prompt and an editorial two-column tool layout', async ({ page }) => {
   await page.clock.install({ time: new Date('2026-09-03T12:00:00-05:00') })
   await page.addInitScript(() => {
-    window.localStorage.setItem('aurora_token', 'home-redesign-token')
+    window.sessionStorage.setItem('aurora_token', 'home-redesign-token')
     window.localStorage.setItem('aurora.activePage', 'home')
     window.localStorage.setItem('aurora.journal.daily-prompt', '2026-09-03')
   })

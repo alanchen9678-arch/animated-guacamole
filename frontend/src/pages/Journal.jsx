@@ -25,87 +25,23 @@ const MOCK_ENTRIES = {}
 
 // ─── AI analysis ───────────────────────────────────────────────────────────────
 
-const JOURNAL_ENTRIES_STORAGE_KEY = 'aurora.journal.entries'
-const JOURNAL_MOODS_STORAGE_KEY = 'aurora.journal.moods'
-
-function normalizeDateKey(key) {
-  const [year, month, day] = String(key).split('-').map(Number)
-  if (!year || !month || !day) return key
-  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-}
-
-function normalizeDateMapKeys(values) {
-  return Object.fromEntries(
-    Object.entries(values).map(([key, value]) => [normalizeDateKey(key), value]),
-  )
-}
-
-function loadJournalEntries() {
-  try {
-    const stored = window.localStorage.getItem(JOURNAL_ENTRIES_STORAGE_KEY)
-    if (!stored) return MOCK_ENTRIES
-
-    const parsed = JSON.parse(stored)
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return { ...MOCK_ENTRIES, ...normalizeDateMapKeys(parsed) }
-    }
-  } catch {
-    return MOCK_ENTRIES
-  }
-
-  return MOCK_ENTRIES
-}
-
-function saveJournalEntries(entries) {
-  try {
-    window.localStorage.setItem(JOURNAL_ENTRIES_STORAGE_KEY, JSON.stringify(entries))
-  } catch {
-    // Storage can be unavailable in some private browsing modes.
-  }
-}
-
-function mergeJournalEntries(localEntries, backendEntries) {
-  const merged = { ...localEntries }
+function mapJournalEntries(backendEntries) {
+  const entries = {}
   for (const entry of backendEntries) {
-    merged[entry.date] = {
-      ...merged[entry.date],
+    entries[entry.date] = {
       text: entry.text,
       doodleData: entry.doodleData ?? null,
     }
   }
-  return merged
+  return entries
 }
 
-function mergeJournalMoods(localMoods, backendEntries) {
-  const merged = { ...localMoods }
+function mapJournalMoods(backendEntries) {
+  const moods = {}
   for (const entry of backendEntries) {
-    if (entry.mood) merged[entry.date] = entry.mood
+    if (entry.mood) moods[entry.date] = entry.mood
   }
-  return merged
-}
-
-function loadJournalMoods() {
-  try {
-    const stored = window.localStorage.getItem(JOURNAL_MOODS_STORAGE_KEY)
-    if (!stored) return MOCK_MOODS
-
-    const parsed = JSON.parse(stored)
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return { ...MOCK_MOODS, ...normalizeDateMapKeys(parsed) }
-    }
-  } catch {
-    return MOCK_MOODS
-  }
-
-  return MOCK_MOODS
-}
-
-function saveJournalMoods(moods) {
-  try {
-    window.localStorage.setItem(JOURNAL_MOODS_STORAGE_KEY, JSON.stringify(moods))
-  } catch {
-    // Storage can be unavailable in some private browsing modes.
-  }
+  return moods
 }
 
 const CRISIS_TERMS  = ['suicide','kill myself','end my life','want to die','dont want to live']
@@ -564,19 +500,12 @@ function DoodleCanvas({ bgColor, value, onChange, disabled = false }) {
 export default function Journal() {
   const { token, loading: userLoading } = useUser()
   const todayKey = makeDateKey(new Date())
-  const [initialJournalState] = useState(() => {
-    const entryHistory = loadJournalEntries()
-    const savedToday = entryHistory[todayKey]
-    return { entryHistory, savedToday }
-  })
-  const [moodData, setMoodData]     = useState(loadJournalMoods)
-  const [entryHistory, setEntryHistory] = useState(initialJournalState.entryHistory)
-  const [entryText, setEntryText]   = useState(() => initialJournalState.savedToday?.text ?? '')
-  const [doodleData, setDoodleData] = useState(() => initialJournalState.savedToday?.doodleData ?? null)
+  const [moodData, setMoodData]     = useState(MOCK_MOODS)
+  const [entryHistory, setEntryHistory] = useState(MOCK_ENTRIES)
+  const [entryText, setEntryText]   = useState('')
+  const [doodleData, setDoodleData] = useState(null)
   const [tab, setTab]               = useState('write')   // write | doodle
-  const [submitted, setSubmitted]   = useState(() => Boolean(
-    initialJournalState.savedToday?.text || initialJournalState.savedToday?.doodleData,
-  ))
+  const [submitted, setSubmitted]   = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [selectedHistoryDate, setSelectedHistoryDate] = useState(todayKey)
   const [expandedEntryDate, setExpandedEntryDate] = useState(null)
@@ -682,10 +611,6 @@ export default function Journal() {
   }
 
   useEffect(() => {
-    saveJournalEntries(entryHistory)
-  }, [entryHistory])
-
-  useEffect(() => {
     if (userLoading || !token) return
 
     let cancelled = false
@@ -697,11 +622,11 @@ export default function Journal() {
       .then((data) => {
         if (cancelled) return
         const backendEntries = data.entries ?? []
-        const mergedHistory = mergeJournalEntries(loadJournalEntries(), backendEntries)
-        const mergedMoods = mergeJournalMoods(loadJournalMoods(), backendEntries)
-        setEntryHistory(mergedHistory)
-        setMoodData(mergedMoods)
-        const savedToday = mergedHistory[todayKey]
+        const serverHistory = mapJournalEntries(backendEntries)
+        const serverMoods = mapJournalMoods(backendEntries)
+        setEntryHistory(serverHistory)
+        setMoodData(serverMoods)
+        const savedToday = serverHistory[todayKey]
         setEntryText(savedToday?.text ?? '')
         setDoodleData(savedToday?.doodleData ?? null)
         setSubmitted(Boolean(savedToday?.text || savedToday?.doodleData))
@@ -720,10 +645,6 @@ export default function Journal() {
       cancelled = true
     }
   }, [token, todayKey, userLoading, reloadKey])
-
-  useEffect(() => {
-    saveJournalMoods(moodData)
-  }, [moodData])
 
   async function submit() {
     if (!hasEntryContent || savingEntry) return
@@ -744,10 +665,8 @@ export default function Journal() {
           doodleData,
         })
         const backendEntries = data.entries ?? []
-        const mergedHistory = mergeJournalEntries(nextHistory, backendEntries)
-        const mergedMoods = mergeJournalMoods({ ...moodData, [todayKey]: todayMood }, backendEntries)
-        setEntryHistory(mergedHistory)
-        setMoodData(mergedMoods)
+        setEntryHistory(mapJournalEntries(backendEntries))
+        setMoodData(mapJournalMoods(backendEntries))
         setSaveError('')
       } catch (error) {
         setSaveError(error.message)
@@ -773,6 +692,7 @@ export default function Journal() {
 
   function setTodayMood(moodId) {
     if (savingMood) return
+    const previousMood = todayMood
     const nextMoods = { ...moodData, [todayKey]: moodId }
     setMoodData(nextMoods)
     setSaveError('')
@@ -791,12 +711,19 @@ export default function Journal() {
     })
       .then((data) => {
         const backendEntries = data.entries ?? []
-        setEntryHistory((currentHistory) => mergeJournalEntries(currentHistory, backendEntries))
-        setMoodData((currentMoods) => mergeJournalMoods(currentMoods, backendEntries))
+        setEntryHistory(mapJournalEntries(backendEntries))
+        setMoodData(mapJournalMoods(backendEntries))
         setSaveError('')
         setSaveSuccess('Your mood was saved.')
       })
       .catch((error) => {
+        setMoodData((currentMoods) => {
+          if (currentMoods[todayKey] !== moodId) return currentMoods
+          const reverted = { ...currentMoods }
+          if (previousMood) reverted[todayKey] = previousMood
+          else delete reverted[todayKey]
+          return reverted
+        })
         setSaveError(error.message)
       })
       .finally(() => setSavingMood(false))

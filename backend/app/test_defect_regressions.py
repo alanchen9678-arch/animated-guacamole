@@ -80,14 +80,19 @@ class ChatDefectRegressionTests(AuthenticatedAPITestCase):
 
 class JournalDefectRegressionTests(AuthenticatedAPITestCase):
     def test_doodle_round_trips_and_can_be_cleared(self):
+        doodle_data = (
+            'data:image/png;base64,'
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ'
+            'AAAADUlEQVR42mNk+M/wHwAEAQH/69a2WQAAAABJRU5ErkJggg=='
+        )
         create_response = self.client.post(
             reverse('journal'),
-            {'date': '2026-08-30', 'content': 'A sketch', 'doodleData': 'data:image/png;base64,abc'},
+            {'date': '2026-08-30', 'content': 'A sketch', 'doodleData': doodle_data},
             format='json',
         )
 
         self.assertEqual(create_response.status_code, 200)
-        self.assertEqual(create_response.data['entry']['doodleData'], 'data:image/png;base64,abc')
+        self.assertEqual(create_response.data['entry']['doodleData'], doodle_data)
         self.assertEqual(JournalDoodle.objects.count(), 1)
 
         clear_response = self.client.post(

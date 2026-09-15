@@ -10,18 +10,20 @@ PERSONALITY_DIMENSION_IDS = {
     'opennessCuriosity',
 }
 PERSONALITY_SIGNAL_STRENGTHS = {'weak', 'moderate', 'strong', 'inconsistent'}
+CHECKIN_SCORE_KEYS = {'anxiety', 'loneliness', 'grief', 'burnout', 'stress', 'confidence'}
 
 
 class CheckInWriteSerializer(serializers.Serializer):
     type = serializers.ChoiceField(choices=[*CheckIn.CheckInType.choices, ('personality', 'Personality')])
     qIds = serializers.ListField(
-        child=serializers.IntegerField(),
+        child=serializers.IntegerField(min_value=1, max_value=100000),
         required=False,
         allow_empty=True,
         default=list,
+        max_length=100,
     )
     scores = serializers.DictField(
-        child=serializers.IntegerField(),
+        child=serializers.IntegerField(min_value=0, max_value=100),
         required=False,
         default=dict,
     )
@@ -70,6 +72,12 @@ class CheckInWriteSerializer(serializers.Serializer):
         }
 
     def validate(self, attrs):
+        question_ids = attrs.get('qIds', [])
+        if len(question_ids) != len(set(question_ids)):
+            raise serializers.ValidationError({'qIds': 'Question IDs must be unique.'})
+        scores = attrs.get('scores', {})
+        if len(scores) > len(CHECKIN_SCORE_KEYS) or set(scores) - CHECKIN_SCORE_KEYS:
+            raise serializers.ValidationError({'scores': 'Unknown check-in score category.'})
         if attrs.get('type') in {CheckIn.CheckInType.INITIAL, 'personality'} and not attrs.get('personality'):
             raise serializers.ValidationError({
                 'personality': 'The initial assessment requires personalization responses.',

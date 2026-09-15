@@ -3,13 +3,37 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { API_BASE_URL } from '../services/config'
 
 const API = `${API_BASE_URL}/api/auth`
+const TOKEN_STORAGE_KEY = 'aurora_token'
+const LEGACY_SENSITIVE_KEYS = ['aurora.journal.entries', 'aurora.journal.moods']
+
+function getInitialToken() {
+  const sessionToken = sessionStorage.getItem(TOKEN_STORAGE_KEY)
+  const legacyToken = localStorage.getItem(TOKEN_STORAGE_KEY)
+  localStorage.removeItem(TOKEN_STORAGE_KEY)
+  LEGACY_SENSITIVE_KEYS.forEach((key) => localStorage.removeItem(key))
+  if (!sessionToken && legacyToken) {
+    sessionStorage.setItem(TOKEN_STORAGE_KEY, legacyToken)
+    return legacyToken
+  }
+  return sessionToken
+}
+
+function clearSessionData() {
+  sessionStorage.removeItem(TOKEN_STORAGE_KEY)
+  localStorage.removeItem(TOKEN_STORAGE_KEY)
+  LEGACY_SENSITIVE_KEYS.forEach((key) => localStorage.removeItem(key))
+  for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
+    const key = sessionStorage.key(index)
+    if (key?.startsWith('aurora.checkin.draft.')) sessionStorage.removeItem(key)
+  }
+}
 
 const UserContext = createContext(null)
 
 export function UserProvider({ children }) {
   const [user, setUser] = useState(null)
-  const [token, setToken] = useState(() => localStorage.getItem('aurora_token'))
-  const [loading, setLoading] = useState(!!localStorage.getItem('aurora_token'))
+  const [token, setToken] = useState(getInitialToken)
+  const [loading, setLoading] = useState(() => Boolean(sessionStorage.getItem(TOKEN_STORAGE_KEY)))
 
   const refreshUser = useCallback(async (tokenOverride = token) => {
     if (!tokenOverride) {
@@ -19,7 +43,7 @@ export function UserProvider({ children }) {
 
     const res = await fetch(`${API}/me/`, { headers: { Authorization: `Token ${tokenOverride}` } })
     if (!res.ok) {
-      localStorage.removeItem('aurora_token')
+      clearSessionData()
       setToken(null)
       setUser(null)
       throw new Error('Unable to load user.')
@@ -38,7 +62,8 @@ export function UserProvider({ children }) {
   }, [token, refreshUser])
 
   const _persist = (tok, userData) => {
-    localStorage.setItem('aurora_token', tok)
+    clearSessionData()
+    sessionStorage.setItem(TOKEN_STORAGE_KEY, tok)
     setToken(tok)
     setUser(userData)
   }
@@ -72,13 +97,13 @@ export function UserProvider({ children }) {
         headers: { Authorization: `Token ${token}` },
       }).catch(() => {})
     }
-    localStorage.removeItem('aurora_token')
+    clearSessionData()
     setToken(null)
     setUser(null)
   }, [token])
 
   const updateProfile = useCallback(async (fields) => {
-    const currentToken = localStorage.getItem('aurora_token')
+    const currentToken = sessionStorage.getItem(TOKEN_STORAGE_KEY)
     const res = await fetch(`${API}/me/`, {
       method: 'PATCH',
       headers: {

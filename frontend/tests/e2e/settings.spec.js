@@ -25,7 +25,7 @@ async function openSettings(page) {
   await page.addInitScript(() => {
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    window.localStorage.setItem('aurora_token', 'settings-test-token')
+    window.sessionStorage.setItem('aurora_token', 'settings-test-token')
     window.localStorage.setItem('aurora.activePage', 'settings')
     window.localStorage.setItem('aurora.journal.daily-prompt', today)
   })

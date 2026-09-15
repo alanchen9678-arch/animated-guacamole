@@ -1,9 +1,11 @@
-from datetime import date
+from datetime import date, timedelta
+import uuid
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from unittest.mock import patch
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
@@ -358,7 +360,8 @@ class AuthAPITests(TestCase):
         self.assertEqual(response.data['error'], 'Username already taken.')
 
     def test_login_returns_existing_user_token(self):
-        # A valid login should return a reusable token and the normalized user payload.
+        # A valid login should return a rotated token and the normalized user payload.
+        previous_token = Token.objects.create(user=self.user)
         response = self.client.post(
             reverse('auth-login'),
             {
@@ -370,6 +373,8 @@ class AuthAPITests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn('token', response.data)
+        self.assertNotEqual(response.data['token'], previous_token.key)
+        self.assertEqual(Token.objects.filter(user=self.user).count(), 1)
         self.assertEqual(response.data['user']['username'], 'auth-user')
         self.assertEqual(response.data['user']['email'], 'auth@example.com')
 
@@ -386,6 +391,27 @@ class AuthAPITests(TestCase):
 
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.data['error'], 'Invalid username or password.')
+
+    def test_register_runs_configured_password_validation(self):
+        response = self.client.post(
+            reverse('auth-register'),
+            {'username': 'weak-password-user', 'password': 'shortpass'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(get_user_model().objects.filter(username='weak-password-user').exists())
+
+    def test_expired_token_is_rejected_and_revoked(self):
+        token = Token.objects.create(user=self.user)
+        Token.objects.filter(pk=token.pk).update(created=timezone.now() - timedelta(hours=13))
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+
+        response = self.client.get(reverse('auth-me'))
+
+        self.assertEqual(response.status_code, 401)
+        self.assertFalse(Token.objects.filter(pk=token.pk).exists())
+        self.assertEqual(response['Cache-Control'], 'no-store, max-age=0')
 
     def test_me_requires_authentication(self):
         # Profile reads should be protected so anonymous callers cannot fetch user data.
@@ -495,7 +521,7 @@ class CheckInAPITests(TestCase):
             {
                 'type': CheckIn.CheckInType.INITIAL,
                 'qIds': [1, 2, 3],
-                'scores': {'stress': 44, 'sleep': 72},
+                'scores': {'stress': 44, 'confidence': 72},
                 'personality': continuous_personality_profile(),
             },
             format='json',
@@ -1048,6 +1074,41 @@ class PeerModerationAPITests(TestCase):
             status=PeerConnection.Status.CONNECTED,
         )
 
+    def test_peer_list_uses_opaque_identifiers(self):
+        response = self.client.get(reverse('peer-list'))
+
+        self.assertEqual(response.status_code, 200)
+        peer_id = response.data[0]['userId']
+        self.assertEqual(uuid.UUID(peer_id), self.other_user.profile.peer_id)
+        self.assertNotEqual(peer_id, str(self.other_user.id))
+
+    def test_room_history_requires_peer_onboarding(self):
+        outsider = get_user_model().objects.create_user(username='not-onboarded', password='testpass123')
+        outsider_client = APIClient()
+        outsider_client.force_authenticate(outsider)
+
+        response = outsider_client.get(reverse('peer-room-messages', args=[self.room.id]))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_dm_history_requires_an_active_connection(self):
+        stranger = get_user_model().objects.create_user(username='peer-stranger', password='testpass123')
+        stranger_profile = UserProfile.objects.create(
+            user=stranger,
+            anonymous_name='WarmLake32',
+            is_peer_onboarded=True,
+        )
+        PeerDM.objects.create(
+            sender=stranger,
+            recipient=self.user,
+            sender_anon_name=stranger_profile.anonymous_name,
+            content='An old message.',
+        )
+
+        response = self.client.get(reverse('peer-dm', args=[stranger_profile.peer_id]))
+
+        self.assertEqual(response.status_code, 403)
+
     def test_room_message_blocks_contact_sharing(self):
         response = self.client.post(
             reverse('peer-room-messages', args=[self.room.id]),
@@ -1083,7 +1144,7 @@ class PeerModerationAPITests(TestCase):
 
     def test_dm_blocks_harmful_advice(self):
         response = self.client.post(
-            reverse('peer-dm', args=[self.other_user.id]),
+            reverse('peer-dm', args=[self.other_user.profile.peer_id]),
             {'content': 'You should stop taking medication right away'},
             format='json',
         )
@@ -1100,7 +1161,7 @@ class PeerModerationAPITests(TestCase):
         }
 
         response = self.client.post(
-            reverse('peer-dm', args=[self.other_user.id]),
+            reverse('peer-dm', args=[self.other_user.profile.peer_id]),
             {'content': 'I am glad you are here today.'},
             format='json',
         )

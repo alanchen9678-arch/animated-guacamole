@@ -3,7 +3,7 @@ import { DISORDER_LABELS } from '../../src/pages/InfoLibrary.data.js'
 
 async function mockUser(page, userId = 44) {
   await page.addInitScript((id) => {
-    window.localStorage.setItem('aurora_token', 'library-a11y-token')
+    window.sessionStorage.setItem('aurora_token', 'library-a11y-token')
     window.localStorage.setItem('aurora.activePage', 'library')
     const now = new Date()
     const today = [

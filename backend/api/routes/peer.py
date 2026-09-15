@@ -3,6 +3,7 @@ import random
 import re
 
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -17,6 +18,7 @@ from app.models import (
     PeerRoomMessage,
     UserProfile,
 )
+from app.throttles import PeerMessageThrottle
 
 WORD_A = ['Calm', 'Quiet', 'Gentle', 'Steady', 'Brave', 'Kind', 'Warm', 'Still', 'Soft', 'Clear', 'Bold', 'Light']
 WORD_N = ['Maple', 'River', 'Stone', 'Dawn', 'Forest', 'Lake', 'Ember', 'Cloud', 'Tide', 'Ridge', 'Pine', 'Brook']
@@ -77,6 +79,17 @@ def _color(name):
 def _get_profile(user):
     profile, _ = UserProfile.objects.get_or_create(user=user)
     return profile
+
+
+def _get_peer_target(peer_id):
+    return (
+        UserProfile.objects
+        .select_related('user')
+        .filter(peer_id=peer_id, is_peer_onboarded=True)
+        .exclude(anonymous_name='')
+        .exclude(anonymous_name__isnull=True)
+        .first()
+    )
 
 
 def _generate_anon_name():
@@ -163,6 +176,8 @@ class PeerRoomListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        if not _get_profile(request.user).is_peer_onboarded:
+            return Response({'error': 'Complete peer onboarding first.'}, status=status.HTTP_403_FORBIDDEN)
         room = _get_default_room()
         member_count = PeerRoomMessage.objects.filter(room=room).values('sender').distinct().count()
         return Response([{
@@ -176,8 +191,12 @@ class PeerRoomListView(APIView):
 
 class PeerRoomMessageView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [PeerMessageThrottle]
+    throttle_scope = 'peer_messages'
 
     def get(self, request, room_id):
+        if not _get_profile(request.user).is_peer_onboarded:
+            return Response({'error': 'Complete peer onboarding first.'}, status=status.HTTP_403_FORBIDDEN)
         try:
             room = PeerRoom.objects.get(id=room_id, is_active=True)
         except PeerRoom.DoesNotExist:
@@ -203,6 +222,9 @@ class PeerRoomMessageView(APIView):
         } for m in messages])
 
     def post(self, request, room_id):
+        profile = _get_profile(request.user)
+        if not profile.is_peer_onboarded or not profile.anonymous_name:
+            return Response({'error': 'Complete peer onboarding first.'}, status=status.HTTP_403_FORBIDDEN)
         try:
             room = PeerRoom.objects.get(id=room_id, is_active=True)
         except PeerRoom.DoesNotExist:
@@ -222,10 +244,6 @@ class PeerRoomMessageView(APIView):
             return Response({'error': AI_MODERATION_UNAVAILABLE_MESSAGE}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         if moderation_error:
             return Response({'error': moderation_error}, status=status.HTTP_400_BAD_REQUEST)
-
-        profile = _get_profile(request.user)
-        if not profile.anonymous_name:
-            return Response({'error': 'Complete peer onboarding first.'}, status=status.HTTP_400_BAD_REQUEST)
 
         msg = PeerRoomMessage.objects.create(
             room=room,
@@ -247,6 +265,8 @@ class PeerListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        if not _get_profile(request.user).is_peer_onboarded:
+            return Response({'error': 'Complete peer onboarding first.'}, status=status.HTTP_403_FORBIDDEN)
         profiles = (
             UserProfile.objects
             .filter(is_peer_onboarded=True)
@@ -278,7 +298,7 @@ class PeerListView(APIView):
                 conn_status = 'none'
                 is_requester = None
             result.append({
-                'userId': uid,
+                'userId': str(p.peer_id),
                 'name': p.anonymous_name,
                 'color': p.avatar_color or _color(p.anonymous_name),
                 'status': conn_status,
@@ -291,14 +311,19 @@ class PeerListView(APIView):
 class PeerConnectView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, user_id):
-        if user_id == request.user.id:
+    @transaction.atomic
+    def post(self, request, peer_id):
+        requester_profile = _get_profile(request.user)
+        if not requester_profile.is_peer_onboarded:
+            return Response({'error': 'Complete peer onboarding first.'}, status=status.HTTP_403_FORBIDDEN)
+        target_profile = _get_peer_target(peer_id)
+        if not target_profile:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        target = target_profile.user
+        if target.id == request.user.id:
             return Response({'error': 'Cannot connect with yourself.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            target = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        list(User.objects.select_for_update().filter(id__in=[request.user.id, target.id]).order_by('id'))
 
         existing = PeerConnection.objects.filter(
             Q(requester=request.user, recipient=target) |
@@ -322,8 +347,20 @@ class PeerConnectView(APIView):
 
 class PeerDMView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [PeerMessageThrottle]
+    throttle_scope = 'peer_messages'
 
-    def get(self, request, user_id):
+    def get(self, request, peer_id):
+        target_profile = _get_peer_target(peer_id)
+        if not target_profile:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        user_id = target_profile.user_id
+        conn = PeerConnection.objects.filter(
+            Q(requester=request.user, recipient_id=user_id, status='connected') |
+            Q(requester_id=user_id, recipient=request.user, status='connected')
+        ).exists()
+        if not conn:
+            return Response({'error': 'Not connected with this peer.'}, status=status.HTTP_403_FORBIDDEN)
         since_id = request.query_params.get('since')
         qs = PeerDM.objects.filter(
             Q(sender=request.user, recipient_id=user_id) |
@@ -344,7 +381,14 @@ class PeerDMView(APIView):
             'timestamp': m.created_at.isoformat(),
         } for m in messages])
 
-    def post(self, request, user_id):
+    def post(self, request, peer_id):
+        profile = _get_profile(request.user)
+        if not profile.is_peer_onboarded or not profile.anonymous_name:
+            return Response({'error': 'Complete peer onboarding first.'}, status=status.HTTP_403_FORBIDDEN)
+        target_profile = _get_peer_target(peer_id)
+        if not target_profile:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        user_id = target_profile.user_id
         if user_id == request.user.id:
             return Response({'error': 'Cannot message yourself.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -370,16 +414,10 @@ class PeerDMView(APIView):
         if moderation_error:
             return Response({'error': moderation_error}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            recipient = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
-
-        profile = _get_profile(request.user)
         msg = PeerDM.objects.create(
             sender=request.user,
-            recipient=recipient,
-            sender_anon_name=profile.anonymous_name or request.user.username,
+            recipient=target_profile.user,
+            sender_anon_name=profile.anonymous_name,
             content=content,
         )
         return Response({

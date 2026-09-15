@@ -26,7 +26,7 @@ load_dotenv(BASE_DIR / ".env")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-DEBUG = os.getenv("DEBUG", "true").lower() == "true"
+DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
 _development_secret_key = "django-insecure-8hpsmmu!9^zwa1$s&#-vsy1#s9z-*@x$84s27!as8hyb5je284"
 _configured_secret_key = os.getenv("SECRET_KEY", "").strip()
@@ -58,12 +58,28 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'app.authentication.ExpiringTokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': os.getenv('THROTTLE_ANON_RATE', '60/min'),
+        'user': os.getenv('THROTTLE_USER_RATE', '300/min'),
+        'login': os.getenv('THROTTLE_LOGIN_RATE', '10/min'),
+        'register': os.getenv('THROTTLE_REGISTER_RATE', '5/hour'),
+        'ai_chat': os.getenv('THROTTLE_AI_CHAT_RATE', '10/min'),
+        'peer_messages': os.getenv('THROTTLE_PEER_MESSAGE_RATE', '120/min'),
+    },
 }
+
+AUTH_TOKEN_TTL_HOURS = int(os.getenv('AUTH_TOKEN_TTL_HOURS', '12'))
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv('DATA_UPLOAD_MAX_MEMORY_SIZE', str(2 * 1024 * 1024)))
+FILE_UPLOAD_MAX_MEMORY_SIZE = DATA_UPLOAD_MAX_MEMORY_SIZE
 
 _configured_cors_origins = os.getenv(
     "CORS_ALLOWED_ORIGINS",
@@ -103,6 +119,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'app.middleware.SensitiveApiHeadersMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -130,7 +147,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 _db_url = os.getenv("DATABASE_URL")
 if _db_url:
-    DATABASES = {"default": dj_database_url.parse(_db_url, conn_max_age=600)}
+    DATABASES = {"default": dj_database_url.parse(_db_url, conn_max_age=600, conn_health_checks=True)}
+    if not DEBUG and DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
+        DATABASES['default'].setdefault('OPTIONS', {})['sslmode'] = os.getenv('DATABASE_SSL_MODE', 'require')
+        if os.getenv('DATABASE_SSL_ROOT_CERT'):
+            DATABASES['default']['OPTIONS']['sslrootcert'] = os.getenv('DATABASE_SSL_ROOT_CERT')
 else:
     DATABASES = {
         "default": {
@@ -149,6 +170,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {'min_length': 12},
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
@@ -180,3 +202,18 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler'},
+    },
+    'loggers': {
+        'aurora.security': {
+            'handlers': ['console'],
+            'level': os.getenv('SECURITY_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
+}
