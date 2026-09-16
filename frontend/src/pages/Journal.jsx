@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { AuroraDropdown } from '../components/ui/heroui-dropdown.jsx'
+import { DawnHarborDropdown } from '../components/ui/heroui-dropdown.jsx'
 import { ColorSwatchPicker } from '../components/ui/heroui-color-swatch-picker.jsx'
 import ColorPickerMenu from '../components/ui/color-picker-menu.jsx'
 import { useUser } from '../context/UserContext.jsx'
@@ -52,11 +52,11 @@ const NEGATIVE_TERMS = ['sad','anxious','stressed','exhausted','overwhelmed','dr
 const AI_RESPONSES = {
   crisis: {
     tone: 'crisis',
-    text: "I'm very concerned about what you've written. Please reach out for support right now. You don't have to face this alone. Call or text 988 (Suicide & Crisis Lifeline, available 24/7) or connect with a licensed therapist through Aurora's Therapist Match.",
+    text: "I'm very concerned about what you've written. Please reach out for support right now. You don't have to face this alone. Call or text 988 (Suicide & Crisis Lifeline, available 24/7) or connect with a licensed therapist through Dawn Harbor's Therapist Match.",
   },
   alert: {
     tone: 'alert',
-    text: "I noticed some patterns in your entry that I want to gently check in about. It's okay to not be okay. If these feelings are persisting, speaking with a therapist might really help. Aurora's Therapist Match can connect you with someone suited to exactly what you're going through.",
+    text: "I noticed some patterns in your entry that I want to gently check in about. It's okay to not be okay. If these feelings are persisting, speaking with a therapist might really help. Dawn Harbor's Therapist Match can connect you with someone suited to exactly what you're going through.",
   },
   positive: [
     "I love reading this. It sounds like you're building some real momentum. Hold onto that feeling.",
@@ -199,34 +199,34 @@ function Calendar({ moodData, entryHistory, selectedDate, onSelectDate, onOpenEn
         <button type="button" className="jn-cal-nav-btn" onClick={prevMonth} aria-label="Previous month">&lt;</button>
         <div className="jn-cal-selects">
           <div className="jn-cal-picker">
-            <AuroraDropdown
+            <DawnHarborDropdown
               ariaLabel="Choose month"
-              buttonClassName="aurora-dropdown-trigger--calendar jn-cal-picker-btn"
-              itemClassName="aurora-dropdown-item--calendar"
+              buttonClassName="dawn-harbor-dropdown-trigger--calendar jn-cal-picker-btn"
+              itemClassName="dawn-harbor-dropdown-item--calendar"
               items={monthOptions}
-              menuClassName="aurora-dropdown-menu--calendar"
+              menuClassName="dawn-harbor-dropdown-menu--calendar"
               onSelectionChange={(value) => {
                 setMonthMotion('fade')
                 setMonth(Number(value))
               }}
               placement="bottom"
-              popoverClassName="aurora-dropdown-popover--calendar"
+              popoverClassName="dawn-harbor-dropdown-popover--calendar"
               selectedKey={String(month)}
             />
           </div>
           <div className="jn-cal-picker">
-            <AuroraDropdown
+            <DawnHarborDropdown
               ariaLabel="Choose year"
-              buttonClassName="aurora-dropdown-trigger--calendar jn-cal-picker-btn jn-cal-picker-btn--year"
-              itemClassName="aurora-dropdown-item--calendar"
+              buttonClassName="dawn-harbor-dropdown-trigger--calendar jn-cal-picker-btn jn-cal-picker-btn--year"
+              itemClassName="dawn-harbor-dropdown-item--calendar"
               items={yearDropdownOptions}
-              menuClassName="aurora-dropdown-menu--calendar"
+              menuClassName="dawn-harbor-dropdown-menu--calendar"
               onSelectionChange={(value) => {
                 setMonthMotion('fade')
                 setYear(Number(value))
               }}
               placement="bottom"
-              popoverClassName="aurora-dropdown-popover--calendar"
+              popoverClassName="dawn-harbor-dropdown-popover--calendar"
               selectedKey={String(year)}
             />
           </div>
@@ -900,7 +900,7 @@ export default function Journal() {
             {TONE_STYLE[aiResponse.tone]?.icon === 'A' ? 'A' : '!'}
           </div>
           <div className="jn-ai-body">
-            <strong className="jn-ai-label" style={{ color: TONE_STYLE[aiResponse.tone]?.ic }}>Aurora</strong>
+            <strong className="jn-ai-label" style={{ color: TONE_STYLE[aiResponse.tone]?.ic }}>Dawn Harbor</strong>
             <p className="jn-ai-text">{aiResponse.text}</p>
             {(aiResponse.tone === 'crisis' || aiResponse.tone === 'alert') && (
               <div className="jn-ai-links">

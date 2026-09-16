@@ -25,9 +25,9 @@ async function openSettings(page) {
   await page.addInitScript(() => {
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    window.sessionStorage.setItem('aurora_token', 'settings-test-token')
-    window.localStorage.setItem('aurora.activePage', 'settings')
-    window.localStorage.setItem('aurora.journal.daily-prompt', today)
+    window.sessionStorage.setItem('dawn-harbor_token', 'settings-test-token')
+    window.localStorage.setItem('dawn-harbor.activePage', 'settings')
+    window.localStorage.setItem('dawn-harbor.journal.daily-prompt', today)
   })
 
   await page.route('**/api/**', async (route) => {

@@ -3,8 +3,8 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { API_BASE_URL } from '../services/config'
 
 const API = `${API_BASE_URL}/api/auth`
-const TOKEN_STORAGE_KEY = 'aurora_token'
-const LEGACY_SENSITIVE_KEYS = ['aurora.journal.entries', 'aurora.journal.moods']
+const TOKEN_STORAGE_KEY = 'dawn-harbor_token'
+const LEGACY_SENSITIVE_KEYS = ['dawn-harbor.journal.entries', 'dawn-harbor.journal.moods']
 
 function getInitialToken() {
   const sessionToken = sessionStorage.getItem(TOKEN_STORAGE_KEY)
@@ -24,7 +24,7 @@ function clearSessionData() {
   LEGACY_SENSITIVE_KEYS.forEach((key) => localStorage.removeItem(key))
   for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
     const key = sessionStorage.key(index)
-    if (key?.startsWith('aurora.checkin.draft.')) sessionStorage.removeItem(key)
+    if (key?.startsWith('dawn-harbor.checkin.draft.')) sessionStorage.removeItem(key)
   }
 }
 

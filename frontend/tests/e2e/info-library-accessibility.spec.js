@@ -3,17 +3,17 @@ import { DISORDER_LABELS } from '../../src/pages/InfoLibrary.data.js'
 
 async function mockUser(page, userId = 44) {
   await page.addInitScript((id) => {
-    window.sessionStorage.setItem('aurora_token', 'library-a11y-token')
-    window.localStorage.setItem('aurora.activePage', 'library')
+    window.sessionStorage.setItem('dawn-harbor_token', 'library-a11y-token')
+    window.localStorage.setItem('dawn-harbor.activePage', 'library')
     const now = new Date()
     const today = [
       now.getFullYear(),
       String(now.getMonth() + 1).padStart(2, '0'),
       String(now.getDate()).padStart(2, '0'),
     ].join('-')
-    window.localStorage.setItem('aurora.journal.daily-prompt', today)
-    window.sessionStorage.removeItem(`aurora.infoLibrary.quizSession.v2:${id}`)
-    window.sessionStorage.removeItem(`aurora.infoLibrary.activeTab.v2:${id}`)
+    window.localStorage.setItem('dawn-harbor.journal.daily-prompt', today)
+    window.sessionStorage.removeItem(`dawn-harbor.infoLibrary.quizSession.v2:${id}`)
+    window.sessionStorage.removeItem(`dawn-harbor.infoLibrary.activeTab.v2:${id}`)
     Math.random = () => 0
   }, userId)
 
@@ -71,7 +71,7 @@ test('condition disclosures expose state, regions, headings, and source context'
 test('a malformed stored quiz is replaced without crashing the page', async ({ page }) => {
   await mockUser(page)
   await page.addInitScript(() => {
-    window.sessionStorage.setItem('aurora.infoLibrary.quizSession.v2:44', JSON.stringify({
+    window.sessionStorage.setItem('dawn-harbor.infoLibrary.quizSession.v2:44', JSON.stringify({
       version: 2,
       questions: Array.from({ length: 8 }, () => ({})),
       idx: 0,
@@ -91,7 +91,7 @@ test('a malformed stored quiz is replaced without crashing the page', async ({ p
   expect(pageErrors).toEqual([])
 
   const stored = await page.evaluate(() => JSON.parse(
-    window.sessionStorage.getItem('aurora.infoLibrary.quizSession.v2:44'),
+    window.sessionStorage.getItem('dawn-harbor.infoLibrary.quizSession.v2:44'),
   ))
   expect(stored.version).toBe(2)
   expect(stored.questions).toHaveLength(8)
@@ -103,7 +103,7 @@ test('feedback links to its Library topic and keeps completed answer text readab
   await page.getByRole('tab', { name: 'Quiz' }).click()
 
   const session = await page.evaluate(() => JSON.parse(
-    window.sessionStorage.getItem('aurora.infoLibrary.quizSession.v2:44'),
+    window.sessionStorage.getItem('dawn-harbor.infoLibrary.quizSession.v2:44'),
   ))
   const question = session.questions[session.idx]
   const wrongAnswer = question.options.find((option) => option !== question.correct)
@@ -127,7 +127,7 @@ test('mobile answer feedback stacks labels without squeezing or overlap', async 
   await page.getByRole('tab', { name: 'Quiz' }).click()
 
   const session = await page.evaluate(() => JSON.parse(
-    window.sessionStorage.getItem('aurora.infoLibrary.quizSession.v2:44'),
+    window.sessionStorage.getItem('dawn-harbor.infoLibrary.quizSession.v2:44'),
   ))
   const current = session.questions[session.idx]
   const wrongAnswer = current.options.find((option) => option !== current.correct)
@@ -157,7 +157,7 @@ test('a perfect round has a calm result and moves focus only on completion', asy
 
   for (let index = 0; index < 8; index += 1) {
     const session = await page.evaluate(() => JSON.parse(
-      window.sessionStorage.getItem('aurora.infoLibrary.quizSession.v2:44'),
+      window.sessionStorage.getItem('dawn-harbor.infoLibrary.quizSession.v2:44'),
     ))
     const current = session.questions[session.idx]
     await page.locator('.il-option').filter({ hasText: current.correct }).click()

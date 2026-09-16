@@ -1,8 +1,8 @@
-# Aurora
+# Dawn Harbor
 
-Aurora is a full-stack mental-wellness web application with authenticated check-ins, journaling, AI chat, therapist matching, peer support, and an educational library.
+Dawn Harbor is a full-stack mental-wellness web application with authenticated check-ins, journaling, AI chat, therapist matching, peer support, and an educational library.
 
-Aurora is not an emergency service or a replacement for professional care. Journal safety prompts direct users in crisis to call or text 988 in the United States.
+Dawn Harbor is not an emergency service or a replacement for professional care. Journal safety prompts direct users in crisis to call or text 988 in the United States.
 
 ## Stack
 
@@ -53,7 +53,7 @@ npm audit
 
 - Chat messages and a rolling seven-day usage allowance are stored in the database.
 - Journal entries, doodles, moods, and global therapist-sharing preferences are persisted per user. Therapist sharing is managed from the Therapist Match homepage and applies to every match and booking.
-- Therapist matches, booking-request history, chat messages, and timezone-aware appointments are persisted. Users can review sharing details and edit or cancel eligible requests and appointments; overlapping appointments are blocked. The bundled therapist directory and therapist replies are demo data; Aurora does not contact a real provider or collect payment.
+- Therapist matches, booking-request history, chat messages, and timezone-aware appointments are persisted. Users can review sharing details and edit or cancel eligible requests and appointments; overlapping appointments are blocked. The bundled therapist directory and therapist replies are demo data; Dawn Harbor does not contact a real provider or collect payment.
 - Peer identities are anonymous. Messages pass local policy checks and, when configured, AI moderation before storage.
 - Educational quiz completion records a daily learning streak.
 

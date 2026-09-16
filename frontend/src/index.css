@@ -242,7 +242,7 @@ a { color: inherit; }
 }
 
 :where(button, [role="button"]):active:not(:disabled) { transform: translateY(1px); }
-:where(input, textarea, select, .aurora-dropdown-trigger) {
+:where(input, textarea, select, .dawn-harbor-dropdown-trigger) {
   border-color: var(--line-strong);
   border-radius: var(--radius-control);
   color: var(--ink);

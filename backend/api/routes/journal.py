@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from api.serializers.journal import JournalEntryReadSerializer, JournalEntryWriteSerializer
 from app.models import JournalDoodle, JournalPrivacySettings, ThoughtJournalEntry
 
-security_logger = logging.getLogger('aurora.security')
+security_logger = logging.getLogger('dawn-harbor.security')
 
 
 class JournalEntryCollectionView(APIView):

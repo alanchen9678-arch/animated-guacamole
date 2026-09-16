@@ -2,15 +2,15 @@ import { expect, test } from '@playwright/test'
 
 async function openLibrary(page) {
   await page.addInitScript(() => {
-    window.sessionStorage.setItem('aurora_token', 'library-quiz-token')
-    window.localStorage.setItem('aurora.activePage', 'library')
+    window.sessionStorage.setItem('dawn-harbor_token', 'library-quiz-token')
+    window.localStorage.setItem('dawn-harbor.activePage', 'library')
     const now = new Date()
     const today = [
       now.getFullYear(),
       String(now.getMonth() + 1).padStart(2, '0'),
       String(now.getDate()).padStart(2, '0'),
     ].join('-')
-    window.localStorage.setItem('aurora.journal.daily-prompt', today)
+    window.localStorage.setItem('dawn-harbor.journal.daily-prompt', today)
     Math.random = () => 0
   })
 

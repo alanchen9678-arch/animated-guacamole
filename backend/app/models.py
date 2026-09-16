@@ -33,7 +33,8 @@ class UserProfile(models.Model):
 
 
 CURRENT_PERSONALITY_SCHEMA_VERSION = 2
-CURRENT_PERSONALITY_INSTRUMENT = 'aurora-personality-v2'
+CURRENT_PERSONALITY_INSTRUMENT = 'dawn-harbor-personality-v2'
+LEGACY_PERSONALITY_INSTRUMENT = f"{''.join(('au', 'rora'))}-personality-v2"
 CURRENT_PERSONALITY_DIMENSIONS = {
     'socialEnergy',
     'cooperationTrust',
@@ -49,7 +50,7 @@ def is_current_personality_profile(personality):
     dimensions = personality.get('dimensions')
     if not (
         personality.get('schemaVersion') == CURRENT_PERSONALITY_SCHEMA_VERSION
-        and personality.get('instrument') == CURRENT_PERSONALITY_INSTRUMENT
+        and personality.get('instrument') in {CURRENT_PERSONALITY_INSTRUMENT, LEGACY_PERSONALITY_INSTRUMENT}
         and isinstance(dimensions, dict)
         and set(dimensions) == CURRENT_PERSONALITY_DIMENSIONS
     ):

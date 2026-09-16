@@ -10,10 +10,10 @@ function ChatbotVignette() {
   return (
     <div className='fv-chat' aria-hidden='true'>
       <div className='fv-chat-thread'>
-        <div className='fv-chat-row fv-chat-row--aurora'>
-          <span className='fv-avatar fv-avatar--aurora'>A</span>
-          <div className='fv-message fv-message--aurora'>
-            <span className='fv-speaker'>Aurora</span>
+        <div className='fv-chat-row fv-chat-row--dawn-harbor'>
+          <span className='fv-avatar fv-avatar--dawn-harbor'>D</span>
+          <div className='fv-message fv-message--dawn-harbor'>
+            <span className='fv-speaker'>Dawn Harbor</span>
             <p>What feels most present for you today?</p>
           </div>
         </div>
@@ -25,17 +25,17 @@ function ChatbotVignette() {
           </div>
         </div>
 
-        <div className='fv-chat-row fv-chat-row--aurora'>
-          <span className='fv-avatar fv-avatar--aurora'>A</span>
-          <div className='fv-message fv-message--aurora'>
-            <span className='fv-speaker'>Aurora</span>
+        <div className='fv-chat-row fv-chat-row--dawn-harbor'>
+          <span className='fv-avatar fv-avatar--dawn-harbor'>D</span>
+          <div className='fv-message fv-message--dawn-harbor'>
+            <span className='fv-speaker'>Dawn Harbor</span>
             <p>We can take it one piece at a time. What would feel helpful to name first?</p>
           </div>
         </div>
       </div>
 
       <div className='fv-composer'>
-        <span>Message Aurora...</span>
+        <span>Message Dawn Harbor...</span>
         <span className='fv-send'>Send</span>
       </div>
     </div>

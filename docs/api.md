@@ -15,7 +15,7 @@ Initial assessments require a `personality` object using the version 2 continuou
 
     {
       schemaVersion: 2,
-      instrument: aurora-personality-v2,
+      instrument: dawn-harbor-personality-v2,
       dimensions: {
         socialEnergy: {
           score: 3.67,

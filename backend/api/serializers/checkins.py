@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from app.models import CheckIn
+from app.models import CheckIn, CURRENT_PERSONALITY_INSTRUMENT, LEGACY_PERSONALITY_INSTRUMENT
 
 PERSONALITY_DIMENSION_IDS = {
     'socialEnergy',
@@ -34,7 +34,7 @@ class CheckInWriteSerializer(serializers.Serializer):
             return None
         if not isinstance(value, dict) or value.get('schemaVersion') != 2:
             raise serializers.ValidationError('A version 2 continuous personality profile is required.')
-        if value.get('instrument') != 'aurora-personality-v2':
+        if value.get('instrument') not in {CURRENT_PERSONALITY_INSTRUMENT, LEGACY_PERSONALITY_INSTRUMENT}:
             raise serializers.ValidationError('Unknown personality instrument.')
 
         dimensions = value.get('dimensions')
@@ -66,7 +66,7 @@ class CheckInWriteSerializer(serializers.Serializer):
 
         return {
             'schemaVersion': 2,
-            'instrument': 'aurora-personality-v2',
+            'instrument': CURRENT_PERSONALITY_INSTRUMENT,
             'dimensions': normalized_dimensions,
             'updatedAt': value.get('updatedAt'),
         }

@@ -35,8 +35,8 @@ export function ChatInput({
     >
       <div
         className={cn(
-          'aurora-chat-input',
-          variant === 'default' && 'aurora-chat-input--default',
+          'dawn-harbor-chat-input',
+          variant === 'default' && 'dawn-harbor-chat-input--default',
           className,
         )}
       >
@@ -82,7 +82,7 @@ export const ChatInputTextArea = forwardRef(function ChatInputTextArea(
       value={value}
       onChange={onChange}
       onKeyDown={handleKeyDown}
-      className={cn('aurora-chat-input__textarea', className)}
+      className={cn('dawn-harbor-chat-input__textarea', className)}
       rows={rows}
     />
   )
@@ -104,11 +104,11 @@ export function ChatInputSubmit({
 
   if (loading && onStop) {
     return (
-      <div className="aurora-chat-input__actions">
+      <div className="dawn-harbor-chat-input__actions">
         <button
           type="button"
           onClick={onStop}
-          className={cn('aurora-chat-input__submit', className)}
+          className={cn('dawn-harbor-chat-input__submit', className)}
           aria-label="Stop"
           {...props}
         >
@@ -127,10 +127,10 @@ export function ChatInputSubmit({
     context.value.trim().length === 0
 
   return (
-    <div className="aurora-chat-input__actions">
+    <div className="dawn-harbor-chat-input__actions">
       <button
         type="button"
-        className={cn('aurora-chat-input__submit', className)}
+        className={cn('dawn-harbor-chat-input__submit', className)}
         disabled={isDisabled}
         onClick={(event) => {
           event.preventDefault()

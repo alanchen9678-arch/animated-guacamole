@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test'
 
-test('shared loading content uses centered Aurora dots and respects reduced motion', async ({ page }) => {
+test('shared loading content uses centered Dawn Harbor dots and respects reduced motion', async ({ page }) => {
   let releaseUserRequest
   const userGate = new Promise((resolve) => { releaseUserRequest = resolve })
 
   await page.addInitScript(() => {
-    window.sessionStorage.setItem('aurora_token', 'loading-state-test-token')
+    window.sessionStorage.setItem('dawn-harbor_token', 'loading-state-test-token')
   })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.route('**/api/auth/me/', async (route) => {
@@ -21,7 +21,7 @@ test('shared loading content uses centered Aurora dots and respects reduced moti
   await page.goto('/')
 
   const loadingState = page.getByRole('status')
-  await expect(loadingState).toContainText('Loading Aurora')
+  await expect(loadingState).toContainText('Loading Dawn Harbor')
   await expect(loadingState.locator('.feedback-loading__dot')).toHaveCount(3)
   await expect(loadingState.locator('.feedback-spinner')).toHaveCount(0)
 
@@ -91,9 +91,9 @@ test('failed check-in loading presents a working retry action', async ({ page })
   await page.addInitScript(() => {
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    window.sessionStorage.setItem('aurora_token', 'feedback-test-token')
-    window.localStorage.setItem('aurora.activePage', 'checkins')
-    window.localStorage.setItem('aurora.journal.daily-prompt', today)
+    window.sessionStorage.setItem('dawn-harbor_token', 'feedback-test-token')
+    window.localStorage.setItem('dawn-harbor.activePage', 'checkins')
+    window.localStorage.setItem('dawn-harbor.journal.daily-prompt', today)
   })
 
   await page.route('**/api/auth/me/', (route) => route.fulfill({

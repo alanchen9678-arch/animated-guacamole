@@ -120,7 +120,7 @@ export default function Settings() {
         <article className="settings-section settings-profile" aria-labelledby="settings-profile-heading">
           <header className="settings-section-header">
             <h3 id="settings-profile-heading">Profile</h3>
-            <p>Choose how your name and profile appear across Aurora.</p>
+            <p>Choose how your name and profile appear across Dawn Harbor.</p>
           </header>
 
           <form className="settings-profile-form" onSubmit={saveProfile}>
@@ -243,7 +243,7 @@ export default function Settings() {
           <section className="settings-section settings-account" aria-labelledby="settings-account-heading">
             <header className="settings-section-header">
               <h3 id="settings-account-heading">Account</h3>
-              <p>Your Aurora account details.</p>
+              <p>Your Dawn Harbor account details.</p>
             </header>
             <dl className="settings-account-list">
               <div className="settings-account-row">

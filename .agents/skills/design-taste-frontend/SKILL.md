@@ -113,7 +113,7 @@ For these directions, there is **no single official package**. Build with native
 | Brutalism | Native CSS, monospace, raw borders. No library. |
 | Editorial / magazine | Serif type, asymmetric grid, generous whitespace. No library. |
 | Dark tech / hacker | Mono + accent neon, terminal motifs. No library. |
-| Aurora / mesh gradients | SVG or layered radial gradients. No library. |
+| Polar-light / mesh gradients | SVG or layered radial gradients. No library. |
 | Kinetic typography | Native CSS animations, scroll-driven animations, GSAP for hijacks. No library. |
 | **Apple Liquid Glass** | Apple documents this for Apple platforms only. **There is no official `liquid-glass.css`.** Web implementations are approximations using `backdrop-filter` + layered borders + highlights. Label clearly as approximation. |
 

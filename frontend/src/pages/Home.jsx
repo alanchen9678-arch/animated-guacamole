@@ -273,7 +273,7 @@ export default function Home() {
       <header className="page-header">
         <h2 className="home-greeting">{greeting}, {name}.</h2>
         <p className="home-sub">
-          Here&apos;s your Aurora snapshot.
+          Here&apos;s your Dawn Harbor snapshot.
         </p>
       </header>
 
@@ -306,9 +306,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="home-tools" aria-labelledby="aurora-tools-heading">
+      <section className="home-tools" aria-labelledby="dawn-harbor-tools-heading">
         <div className="home-section-head">
-          <h3 className="home-section-title" id="aurora-tools-heading">Aurora tools</h3>
+          <h3 className="home-section-title" id="dawn-harbor-tools-heading">Dawn Harbor tools</h3>
         </div>
         <div className="feature-grid">
           {features.map((feature) => (

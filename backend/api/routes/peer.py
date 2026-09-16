@@ -59,7 +59,7 @@ LEETSPEAK_MAP = str.maketrans({
     '$': 's',
 })
 AI_MODERATION_BLOCK_MESSAGE = (
-    "This message was blocked by Aurora's safety system and wasn't sent. "
+    "This message was blocked by Dawn Harbor's safety system and wasn't sent. "
     "Please rephrase it in a way that feels safe and respectful for peer support."
 )
 AI_MODERATION_CRISIS_MESSAGE = (

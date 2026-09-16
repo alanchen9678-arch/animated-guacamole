@@ -29,7 +29,7 @@ const MOD_RULES = [
     terms: ['suicide','suicidal','kill myself','end my life','end it all','want to die','dont want to live','do not want to live'],
     patterns: [],
     label: 'We noticed something serious',
-    message: "It sounds like you might be in a really dark place right now. You are not alone. Please reach out to the 988 Suicide & Crisis Lifeline (call or text 988, available 24/7). You can also connect with a therapist through Aurora's Therapist Match.",
+    message: "It sounds like you might be in a really dark place right now. You are not alone. Please reach out to the 988 Suicide & Crisis Lifeline (call or text 988, available 24/7). You can also connect with a therapist through Dawn Harbor's Therapist Match.",
     color: '#dc2626', bg: 'rgba(220,38,38,0.06)', border: 'rgba(220,38,38,0.22)',
   },
   {
@@ -169,10 +169,10 @@ function OnboardingView({ onDone, loading, error }) {
   return (
     <section className="page">
       <div className="ps-center-wrap ps-center-wrap--wide">
-        <p className="ps-eyebrow">Aurora - Peer Support</p>
+        <p className="ps-eyebrow">Dawn Harbor - Peer Support</p>
         <h2 className="ps-heading">Community guidelines</h2>
         <p className="ps-sub">
-          Aurora's peer community connects you with others who share similar experiences.
+          Dawn Harbor's peer community connects you with others who share similar experiences.
           To keep this space safe for everyone, please read and agree before continuing.
         </p>
         <div className="ps-guidelines">

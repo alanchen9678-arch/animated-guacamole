@@ -75,7 +75,7 @@
   justify-content: flex-end;
 }
 
-.fv-avatar--aurora {
+.fv-avatar--dawn-harbor {
   width: 28px;
   height: 28px;
 }
@@ -86,7 +86,7 @@
   border-radius: var(--radius-small);
 }
 
-.fv-message--aurora {
+.fv-message--dawn-harbor {
   border: 1px solid rgba(46, 42, 38, 0.1);
   background: rgba(243, 238, 228, 0.88);
   color: var(--ink);

@@ -20,9 +20,9 @@ test('global therapist sharing and care history persist through the therapist wo
   await page.addInitScript(() => {
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    window.sessionStorage.setItem('aurora_token', 'therapist-workflow-token')
-    window.localStorage.setItem('aurora.activePage', 'therapist')
-    window.localStorage.setItem('aurora.journal.daily-prompt', today)
+    window.sessionStorage.setItem('dawn-harbor_token', 'therapist-workflow-token')
+    window.localStorage.setItem('dawn-harbor.activePage', 'therapist')
+    window.localStorage.setItem('dawn-harbor.journal.daily-prompt', today)
   })
 
   await page.route('**/api/auth/me/', (route) => route.fulfill({
@@ -169,9 +169,9 @@ test('global therapist sharing and care history persist through the therapist wo
   await expect(page.getByText('Exactly what your therapist can see')).toHaveCount(0)
   await page.getByRole('button', { name: /Find a Therapist/ }).click()
   await page.getByRole('button', { name: 'Select state' }).click()
-  await page.locator('.aurora-dropdown-item').filter({ hasText: 'CA' }).click()
+  await page.locator('.dawn-harbor-dropdown-item').filter({ hasText: 'CA' }).click()
   await page.getByRole('button', { name: 'Select insurance provider' }).click()
-  await page.locator('.aurora-dropdown-item').filter({ hasText: 'Aetna' }).click()
+  await page.locator('.dawn-harbor-dropdown-item').filter({ hasText: 'Aetna' }).click()
   await page.getByRole('button', { name: /Show my matches/ }).click()
 
   const connectedResult = page.getByRole('button', { name: 'Open existing chat with Dr. Priya Sharma' })

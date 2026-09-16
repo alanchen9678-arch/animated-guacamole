@@ -1,7 +1,7 @@
 import { createContext, useEffect, useContext, useState } from 'react'
 
 const NavigationContext = createContext(null)
-const NAVIGATION_STORAGE_KEY = 'aurora.activePage'
+const NAVIGATION_STORAGE_KEY = 'dawn-harbor.activePage'
 const LOCKED_PAGE_ID = 'checkins'
 
 export function NavigationProvider({ children, lockedPageId = null }) {

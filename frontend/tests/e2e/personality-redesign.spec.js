@@ -6,9 +6,9 @@ test('initial assessment stores continuous signals without revealing a personali
   await page.addInitScript(() => {
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    window.sessionStorage.setItem('aurora_token', 'personality-v2-token')
-    window.localStorage.setItem('aurora.activePage', 'checkins')
-    window.localStorage.setItem('aurora.journal.daily-prompt', today)
+    window.sessionStorage.setItem('dawn-harbor_token', 'personality-v2-token')
+    window.localStorage.setItem('dawn-harbor.activePage', 'checkins')
+    window.localStorage.setItem('dawn-harbor.journal.daily-prompt', today)
   })
 
   const user = {
@@ -83,7 +83,7 @@ test('initial assessment stores continuous signals without revealing a personali
   await expect(page.getByText(/The Architect|The Creator|The Helper/)).toHaveCount(0)
 
   expect(submittedPayload.personality.schemaVersion).toBe(2)
-  expect(submittedPayload.personality.instrument).toBe('aurora-personality-v2')
+  expect(submittedPayload.personality.instrument).toBe('dawn-harbor-personality-v2')
   expect(submittedPayload.personality).not.toHaveProperty('id')
   expect(submittedPayload.personality).not.toHaveProperty('name')
   expect(submittedPayload.personality).not.toHaveProperty('category')
@@ -106,9 +106,9 @@ test('legacy users are locked into the new assessment without replacing wellness
   await page.addInitScript(() => {
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    window.sessionStorage.setItem('aurora_token', 'legacy-upgrade-token')
-    window.localStorage.setItem('aurora.activePage', 'home')
-    window.localStorage.setItem('aurora.journal.daily-prompt', today)
+    window.sessionStorage.setItem('dawn-harbor_token', 'legacy-upgrade-token')
+    window.localStorage.setItem('dawn-harbor.activePage', 'home')
+    window.localStorage.setItem('dawn-harbor.journal.daily-prompt', today)
   })
 
   const user = {
@@ -175,8 +175,8 @@ test('legacy users are locked into the new assessment without replacing wellness
   expect(submittedPayload.type).toBe('personality')
   expect(submittedPayload.qIds).toEqual([])
   expect(submittedPayload.scores).toEqual({})
-  expect(submittedPayload.personality.instrument).toBe('aurora-personality-v2')
+  expect(submittedPayload.personality.instrument).toBe('dawn-harbor-personality-v2')
 
-  await page.getByRole('button', { name: /Continue to Aurora/ }).click()
+  await page.getByRole('button', { name: /Continue to Dawn Harbor/ }).click()
   await expect(page.getByRole('button', { name: 'Home' })).toBeVisible()
 })

@@ -22,7 +22,7 @@ from app.models import (
 )
 
 THERAPIST_AUTO_REPLIES = [
-    "Hello. I've reviewed your Aurora profile and I'm glad you reached out. How have things been feeling for you lately?",
+    "Hello. I've reviewed your Dawn Harbor profile and I'm glad you reached out. How have things been feeling for you lately?",
     "That makes sense. I'd like to understand what has been weighing on you most before we focus on solutions. What feels hardest right now?",
     "We can take this one step at a time. You do not need to explain everything at once.",
     "I hear a pattern there. Let's slow it down together and look at what tends to happen just before that feeling spikes.",

@@ -4,9 +4,9 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    window.sessionStorage.setItem('aurora_token', 'checkin-draft-token')
-    window.localStorage.setItem('aurora.activePage', 'checkins')
-    window.localStorage.setItem('aurora.journal.daily-prompt', today)
+    window.sessionStorage.setItem('dawn-harbor_token', 'checkin-draft-token')
+    window.localStorage.setItem('dawn-harbor.activePage', 'checkins')
+    window.localStorage.setItem('dawn-harbor.journal.daily-prompt', today)
   })
 
   await page.route('**/api/auth/me/', (route) => route.fulfill({
@@ -51,7 +51,7 @@ test('unfinished weekly check-in restores its answers and position after reload'
   await expect(page.getByText('Question 2 of 12')).toBeVisible()
 
   const savedDraft = await page.evaluate(() => (
-    JSON.parse(window.sessionStorage.getItem('aurora.checkin.draft.v1:42'))
+    JSON.parse(window.sessionStorage.getItem('dawn-harbor.checkin.draft.v1:42'))
   ))
   expect(savedDraft.questionIds).toHaveLength(12)
   expect(Object.keys(savedDraft.answers)).toHaveLength(1)

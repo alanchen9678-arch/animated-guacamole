@@ -1,13 +1,13 @@
-.aurora-dropdown-shell {
+.dawn-harbor-dropdown-shell {
   position: relative;
   width: 100%;
 }
 
-.aurora-dropdown-shell:has(.aurora-dropdown-trigger--calendar) {
+.dawn-harbor-dropdown-shell:has(.dawn-harbor-dropdown-trigger--calendar) {
   width: fit-content;
 }
 
-.aurora-dropdown-trigger {
+.dawn-harbor-dropdown-trigger {
   display: inline-flex;
   width: 100%;
   align-items: center;
@@ -23,19 +23,19 @@
   transition: border-color 140ms, background 140ms, transform 140ms, box-shadow 140ms;
 }
 
-.aurora-dropdown-trigger:hover {
+.dawn-harbor-dropdown-trigger:hover {
   border-color: rgba(77, 107, 88, 0.34);
   background: #fff;
 }
 
-.aurora-dropdown-trigger:focus-visible {
+.dawn-harbor-dropdown-trigger:focus-visible {
   outline: none;
   border-color: var(--accent);
   background: #fff;
   box-shadow: 0 0 0 3px rgba(77, 107, 88, 0.12);
 }
 
-.aurora-dropdown-trigger-label {
+.dawn-harbor-dropdown-trigger-label {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -43,24 +43,24 @@
   text-align: left;
 }
 
-.aurora-dropdown-trigger-label--placeholder {
+.dawn-harbor-dropdown-trigger-label--placeholder {
   color: var(--muted);
 }
 
-.aurora-dropdown-trigger-icon {
+.dawn-harbor-dropdown-trigger-icon {
   flex-shrink: 0;
   color: var(--muted);
   font-size: 0.8rem;
   transition: transform 140ms, color 140ms;
 }
 
-.aurora-dropdown-trigger:hover .aurora-dropdown-trigger-icon,
-.aurora-dropdown-trigger:focus-visible .aurora-dropdown-trigger-icon {
+.dawn-harbor-dropdown-trigger:hover .dawn-harbor-dropdown-trigger-icon,
+.dawn-harbor-dropdown-trigger:focus-visible .dawn-harbor-dropdown-trigger-icon {
   color: var(--accent);
   transform: translateY(1px);
 }
 
-.aurora-dropdown-popover {
+.dawn-harbor-dropdown-popover {
   position: absolute;
   z-index: 40;
   top: calc(100% + 8px);
@@ -73,13 +73,13 @@
   padding: 8px;
 }
 
-.aurora-dropdown-menu {
+.dawn-harbor-dropdown-menu {
   display: grid;
   gap: 4px;
   outline: none;
 }
 
-.aurora-dropdown-item {
+.dawn-harbor-dropdown-item {
   border-radius: var(--radius-control);
   padding: 0;
   background: transparent;
@@ -87,14 +87,14 @@
   transition: background 140ms, color 140ms;
 }
 
-.aurora-dropdown-item[data-focused="true"],
-.aurora-dropdown-item[data-hovered="true"],
-.aurora-dropdown-item:hover {
+.dawn-harbor-dropdown-item[data-focused="true"],
+.dawn-harbor-dropdown-item[data-hovered="true"],
+.dawn-harbor-dropdown-item:hover {
   background: var(--accent-soft);
   color: var(--accent-dark);
 }
 
-.aurora-dropdown-item-row {
+.dawn-harbor-dropdown-item-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -102,14 +102,14 @@
   padding: 9px 10px;
 }
 
-.aurora-dropdown-item-copy {
+.dawn-harbor-dropdown-item-copy {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.aurora-dropdown-item-check {
+.dawn-harbor-dropdown-item-check {
   flex-shrink: 0;
   opacity: 0;
   color: var(--accent);
@@ -118,11 +118,11 @@
   transition: opacity 140ms;
 }
 
-.aurora-dropdown-item-check--selected {
+.dawn-harbor-dropdown-item-check--selected {
   opacity: 1;
 }
 
-.aurora-dropdown-trigger--calendar {
+.dawn-harbor-dropdown-trigger--calendar {
   width: auto;
   gap: 6px;
   padding: 4px 2px;
@@ -134,8 +134,8 @@
   letter-spacing: -0.01em;
 }
 
-.aurora-dropdown-trigger--calendar:hover,
-.aurora-dropdown-trigger--calendar:focus-visible {
+.dawn-harbor-dropdown-trigger--calendar:hover,
+.dawn-harbor-dropdown-trigger--calendar:focus-visible {
   background: transparent;
   box-shadow: none;
   transform: none;
@@ -143,38 +143,38 @@
   color: var(--accent);
 }
 
-.aurora-dropdown-trigger--calendar .aurora-dropdown-trigger-icon {
+.dawn-harbor-dropdown-trigger--calendar .dawn-harbor-dropdown-trigger-icon {
   font-size: 0.68rem;
 }
 
-.aurora-dropdown-popover--calendar {
+.dawn-harbor-dropdown-popover--calendar {
   min-width: 0;
   padding: 6px;
 }
 
-.aurora-dropdown-menu--calendar {
+.dawn-harbor-dropdown-menu--calendar {
   max-height: 180px;
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
-.aurora-dropdown-menu--calendar::-webkit-scrollbar {
+.dawn-harbor-dropdown-menu--calendar::-webkit-scrollbar {
   display: none;
 }
 
-.aurora-dropdown-menu--scrollable {
+.dawn-harbor-dropdown-menu--scrollable {
   max-height: 220px;
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
-.aurora-dropdown-menu--scrollable::-webkit-scrollbar {
+.dawn-harbor-dropdown-menu--scrollable::-webkit-scrollbar {
   display: none;
 }
 
-.aurora-dropdown-item--calendar {
+.dawn-harbor-dropdown-item--calendar {
   font-size: 0.84rem;
   font-weight: 600;
 }

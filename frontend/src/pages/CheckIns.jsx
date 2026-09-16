@@ -180,7 +180,7 @@ const CHECKIN_QUESTION_BY_ID = new Map(
 )
 
 function getCheckInDraftStorageKey(user) {
-  return `aurora.checkin.draft.v${CHECKIN_DRAFT_VERSION}:${user?.id ?? 'guest'}`
+  return `dawn-harbor.checkin.draft.v${CHECKIN_DRAFT_VERSION}:${user?.id ?? 'guest'}`
 }
 
 function loadCheckInDraft(storageKey) {
@@ -198,7 +198,7 @@ function loadCheckInDraft(storageKey) {
       || !['initial', 'personality', 'weekly'].includes(draft.surveyType)
       || !Array.isArray(draft.questionIds)
       || !draft.questionIds.length
-      || (draft.surveyType !== 'weekly' && draft.personalityInstrument !== 'aurora-personality-v2')
+      || (draft.surveyType !== 'weekly' && draft.personalityInstrument !== 'dawn-harbor-personality-v2')
     ) return null
 
     const questions = draft.questionIds.map((id) => CHECKIN_QUESTION_BY_ID.get(String(id)))
@@ -229,7 +229,7 @@ function saveCheckInDraft(storageKey, { surveyType, questions, answers, currentI
     sessionStorage.setItem(storageKey, JSON.stringify({
       version: CHECKIN_DRAFT_VERSION,
       surveyType,
-      personalityInstrument: surveyType !== 'weekly' ? 'aurora-personality-v2' : null,
+      personalityInstrument: surveyType !== 'weekly' ? 'dawn-harbor-personality-v2' : null,
       questionIds: questions.map((question) => question.id),
       answers,
       currentIndex,
@@ -394,7 +394,7 @@ function computePersonalityProfile(answers, questions) {
 
   return {
     schemaVersion: PERSONALITY_SCHEMA_VERSION,
-    instrument: 'aurora-personality-v2',
+    instrument: 'dawn-harbor-personality-v2',
     dimensions,
     updatedAt: new Date().toISOString(),
   }
@@ -426,8 +426,8 @@ function generateInsight(scores, prevScores) {
   }
   const avg = Object.values(scores).reduce((a, b) => a + b, 0) / CATEGORIES.length
   if (avg < 35) return "Your scores look healthy across the board this week. Keep doing what you're doing, and come back next week to keep the streak going."
-  if (scores[top.id] >= 75) return `Your ${top.label.toLowerCase()} is scoring in the ${scoreBand(scores[top.id]).label.toLowerCase()} range. Aurora's AI Chatbot and Therapist Match are here whenever you're ready for support.`
-  return "Thanks for completing this check-in. Your results are tracked over time so Aurora can spot patterns and reach out when things start to shift."
+  if (scores[top.id] >= 75) return `Your ${top.label.toLowerCase()} is scoring in the ${scoreBand(scores[top.id]).label.toLowerCase()} range. Dawn Harbor's AI Chatbot and Therapist Match are here whenever you're ready for support.`
+  return "Thanks for completing this check-in. Your results are tracked over time so Dawn Harbor can spot patterns and reach out when things start to shift."
 }
 
 function fmtDate(str) {
@@ -453,13 +453,13 @@ function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, hasC
           {needsPersonalityUpgrade ? (
             <>
               <div className="ci-due-badge">Update required</div>
-              <p className="ci-due-text">Aurora's personalization assessment has changed. Complete the new 30-question assessment to continue using Aurora. Your previous check-ins and wellness history will be preserved.</p>
+              <p className="ci-due-text">Dawn Harbor's personalization assessment has changed. Complete the new 30-question assessment to continue using Dawn Harbor. Your previous check-ins and wellness history will be preserved.</p>
               <button className="ci-start-btn" onClick={() => onStart('personality')}>Take updated assessment</button>
             </>
           ) : !hasInitialAssessment ? (
             <>
               <div className="ci-due-badge">Get started</div>
-              <p className="ci-due-text">Before weekly check-ins begin, complete your 40-question initial assessment to set your wellness baseline and help Aurora personalize its support.</p>
+              <p className="ci-due-text">Before weekly check-ins begin, complete your 40-question initial assessment to set your wellness baseline and help Dawn Harbor personalize its support.</p>
               <button className="ci-start-btn" onClick={() => onStart('initial')}>Start initial assessment</button>
             </>
           ) : dueToday ? (
@@ -493,10 +493,10 @@ function IntroView({ type, onStart, onBack }) {
   const time      = isInitial ? '~15' : isPersonality ? '~10' : '~5'
   const title     = isInitial ? 'Initial Assessment' : isPersonality ? 'Updated Personalization Assessment' : 'Weekly Check-In'
   const desc      = isInitial
-    ? 'This one-time assessment establishes your baseline across six well-being dimensions and gives Aurora general personalization signals. It takes about 15 minutes and does not diagnose or define who you are.'
+    ? 'This one-time assessment establishes your baseline across six well-being dimensions and gives Dawn Harbor general personalization signals. It takes about 15 minutes and does not diagnose or define who you are.'
     : isPersonality
-      ? 'Aurora now uses five continuous personalization signals instead of fixed personality types. Complete these 30 questions to keep using Aurora. Your existing wellness history will not be changed.'
-    : "This weekly check-in tracks how you've been doing across all six well-being dimensions. Aurora uses it to keep your score profile current and spot meaningful changes over time."
+      ? 'Dawn Harbor now uses five continuous personalization signals instead of fixed personality types. Complete these 30 questions to keep using Dawn Harbor. Your existing wellness history will not be changed.'
+    : "This weekly check-in tracks how you've been doing across all six well-being dimensions. Dawn Harbor uses it to keep your score profile current and spot meaningful changes over time."
 
   return (
     <div className="ci-intro">
@@ -668,13 +668,13 @@ function ResultsView({ surveyType, scores, prevScores, onDone }) {
         <div className="ci-results-header">
           <h3 className="ci-results-title">Thanks. Your check-in is complete.</h3>
           <p className="ci-results-sub">
-            Your answers help Aurora adapt suggestions and approaches to what may work better for you over time.
+            Your answers help Dawn Harbor adapt suggestions and approaches to what may work better for you over time.
           </p>
           <p className="ci-results-privacy">
             Personality responses are used as general personalization signals, not as a diagnosis or fixed description of who you are.
           </p>
         </div>
-        <button className="ci-done-btn" onClick={onDone}>Continue to Aurora →</button>
+        <button className="ci-done-btn" onClick={onDone}>Continue to Dawn Harbor →</button>
       </div>
     )
   }
@@ -693,11 +693,11 @@ function ResultsView({ surveyType, scores, prevScores, onDone }) {
         <p className="ci-results-sub">{summary}</p>
       </div>
 
-      {/* aurora insight */}
+      {/* dawn-harbor insight */}
       <div className="ci-insight">
         <div className="ci-insight-icon" style={{ background: '#3a6898' }}>A</div>
         <div className="ci-insight-body">
-          <strong className="ci-insight-label" style={{ color: '#3a6898' }}>Aurora</strong>
+          <strong className="ci-insight-label" style={{ color: '#3a6898' }}>Dawn Harbor</strong>
           <p className="ci-insight-text">{insightText}</p>
         </div>
       </div>
@@ -938,7 +938,7 @@ export default function CheckIns() {
 
       <header className="page-header">
         <h2>Check-Ins</h2>
-        <p>Short, regular surveys that track your well-being across six dimensions so Aurora can support you proactively.</p>
+        <p>Short, regular surveys that track your well-being across six dimensions so Dawn Harbor can support you proactively.</p>
       </header>
 
       {saveError && (

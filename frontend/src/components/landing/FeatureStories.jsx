@@ -5,7 +5,7 @@ import FeatureVignette from './FeatureVignettes.jsx'
 import './FeatureVignettes.css'
 
 const FEATURE_PRESENTATION = {
-  chatbot: { label: 'A focused Aurora conversation with a compact message composer', layout: 'lead' },
+  chatbot: { label: 'A focused Dawn Harbor conversation with a compact message composer', layout: 'lead' },
   checkins: { label: 'A weekly check-in question with a seven-point scale and streak summary', layout: 'reverse' },
   journal: { label: 'A journal notebook paired with a mood calendar', layout: 'wide' },
   therapist: { label: 'A therapist profile with fit score, connection action, and separate scheduling information', layout: 'offset' },
@@ -42,7 +42,7 @@ export default function FeatureStories({ features }) {
       <motion.header className='landing-features-intro' variants={revealItem} {...motionProps}>
         <h2 id='landing-features-title'>Support for the way you feel, reflect, and connect.</h2>
         <p>
-          Aurora brings private reflection, guided check-ins, trusted care, and community into one calm workspace.
+          Dawn Harbor brings private reflection, guided check-ins, trusted care, and community into one calm workspace.
         </p>
       </motion.header>
 

@@ -1,6 +1,6 @@
 # Architecture
 
-Aurora is a React single-page application backed by a Django REST API.
+Dawn Harbor is a React single-page application backed by a Django REST API.
 
 ## Request flow
 
@@ -21,7 +21,7 @@ SQLite is the local default. When `DATABASE_URL` is present, Django uses Postgre
 
 Chat reserves usage in `ChatUsage` inside a transaction. A provider failure releases the reservation and stores no partial message. Successful user and assistant messages are committed together.
 
-The one-time initial Check-In stores an `aurora-personality-v2` profile with five continuous dimensions: social energy, cooperation and trust, self-management, emotional reactivity and recovery, and openness and curiosity. These values are internal personalization signals rather than user-facing personality types. Each dimension includes a consistency measure and a signal-strength classification. Chat ignores weak, inconsistent, malformed, and legacy archetype data; safety requirements, factual accuracy, the current request, and current context always take priority over personalization.
+The one-time initial Check-In stores an `dawn-harbor-personality-v2` profile with five continuous dimensions: social energy, cooperation and trust, self-management, emotional reactivity and recovery, and openness and curiosity. These values are internal personalization signals rather than user-facing personality types. Each dimension includes a consistency measure and a signal-strength classification. Chat ignores weak, inconsistent, malformed, and legacy archetype data; safety requirements, factual accuracy, the current request, and current context always take priority over personalization.
 
 Authenticated users are restricted to Check-Ins until `hasCurrentPersonalityAssessment` is true. New users complete the combined 40-question initial assessment. Users with an earlier initial assessment but no valid v2 profile complete a separate 30-question personality upgrade; this updates only their internal personality profile and preserves all historical wellness check-ins and scores.
 

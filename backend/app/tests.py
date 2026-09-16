@@ -31,7 +31,7 @@ from .models import (
 def continuous_personality_profile():
     return {
         'schemaVersion': 2,
-        'instrument': 'aurora-personality-v2',
+        'instrument': 'dawn-harbor-personality-v2',
         'dimensions': {
             'socialEnergy': {'score': 2.2, 'consistency': 0.8, 'signalStrength': 'moderate'},
             'cooperationTrust': {'score': 3.4, 'consistency': 0.7, 'signalStrength': 'weak'},
@@ -46,7 +46,7 @@ class ConversationModelTests(TestCase):
     def setUp(self):
         # Each conversation test gets its own user in the isolated test database.
         self.user = get_user_model().objects.create_user(
-            username='aurora-user',
+            username='dawn-harbor-user',
             password='testpass123',
         )
 
@@ -701,7 +701,7 @@ class CheckInAPITests(TestCase):
         self.assertEqual(initial.question_ids, [7, 9])
         self.assertEqual(initial.scores, {'stress': 44, 'sleep': 65})
         self.assertEqual(self.user.checkins.count(), 1)
-        self.assertEqual(self.user.profile.personality['instrument'], 'aurora-personality-v2')
+        self.assertEqual(self.user.profile.personality['instrument'], 'dawn-harbor-personality-v2')
 
     def test_personality_only_upgrade_requires_existing_initial_assessment(self):
         response = self.client.post(
@@ -966,7 +966,7 @@ class ChatAPITests(TestCase):
             user=self.user,
             personality={
                 'schemaVersion': 2,
-                'instrument': 'aurora-personality-v2',
+                'instrument': 'dawn-harbor-personality-v2',
                 'dimensions': {
                     'socialEnergy': {'score': 3, 'consistency': 1, 'signalStrength': 'weak'},
                     'cooperationTrust': {'score': 3, 'consistency': 1, 'signalStrength': 'weak'},
@@ -1185,7 +1185,7 @@ class PeerModerationAPITests(TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
-        self.assertIn("Aurora's safety system", response.data['error'])
+        self.assertIn("Dawn Harbor's safety system", response.data['error'])
         self.assertEqual(PeerRoomMessage.objects.count(), 0)
 
     @patch('api.routes.peer.moderate_peer_message')

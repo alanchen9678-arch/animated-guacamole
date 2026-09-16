@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test'
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    window.localStorage.removeItem('aurora_token')
-    window.sessionStorage.removeItem('aurora_token')
+    window.localStorage.removeItem('dawn-harbor_token')
+    window.sessionStorage.removeItem('dawn-harbor_token')
   })
 })
 
@@ -92,7 +92,7 @@ test('restored sessions show a loading state instead of flashing logged-out cont
   let releaseProfile
   const profileGate = new Promise((resolve) => { releaseProfile = resolve })
   await page.addInitScript(() => {
-    window.sessionStorage.setItem('aurora_token', 'restored-test-token')
+    window.sessionStorage.setItem('dawn-harbor_token', 'restored-test-token')
   })
   await page.route('**/api/auth/me/', async (route) => {
     await profileGate
@@ -111,7 +111,7 @@ test('restored sessions show a loading state instead of flashing logged-out cont
 
   await page.goto('/')
 
-  await expect(page.getByText('Loading Aurora…', { exact: true })).toBeVisible()
+  await expect(page.getByText('Loading Dawn Harbor…', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Get started free' })).toBeHidden()
   releaseProfile()
   await expect(page.getByRole('heading', { name: /Avery\./ })).toBeVisible()

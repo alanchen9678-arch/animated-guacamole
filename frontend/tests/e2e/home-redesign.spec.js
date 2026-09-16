@@ -3,9 +3,9 @@ import { expect, test } from '@playwright/test'
 test('home uses one daily prompt and an editorial two-column tool layout', async ({ page }) => {
   await page.clock.install({ time: new Date('2026-09-03T12:00:00-05:00') })
   await page.addInitScript(() => {
-    window.sessionStorage.setItem('aurora_token', 'home-redesign-token')
-    window.localStorage.setItem('aurora.activePage', 'home')
-    window.localStorage.setItem('aurora.journal.daily-prompt', '2026-09-03')
+    window.sessionStorage.setItem('dawn-harbor_token', 'home-redesign-token')
+    window.localStorage.setItem('dawn-harbor.activePage', 'home')
+    window.localStorage.setItem('dawn-harbor.journal.daily-prompt', '2026-09-03')
   })
   await page.route('**/api/auth/me/', (route) => route.fulfill({
     status: 200,
@@ -59,7 +59,7 @@ test('home uses one daily prompt and an editorial two-column tool layout', async
 
   await page.clock.setFixedTime(new Date('2026-09-04T12:00:00-05:00'))
   await page.evaluate(() => {
-    window.localStorage.setItem('aurora.journal.daily-prompt', '2026-09-04')
+    window.localStorage.setItem('dawn-harbor.journal.daily-prompt', '2026-09-04')
   })
   await page.reload()
 

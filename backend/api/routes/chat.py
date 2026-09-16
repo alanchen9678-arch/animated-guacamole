@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from ai_engine.pipeline import generate_chat_reply
 from api.serializers.chat import ChatRequestSerializer
-from app.models import ChatUsage, Conversation, Message, UserProfile
+from app.models import ChatUsage, Conversation, Message, UserProfile, is_current_personality_profile
 from app.throttles import AiChatThrottle
 
 WEEKLY_MESSAGE_LIMIT = 200
@@ -109,8 +109,7 @@ def build_style_context(user):
 
     personality = profile.personality or {}
     if (
-        personality.get('schemaVersion') != 2
-        or personality.get('instrument') != 'aurora-personality-v2'
+        not is_current_personality_profile(personality)
     ):
         return None
 

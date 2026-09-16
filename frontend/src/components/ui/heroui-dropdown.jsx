@@ -18,7 +18,7 @@ function cn(...values) {
   return values.filter(Boolean).join(" ")
 }
 
-export function AuroraDropdown({
+export function DawnHarborDropdown({
   items,
   selectedKey,
   onSelectionChange,
@@ -93,12 +93,12 @@ export function AuroraDropdown({
   }
 
   return (
-    <div className="aurora-dropdown-shell" ref={rootRef}>
+    <div className="dawn-harbor-dropdown-shell" ref={rootRef}>
       <button
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-label={ariaLabel}
-        className={cn("aurora-dropdown-trigger", buttonClassName)}
+        className={cn("dawn-harbor-dropdown-trigger", buttonClassName)}
         disabled={disabled}
         onClick={() => setIsOpen((open) => !open)}
         onKeyDown={(event) => {
@@ -113,21 +113,21 @@ export function AuroraDropdown({
       >
         <span
           className={cn(
-            "aurora-dropdown-trigger-label",
-            !selectedItem && "aurora-dropdown-trigger-label--placeholder",
+            "dawn-harbor-dropdown-trigger-label",
+            !selectedItem && "dawn-harbor-dropdown-trigger-label--placeholder",
             triggerLabelClassName,
           )}
         >
           {triggerLabel}
         </span>
-        <span className="aurora-dropdown-trigger-icon" aria-hidden="true">{"\u25BE"}</span>
+        <span className="dawn-harbor-dropdown-trigger-icon" aria-hidden="true">{"\u25BE"}</span>
       </button>
 
       {isOpen && (
-        <div className={cn("aurora-dropdown-popover", popoverClassName)}>
+        <div className={cn("dawn-harbor-dropdown-popover", popoverClassName)}>
           <div
             aria-label={ariaLabel}
-            className={cn("aurora-dropdown-menu", menuClassName)}
+            className={cn("dawn-harbor-dropdown-menu", menuClassName)}
             ref={menuRef}
             role="listbox"
           >
@@ -136,21 +136,21 @@ export function AuroraDropdown({
               return (
                 <button
                   aria-selected={isSelected}
-                  className={cn("aurora-dropdown-item", itemClassName)}
+                  className={cn("dawn-harbor-dropdown-item", itemClassName)}
                   key={item.value}
                   onClick={() => selectItem(item.value)}
                   onKeyDown={(event) => handleOptionKeyDown(event, index)}
                   role="option"
                   type="button"
                 >
-                  <span className="aurora-dropdown-item-row">
-                    <span className="aurora-dropdown-item-copy">
+                  <span className="dawn-harbor-dropdown-item-row">
+                    <span className="dawn-harbor-dropdown-item-copy">
                       {renderItemLabel ? renderItemLabel(item) : item.label}
                     </span>
                     <span
                       className={cn(
-                        "aurora-dropdown-item-check",
-                        isSelected && "aurora-dropdown-item-check--selected",
+                        "dawn-harbor-dropdown-item-check",
+                        isSelected && "dawn-harbor-dropdown-item-check--selected",
                       )}
                       aria-hidden="true"
                     >

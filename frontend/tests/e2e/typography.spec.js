@@ -23,9 +23,9 @@ test('dashboard pages share the home typography hierarchy and secondary color', 
   await page.addInitScript(() => {
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    window.sessionStorage.setItem('aurora_token', 'typography-token')
-    window.localStorage.setItem('aurora.activePage', 'settings')
-    window.localStorage.setItem('aurora.journal.daily-prompt', today)
+    window.sessionStorage.setItem('dawn-harbor_token', 'typography-token')
+    window.localStorage.setItem('dawn-harbor.activePage', 'settings')
+    window.localStorage.setItem('dawn-harbor.journal.daily-prompt', today)
   })
   await page.route('**/api/**', (route) => {
     const url = new URL(route.request().url())
@@ -90,7 +90,7 @@ test('dashboard pages share the home typography hierarchy and secondary color', 
     getComputedStyle(element).gridTemplateColumns.split(' ').length
   ))).toBe(2)
   await page.getByRole('button', { name: 'Start chatting' }).click()
-  await expect(page.getByText("Hi, I'm Aurora. I'm here to listen with warmth and honesty. What's on your mind today?")).toBeVisible()
+  await expect(page.getByText("Hi, I'm Dawn Harbor. I'm here to listen with warmth and honesty. What's on your mind today?")).toBeVisible()
   await expect(page.locator('.chat-header-avatar')).toHaveCount(0)
   await expect(page.locator('.chat-header-name')).toHaveCount(0)
   await expect(page.locator('.msg-avatar').first()).toHaveCSS('background-color', 'rgb(58, 82, 68)')
@@ -136,7 +136,7 @@ test('dashboard pages share the home typography hierarchy and secondary color', 
   await expect(page.locator('.send-btn')).toBeDisabled()
   await expect(page.locator('.send-btn')).toHaveCSS('background-color', 'rgb(216, 222, 216)')
 
-  const composer = page.getByPlaceholder(/Message Aurora/)
+  const composer = page.getByPlaceholder(/Message Dawn Harbor/)
   await composer.fill('Testing the quieter conversation')
   await expect(page.locator('.send-btn')).toBeEnabled()
   await expect(page.locator('.send-btn')).toHaveCSS('background-color', 'rgb(58, 82, 68)')

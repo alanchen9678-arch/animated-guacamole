@@ -12,8 +12,8 @@ import {
 import './InfoLibrary.css'
 
 const QUIZ_STORAGE_VERSION = 2
-const QUIZ_STORAGE_PREFIX = 'aurora.infoLibrary.quizSession.v2'
-const TAB_STORAGE_PREFIX = 'aurora.infoLibrary.activeTab.v2'
+const QUIZ_STORAGE_PREFIX = 'dawn-harbor.infoLibrary.quizSession.v2'
+const TAB_STORAGE_PREFIX = 'dawn-harbor.infoLibrary.activeTab.v2'
 const VALID_DISORDER_IDS = new Set(DISORDERS.map((item) => item.id))
 
 function shuffle(items) {

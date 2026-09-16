@@ -12,7 +12,7 @@ import './app.css'
 import './quiet-pages.css'
 
 const features = [
-  { id: 'chatbot',   title: 'AI Chatbot',       desc: "Talk through what's on your mind with Aurora's AI, available around the clock.",          tag: '24/7'        },
+  { id: 'chatbot',   title: 'AI Chatbot',       desc: "Talk through what's on your mind with Dawn Harbor's AI, available around the clock.",          tag: '24/7'        },
   { id: 'checkins',  title: 'Check-Ins',         desc: 'Quick daily surveys that monitor your mental wellness and flag changes early.',            tag: 'Daily'       },
   { id: 'journal',   title: 'Thought Journal',   desc: "A private, open-ended space to process your feelings and daily experiences.",             tag: 'Private'     },
   { id: 'therapist', title: 'Therapist Match',   desc: 'Get paired with a licensed professional whose style and focus suit your needs.',          tag: 'Licensed'    },
@@ -53,7 +53,7 @@ function BellIcon() {
   )
 }
 
-const DAILY_PROMPT_KEY   = 'aurora.journal.daily-prompt'
+const DAILY_PROMPT_KEY   = 'dawn-harbor.journal.daily-prompt'
 
 function getTodayKey() {
   const now = new Date()
@@ -139,7 +139,7 @@ function AppShell() {
       return
     }
     const todayKey = getTodayKey()
-    if (localStorage.getItem(`aurora.checkin.prompt-shown.${user.id}`) === todayKey) return
+    if (localStorage.getItem(`dawn-harbor.checkin.prompt-shown.${user.id}`) === todayKey) return
     setShowCheckinPrompt(true)
   }, [isLoggedIn, assessmentLocked, user?.checkInDueThisWeek, user?.weeklyCheckInDueSince])
 
@@ -161,7 +161,7 @@ function AppShell() {
   }
 
   function dismissCheckinPrompt(goToCheckins = false) {
-    localStorage.setItem(`aurora.checkin.prompt-shown.${user.id}`, getTodayKey())
+    localStorage.setItem(`dawn-harbor.checkin.prompt-shown.${user.id}`, getTodayKey())
     setShowCheckinPrompt(false)
     if (goToCheckins) navigate('checkins')
   }
@@ -182,7 +182,7 @@ function AppShell() {
   }, [activeShellPage, isLoggedIn])
 
   if (loading) {
-    return <LoadingState label="Loading Aurora…" skeletonLines={3} className="app-loading" />
+    return <LoadingState label="Loading Dawn Harbor…" skeletonLines={3} className="app-loading" />
   }
 
   return (
@@ -194,10 +194,10 @@ function AppShell() {
       {/* ── top bar ── */}
       <header className="topbar">
         <div className="topbar-inner">
-          <div className="aurora-logo">
+          <div className="dawn-harbor-logo">
             <TextReveal
               as="button"
-              text="Aurora"
+              text="Dawn Harbor"
               fontSize="1.15rem"
               color="var(--ink)"
               hoverColor="var(--blue)"
@@ -255,9 +255,9 @@ function AppShell() {
               </div>
             </div>
 
-            <div className="landing-product-visual" aria-label="Aurora daily reflection preview">
+            <div className="landing-product-visual" aria-label="Dawn Harbor daily reflection preview">
               <div className="product-visual-header">
-                <span className="product-visual-brand">Aurora</span>
+                <span className="product-visual-brand">Dawn Harbor</span>
                 <span className="product-visual-date">Today</span>
               </div>
               <div className="product-visual-body">
@@ -265,7 +265,7 @@ function AppShell() {
                   <p className="product-visual-label">Today's journal prompt</p>
                   <p className="product-visual-prompt">What would support look like for you right now?</p>
                 </div>
-                <div className="product-visual-tools" aria-label="Aurora tools">
+                <div className="product-visual-tools" aria-label="Dawn Harbor tools">
                   <div className="product-visual-tool"><span>Mood</span><strong>Pick a mood</strong></div>
                   <div className="product-visual-tool"><span>Journal</span><strong>Private</strong></div>
                   <div className="product-visual-tool"><span>Check-in</span><strong>Due this week</strong></div>
@@ -279,7 +279,7 @@ function AppShell() {
           <section className={'landing-endcap'} aria-labelledby={'landing-endcap-title'}>
             <div className={'landing-endcap-copy'}>
               <h2 id={'landing-endcap-title'}>Ready when you are.</h2>
-              <p>Create your private Aurora space.</p>
+              <p>Create your private Dawn Harbor space.</p>
             </div>
             <button className={'btn-primary-lg'} onClick={() => openAuth('register')}>Get started free</button>
           </section>
@@ -297,7 +297,7 @@ function AppShell() {
                 <p className="djp-sub">Take a moment to write in your journal today.</p>
               </div>
             </div>
-            <p className="djp-body">Even a few sentences about how you're feeling can help Aurora support you better. Your entries are private.</p>
+            <p className="djp-body">Even a few sentences about how you're feeling can help Dawn Harbor support you better. Your entries are private.</p>
             <div className="djp-actions">
               <button className="djp-skip" onClick={dismissDailyPrompt}>Maybe later</button>
               <button className="djp-go" onClick={openJournalFromPrompt}>Open journal →</button>
@@ -362,7 +362,7 @@ function AppShell() {
                 <p className="cip-sub">It's been a while since your last check-in.</p>
               </div>
             </div>
-            <p className="cip-body">Regular check-ins help Aurora detect changes in your well-being early and support you more effectively. It only takes about 4 minutes.</p>
+            <p className="cip-body">Regular check-ins help Dawn Harbor detect changes in your well-being early and support you more effectively. It only takes about 4 minutes.</p>
             <div className="cip-actions">
               <button className="cip-skip" onClick={() => dismissCheckinPrompt(false)}>Maybe later</button>
               <button className="cip-go" onClick={() => dismissCheckinPrompt(true)}>Start check-in →</button>

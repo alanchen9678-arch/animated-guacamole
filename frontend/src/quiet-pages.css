@@ -203,7 +203,7 @@
   border-bottom-color: rgba(77, 107, 88, 0.5);
   background: transparent;
 }
-/* Aurora chat: a focused conversation workspace. */
+/* Dawn Harbor chat: a focused conversation workspace. */
 .app-root .intro-wrap { width: min(100%, 780px); padding-top: clamp(10px, 3vh, 34px); }
 .app-root .intro-badge { padding: 0; border-radius: 0; color: var(--accent); background: transparent; }
 .app-root .intro-actions { align-items: center; }
@@ -1631,7 +1631,7 @@
   }
 }
 
-/* Keep human-care conversations visually aligned with Aurora's compact composer. */
+/* Keep human-care conversations visually aligned with Dawn Harbor's compact composer. */
 .app-root .tm-chat-input-bar,
 .app-root .ps-input-bar {
   width: 100%;
@@ -1641,8 +1641,8 @@
   background: transparent;
   box-shadow: none;
 }
-.app-root .tm-chat-compose.aurora-chat-input--default,
-.app-root .ps-chat-compose.aurora-chat-input--default {
+.app-root .tm-chat-compose.dawn-harbor-chat-input--default,
+.app-root .ps-chat-compose.dawn-harbor-chat-input--default {
   min-height: 52px;
   flex-direction: row;
   padding: 6px 7px 6px 14px;
@@ -1652,8 +1652,8 @@
   border-radius: 14px;
   background: var(--panel-raised);
 }
-.app-root .tm-chat-compose.aurora-chat-input--default:focus-within,
-.app-root .ps-chat-compose.aurora-chat-input--default:focus-within {
+.app-root .tm-chat-compose.dawn-harbor-chat-input--default:focus-within,
+.app-root .ps-chat-compose.dawn-harbor-chat-input--default:focus-within {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(77, 107, 88, 0.14);
 }
@@ -1668,8 +1668,8 @@
 .app-root .ps-chat-compose .chat-textarea::placeholder {
   color: var(--muted);
 }
-.app-root .tm-chat-compose .send-btn.aurora-chat-input__submit,
-.app-root .ps-chat-compose .send-btn.aurora-chat-input__submit {
+.app-root .tm-chat-compose .send-btn.dawn-harbor-chat-input__submit,
+.app-root .ps-chat-compose .send-btn.dawn-harbor-chat-input__submit {
   width: 40px;
   height: 40px;
   flex: 0 0 40px;
@@ -1678,8 +1678,8 @@
   color: var(--panel-raised);
   justify-self: end;
 }
-.app-root .tm-chat-compose .send-btn.aurora-chat-input__submit:disabled,
-.app-root .ps-chat-compose .send-btn.aurora-chat-input__submit:disabled {
+.app-root .tm-chat-compose .send-btn.dawn-harbor-chat-input__submit:disabled,
+.app-root .ps-chat-compose .send-btn.dawn-harbor-chat-input__submit:disabled {
   border-color: var(--line);
   background: #d8ded8;
   color: var(--muted-soft);

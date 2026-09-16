@@ -5,10 +5,10 @@ const TODAY = '2026-09-10'
 async function loadAuthenticatedHome(page, userOverrides = {}) {
   await page.clock.install({ time: new Date('2026-09-10T12:00:00-05:00') })
   await page.addInitScript(({ today }) => {
-    window.sessionStorage.setItem('aurora_token', 'notification-test-token')
-    window.localStorage.setItem('aurora.activePage', 'home')
-    window.localStorage.setItem('aurora.journal.daily-prompt', today)
-    window.localStorage.setItem('aurora.checkin.prompt-shown.44', today)
+    window.sessionStorage.setItem('dawn-harbor_token', 'notification-test-token')
+    window.localStorage.setItem('dawn-harbor.activePage', 'home')
+    window.localStorage.setItem('dawn-harbor.journal.daily-prompt', today)
+    window.localStorage.setItem('dawn-harbor.checkin.prompt-shown.44', today)
   }, { today: TODAY })
 
   await page.route('**/api/auth/me/', (route) => route.fulfill({

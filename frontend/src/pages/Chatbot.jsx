@@ -4,7 +4,7 @@ import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/
 import { fetchChatHistory, sendChatMessage } from '../services/api.js'
 import { FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
 
-const CHATBOT_ONBOARDING_STORAGE_KEY = 'aurora.chatbot.onboarding'
+const CHATBOT_ONBOARDING_STORAGE_KEY = 'dawn-harbor.chatbot.onboarding'
 
 function loadChatbotOnboardingState() {
   try {
@@ -37,15 +37,15 @@ function defaultGreeting() {
   return {
     id: 0,
     role: 'ai',
-    text: "Hi, I'm Aurora. I'm here to listen with warmth and honesty. What's on your mind today?",
+    text: "Hi, I'm Dawn Harbor. I'm here to listen with warmth and honesty. What's on your mind today?",
     time: timestamp(),
   }
 }
 
 function TypingIndicator() {
   return (
-    <div className="msg-row msg-row--ai" role="status" aria-live="polite" aria-label="Aurora is typing">
-      <div className="msg-avatar" aria-hidden="true">A</div>
+    <div className="msg-row msg-row--ai" role="status" aria-live="polite" aria-label="Dawn Harbor is typing">
+      <div className="msg-avatar" aria-hidden="true">D</div>
       <div className="bubble bubble--ai typing-bubble">
         <span className="dot" />
         <span className="dot" />
@@ -60,8 +60,8 @@ function Message({ msg }) {
 
   return (
     <div className={`msg-row${isUser ? ' msg-row--user' : ' msg-row--ai'}`}>
-      <span className="chat-speaker-label">{isUser ? 'You' : 'Aurora'}</span>
-      {!isUser && <div className="msg-avatar" aria-hidden="true">A</div>}
+      <span className="chat-speaker-label">{isUser ? 'You' : 'Dawn Harbor'}</span>
+      {!isUser && <div className="msg-avatar" aria-hidden="true">D</div>}
       <div className={`bubble${isUser ? ' bubble--user' : ' bubble--ai'}`}>
         <p className="bubble-text">{msg.text}</p>
         <span className="bubble-time">{msg.time}</span>
@@ -74,11 +74,11 @@ function ChatbotIntro({ onStart }) {
   return (
     <section className="page">
       <div className="intro-wrap">
-        <p className="intro-eyebrow">Aurora · AI Chatbot</p>
+        <p className="intro-eyebrow">Dawn Harbor · AI Chatbot</p>
         <h2 className="intro-heading">Your 24/7 Mental Wellness Companion</h2>
 
         <p className="intro-body">
-          Aurora gives you access to an interactive AI chatbot you can reach any time of day or
+          Dawn Harbor gives you access to an interactive AI chatbot you can reach any time of day or
           night. It is designed to feel calm, supportive, and realistic while staying connected to
           the rest of the platform.
         </p>
@@ -87,7 +87,7 @@ function ChatbotIntro({ onStart }) {
           <div className="disclaimer-box">
             <div className="disclaimer-icon">!</div>
             <p>
-              Aurora&apos;s chatbot is <strong>not a replacement for professional mental health
+              Dawn Harbor&apos;s chatbot is <strong>not a replacement for professional mental health
               care.</strong> If someone seems at risk, they should be directed to a crisis line,
               emergency services, or a licensed clinician.
             </p>
@@ -231,7 +231,7 @@ function ChatbotChat() {
           <ChatInputTextArea
             ref={inputRef}
             className="chat-textarea"
-            placeholder={'Message Aurora\u2026'}
+            placeholder={'Message Dawn Harbor\u2026'}
             disabled={isTyping || isLoadingHistory}
           />
           <ChatInputSubmit
@@ -453,14 +453,14 @@ const styles = `
     width: 40px;
     height: 40px;
   }
-  .send-btn.aurora-chat-input__submit {
+  .send-btn.dawn-harbor-chat-input__submit {
     background: var(--accent-dark);
     border-color: rgba(58, 82, 68, 0.34);
   }
-  .send-btn.aurora-chat-input__submit:hover:not(:disabled) {
+  .send-btn.dawn-harbor-chat-input__submit:hover:not(:disabled) {
     background: #31483a;
   }
-  .send-btn.aurora-chat-input__submit:disabled {
+  .send-btn.dawn-harbor-chat-input__submit:disabled {
     background: var(--accent-dark);
     border-color: rgba(58, 82, 68, 0.22);
     opacity: 0.42;
@@ -551,7 +551,7 @@ const styles = `
     background: transparent;
     box-shadow: none;
   }
-  .app-root .chat-compose.aurora-chat-input--default {
+  .app-root .chat-compose.dawn-harbor-chat-input--default {
     min-height: 52px;
     padding: 6px 7px 6px 14px;
     flex-direction: row;
@@ -561,7 +561,7 @@ const styles = `
     border-radius: 14px;
     background: var(--panel-raised);
   }
-  .app-root .chat-compose.aurora-chat-input--default:focus-within {
+  .app-root .chat-compose.dawn-harbor-chat-input--default:focus-within {
     border-color: var(--accent);
     box-shadow: 0 0 0 2px rgba(77, 107, 88, 0.14);
   }
@@ -574,7 +574,7 @@ const styles = `
   .app-root .chat-textarea::placeholder {
     color: var(--muted);
   }
-  .app-root .send-btn.aurora-chat-input__submit {
+  .app-root .send-btn.dawn-harbor-chat-input__submit {
     width: 40px;
     height: 40px;
     flex: 0 0 40px;
@@ -582,7 +582,7 @@ const styles = `
     background: var(--accent-dark);
     color: var(--panel-raised);
   }
-  .app-root .send-btn.aurora-chat-input__submit:disabled {
+  .app-root .send-btn.dawn-harbor-chat-input__submit:disabled {
     border-color: var(--line);
     background: #d8ded8;
     color: var(--muted-soft);

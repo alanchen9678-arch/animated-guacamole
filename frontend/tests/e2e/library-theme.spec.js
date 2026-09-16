@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test'
 
 test('library uses the assigned topic palette without streak behavior', async ({ page }) => {
   await page.addInitScript(() => {
-    window.sessionStorage.setItem('aurora_token', 'library-theme-token')
-    window.localStorage.setItem('aurora.activePage', 'library')
+    window.sessionStorage.setItem('dawn-harbor_token', 'library-theme-token')
+    window.localStorage.setItem('dawn-harbor.activePage', 'library')
   })
   await page.route('**/api/auth/me/', (route) => route.fulfill({
     status: 200,

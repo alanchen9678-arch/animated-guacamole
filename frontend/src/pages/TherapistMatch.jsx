@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { AuroraDropdown } from '../components/ui/heroui-dropdown.jsx'
+import { DawnHarborDropdown } from '../components/ui/heroui-dropdown.jsx'
 import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/chat-input.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { AsyncButton, EmptyState, FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
@@ -61,7 +61,7 @@ function formatNeedsProfile(rawProfile) {
   }
 }
 
-const ACTIVE_THERAPIST_CHATS_KEY = 'aurora.therapistMatch.activeChats'
+const ACTIVE_THERAPIST_CHATS_KEY = 'dawn-harbor.therapistMatch.activeChats'
 
 const CORE_THERAPISTS = [
   {
@@ -534,7 +534,7 @@ function TherapistSharingSettings({ privacy, onUpdatePrivacy, privacySaving }) {
       <div className="tm-privacy-row">
         <div>
           <strong>Allow AI chat logs</strong>
-          <p>Share recent Aurora conversations with your therapists.</p>
+          <p>Share recent Dawn Harbor conversations with your therapists.</p>
         </div>
         <button
           className={`tm-toggle${privacy.allowChatAccess ? ' tm-toggle--on' : ''}`}
@@ -708,11 +708,11 @@ function PreferencesView({ prefs, onBack, onChange, onMatch }) {
           <div className="tm-pref-fields tm-pref-fields--two">
             <div className="tm-pref-field">
               <span className="tm-pref-label">State <span className="tm-req">*</span></span>
-              <AuroraDropdown ariaLabel="Select state" buttonClassName="tm-select tm-select--dropdown" items={STATE_OPTIONS} menuClassName="aurora-dropdown-menu--scrollable" onSelectionChange={(value) => { onChange({ ...prefs, state: value }); setError('') }} placeholder="Select state..." selectedKey={state} />
+              <DawnHarborDropdown ariaLabel="Select state" buttonClassName="tm-select tm-select--dropdown" items={STATE_OPTIONS} menuClassName="dawn-harbor-dropdown-menu--scrollable" onSelectionChange={(value) => { onChange({ ...prefs, state: value }); setError('') }} placeholder="Select state..." selectedKey={state} />
             </div>
             <div className="tm-pref-field">
               <span className="tm-pref-label">Insurance <span className="tm-req">*</span></span>
-              <AuroraDropdown ariaLabel="Select insurance provider" buttonClassName="tm-select tm-select--dropdown" items={INSURER_OPTIONS} onSelectionChange={(value) => { onChange({ ...prefs, insurance: value }); setError('') }} placeholder="Select insurer..." selectedKey={insurance} />
+              <DawnHarborDropdown ariaLabel="Select insurance provider" buttonClassName="tm-select tm-select--dropdown" items={INSURER_OPTIONS} onSelectionChange={(value) => { onChange({ ...prefs, insurance: value }); setError('') }} placeholder="Select insurer..." selectedKey={insurance} />
             </div>
           </div>
         </section>
@@ -948,7 +948,7 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
               <>
                 <div className="tm-form-field">
                   <label className="tm-field-label">Insurance provider</label>
-                  <AuroraDropdown
+                  <DawnHarborDropdown
                     ariaLabel="Select insurance provider for connection"
                     buttonClassName="tm-select tm-select--dropdown"
                     items={INSURER_OPTIONS}

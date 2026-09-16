@@ -17,7 +17,7 @@ from rest_framework.views import APIView
 
 from .models import UserProfile, get_user_checkin_summary, update_user_profile_insights
 
-security_logger = logging.getLogger('aurora.security')
+security_logger = logging.getLogger('dawn-harbor.security')
 
 
 class MeUpdateSerializer(serializers.Serializer):

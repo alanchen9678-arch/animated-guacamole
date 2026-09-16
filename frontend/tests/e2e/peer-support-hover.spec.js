@@ -49,9 +49,9 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    window.sessionStorage.setItem('aurora_token', 'peer-hover-token')
-    window.localStorage.setItem('aurora.activePage', 'community')
-    window.localStorage.setItem('aurora.journal.daily-prompt', today)
+    window.sessionStorage.setItem('dawn-harbor_token', 'peer-hover-token')
+    window.localStorage.setItem('dawn-harbor.activePage', 'community')
+    window.localStorage.setItem('dawn-harbor.journal.daily-prompt', today)
   })
   await page.route('**/api/auth/me/', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
     id: 71, username: 'peer-user', firstName: 'Avery', hasInitialAssessment: true,

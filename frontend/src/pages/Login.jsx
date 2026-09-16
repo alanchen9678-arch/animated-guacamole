@@ -228,7 +228,7 @@ export default function Login({ initialMode = 'login', onClose }) {
             <div className="auth-logo">
               <TextReveal
                 as="span"
-                text="Aurora"
+                text="Dawn Harbor"
                 fontSize="1.1rem"
                 color="#2e2a26"
                 hoverColor="#3a6898"

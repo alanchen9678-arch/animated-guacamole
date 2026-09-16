@@ -210,7 +210,7 @@ LOGGING = {
         'console': {'class': 'logging.StreamHandler'},
     },
     'loggers': {
-        'aurora.security': {
+        'dawn-harbor.security': {
             'handlers': ['console'],
             'level': os.getenv('SECURITY_LOG_LEVEL', 'INFO'),
             'propagate': False,

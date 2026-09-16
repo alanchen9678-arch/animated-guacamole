@@ -1,7 +1,7 @@
 import { API_BASE_URL } from './config'
 
 function getAuthHeaders() {
-  const token = sessionStorage.getItem('aurora_token')
+  const token = sessionStorage.getItem('dawn-harbor_token')
   return token ? { Authorization: `Token ${token}` } : {}
 }
 
