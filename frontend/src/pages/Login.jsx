@@ -231,7 +231,7 @@ export default function Login({ initialMode = 'login', onClose }) {
                 text="Dawn Harbor"
                 fontSize="1.1rem"
                 color="#2e2a26"
-                hoverColor="#3a6898"
+                hoverColor="var(--accent)"
                 className="auth-logo-text"
                 style={{ background: 'transparent', border: 'none' }}
               />

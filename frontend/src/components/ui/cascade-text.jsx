@@ -26,7 +26,7 @@ const TextReveal = memo(function TextReveal({
   duration = 250,
   easing = "ease-in-out",
   color = "inherit",
-  hoverColor = "#b2c73a",
+  hoverColor = "var(--accent)",
   direction = "up",
   onClick,
 }) {

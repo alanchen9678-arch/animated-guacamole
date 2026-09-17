@@ -200,7 +200,7 @@ function AppShell() {
               text="Dawn Harbor"
               fontSize="1.15rem"
               color="var(--ink)"
-              hoverColor="var(--blue)"
+              hoverColor="var(--accent)"
               className="logo-reveal"
               style={{ background: 'transparent', border: 'none' }}
               onClick={() => navigate('home')}
