@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="560" viewBox="0 0 920 560">
+  <rect width="920" height="560" fill="#faf4e8"/>
+  <style>
+    .heading{font:650 24px Geist,Segoe UI,sans-serif;fill:#2e2a26}.sub{font:14px Geist,Segoe UI,sans-serif;fill:#5b605c}
+    .label{font:600 13px Geist,Segoe UI,sans-serif;fill:#45413c}.avatar{stroke:rgba(46,42,38,.18);stroke-width:1}
+  </style>
+  <text x="48" y="52" class="heading">Personal Harbor Stamps</text>
+  <text x="48" y="78" class="sub">User-selected symbols</text>
+  <g color="#faf4e8">
+    <circle class="avatar" cx="95" cy="135" r="32" fill="#4d6b58"/><svg x="79" y="119" width="32" height="32"><use href="../frontend/public/avatar-symbols.svg#user-horizon"/></svg>
+    <circle class="avatar" cx="300" cy="135" r="32" fill="#5f7774"/><svg x="284" y="119" width="32" height="32"><use href="../frontend/public/avatar-symbols.svg#user-lantern"/></svg>
+    <circle class="avatar" cx="505" cy="135" r="32" fill="#506b82"/><svg x="489" y="119" width="32" height="32"><use href="../frontend/public/avatar-symbols.svg#user-ripple"/></svg>
+    <circle class="avatar" cx="710" cy="135" r="32" fill="#627967"/><svg x="694" y="119" width="32" height="32"><use href="../frontend/public/avatar-symbols.svg#user-fern"/></svg>
+    <circle class="avatar" cx="95" cy="225" r="32" fill="#756675"/><svg x="79" y="209" width="32" height="32"><use href="../frontend/public/avatar-symbols.svg#user-moon"/></svg>
+    <circle class="avatar" cx="300" cy="225" r="32" fill="#806d5b"/><svg x="284" y="209" width="32" height="32"><use href="../frontend/public/avatar-symbols.svg#user-compass"/></svg>
+    <circle class="avatar" cx="505" cy="225" r="32" fill="#536b5d"/><svg x="489" y="209" width="32" height="32"><use href="../frontend/public/avatar-symbols.svg#user-cairn"/></svg>
+    <circle class="avatar" cx="710" cy="225" r="32" fill="#687580"/><svg x="694" y="209" width="32" height="32"><use href="../frontend/public/avatar-symbols.svg#user-open-sky"/></svg>
+  </g>
+  <g class="label" text-anchor="middle">
+    <text x="95" y="181">Horizon</text><text x="300" y="181">Lantern</text><text x="505" y="181">Ripple</text><text x="710" y="181">Fern</text>
+    <text x="95" y="271">Moon</text><text x="300" y="271">Compass</text><text x="505" y="271">Cairn</text><text x="710" y="271">Open Sky</text>
+  </g>
+  <path d="M48 310H872" stroke="rgba(46,42,38,.15)"/>
+  <text x="48" y="354" class="heading">Anonymous Peer Marks</text>
+  <text x="48" y="380" class="sub">Stable, privacy-separated peer identities</text>
+  <g color="#faf4e8">
+    <rect class="avatar" x="67" y="407" width="56" height="56" rx="16" fill="#506b82"/><svg x="81" y="421" width="28" height="28"><use href="../frontend/public/avatar-symbols.svg#peer-cove"/></svg>
+    <rect class="avatar" x="170" y="407" width="56" height="56" rx="16" fill="#5f7774"/><svg x="184" y="421" width="28" height="28"><use href="../frontend/public/avatar-symbols.svg#peer-tide"/></svg>
+    <rect class="avatar" x="273" y="407" width="56" height="56" rx="16" fill="#627967"/><svg x="287" y="421" width="28" height="28"><use href="../frontend/public/avatar-symbols.svg#peer-reed"/></svg>
+    <rect class="avatar" x="376" y="407" width="56" height="56" rx="16" fill="#806d5b"/><svg x="390" y="421" width="28" height="28"><use href="../frontend/public/avatar-symbols.svg#peer-pebble"/></svg>
+    <rect class="avatar" x="479" y="407" width="56" height="56" rx="16" fill="#4d6b58"/><svg x="493" y="421" width="28" height="28"><use href="../frontend/public/avatar-symbols.svg#peer-beacon"/></svg>
+    <rect class="avatar" x="582" y="407" width="56" height="56" rx="16" fill="#756675"/><svg x="596" y="421" width="28" height="28"><use href="../frontend/public/avatar-symbols.svg#peer-shell"/></svg>
+    <rect class="avatar" x="685" y="407" width="56" height="56" rx="16" fill="#536b5d"/><svg x="699" y="421" width="28" height="28"><use href="../frontend/public/avatar-symbols.svg#peer-pine"/></svg>
+    <rect class="avatar" x="788" y="407" width="56" height="56" rx="16" fill="#687580"/><svg x="802" y="421" width="28" height="28"><use href="../frontend/public/avatar-symbols.svg#peer-north-star"/></svg>
+  </g>
+  <g class="label" text-anchor="middle">
+    <text x="95" y="480">Cove</text><text x="198" y="480">Tide</text><text x="301" y="480">Reed</text><text x="404" y="480">Pebble</text>
+    <text x="507" y="480">Beacon</text><text x="610" y="480">Shell</text><text x="713" y="480">Pine</text><text x="816" y="480">North Star</text>
+  </g>
+  <text x="48" y="530" class="sub">Two-tone paper-cut forms / no gradients / currentColor ready</text>
+</svg>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useUser } from '../context/UserContext.jsx'
 import { AsyncButton, FeedbackNotice } from '../components/ui/feedback.jsx'
+import { AvatarSymbol, USER_AVATAR_SYMBOLS } from '../components/ui/avatar-symbols.jsx'
 import './Settings.css'
 
 const MOODS = ['calm', 'anxious', 'sad', 'happy', 'stressed', 'grateful', 'tired', 'hopeful']
@@ -16,13 +17,6 @@ const AVATAR_COLORS = [
   { value: '#756a52', label: 'Quiet olive' },
 ]
 
-function getInitials(displayName, user) {
-  const source = displayName.trim() || user?.firstName || user?.username || '?'
-  const words = source.split(/\s+/).filter(Boolean)
-  if (words.length > 1) return `${words[0][0]}${words[1][0]}`.toUpperCase()
-  return source.slice(0, 2).toUpperCase()
-}
-
 function getStreakLabel(streak) {
   const count = streak ?? 0
   return `${count} ${count === 1 ? 'week' : 'weeks'}`
@@ -36,6 +30,7 @@ export default function Settings() {
   const [bio, setBio] = useState(user?.bio || '')
   const [email, setEmail] = useState(user?.email || '')
   const [avatarColor, setAvatarColor] = useState(user?.avatarColor || '#4d6b58')
+  const [avatarSymbol, setAvatarSymbol] = useState(user?.avatarSymbol || 'user-horizon')
 
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
@@ -53,12 +48,12 @@ export default function Settings() {
     window.clearTimeout(moodFeedbackTimer.current)
   }, [])
 
-  const initials = getInitials(displayName, user)
   const profileDirty = (
     displayName !== (user?.displayName || '')
     || bio !== (user?.bio || '')
     || email !== (user?.email || '')
     || avatarColor !== (user?.avatarColor || '#4d6b58')
+    || avatarSymbol !== (user?.avatarSymbol || 'user-horizon')
   )
 
   const avatarColors = AVATAR_COLORS.some(({ value }) => value === avatarColor)
@@ -73,11 +68,12 @@ export default function Settings() {
     window.clearTimeout(profileFeedbackTimer.current)
 
     try {
-      const updated = await updateProfile({ displayName, bio, email, avatarColor })
+      const updated = await updateProfile({ displayName, bio, email, avatarColor, avatarSymbol })
       setDisplayName(updated?.displayName ?? displayName)
       setBio(updated?.bio ?? bio)
       setEmail(updated?.email ?? email)
       setAvatarColor(updated?.avatarColor ?? avatarColor)
+      setAvatarSymbol(updated?.avatarSymbol ?? avatarSymbol)
       setProfileSaved(true)
       profileFeedbackTimer.current = window.setTimeout(() => setProfileSaved(false), 2500)
     } catch (error) {
@@ -124,41 +120,70 @@ export default function Settings() {
           </header>
 
           <form className="settings-profile-form" onSubmit={saveProfile}>
-            <fieldset className="settings-avatar-fieldset">
-              <legend>Avatar color</legend>
+            <fieldset className="settings-avatar-fieldset" disabled={profileSaving} aria-busy={profileSaving || undefined}>
+              <legend>Profile mark</legend>
               <div className="settings-avatar-control">
                 <div
                   className="settings-avatar-preview"
                   style={{ backgroundColor: avatarColor }}
-                  aria-hidden="true"
                 >
-                  {initials}
+                  <AvatarSymbol
+                    symbol={avatarSymbol}
+                    size={30}
+                    title={`${USER_AVATAR_SYMBOLS.find(({ id }) => id === avatarSymbol)?.label || 'Selected'} profile mark`}
+                  />
                 </div>
-                <div className="settings-color-swatches">
-                  {avatarColors.map(({ value, label }) => {
-                    const id = `settings-avatar-${value.slice(1)}`
-                    return (
-                      <span className="settings-color-choice" key={value}>
-                        <input
-                          className="settings-visually-hidden"
-                          id={id}
-                          name="avatarColor"
-                          type="radio"
-                          value={value}
-                          checked={avatarColor === value}
-                          onChange={() => setAvatarColor(value)}
-                        />
-                        <label
-                          className="settings-color-swatch"
-                          htmlFor={id}
-                          style={{ '--settings-swatch': value }}
-                          title={label}
-                        >
-                          <span className="settings-visually-hidden">{label}</span>
-                        </label>
-                      </span>
-                    )
-                  })}
+                <div className="settings-avatar-options">
+                  <span className="settings-avatar-option-label">Symbol</span>
+                  <div className="settings-symbol-options">
+                    {USER_AVATAR_SYMBOLS.map(({ id: symbolId, label }) => {
+                      const id = `settings-symbol-${symbolId}`
+                      return (
+                        <span className="settings-symbol-choice" key={symbolId}>
+                          <input
+                            className="settings-visually-hidden"
+                            id={id}
+                            name="avatarSymbol"
+                            type="radio"
+                            value={symbolId}
+                            checked={avatarSymbol === symbolId}
+                            onChange={() => setAvatarSymbol(symbolId)}
+                          />
+                          <label className="settings-symbol-button" htmlFor={id} title={label}>
+                            <AvatarSymbol symbol={symbolId} size={20} />
+                            <span className="settings-visually-hidden">{label}</span>
+                          </label>
+                        </span>
+                      )
+                    })}
+                  </div>
+                  <span className="settings-avatar-option-label">Color</span>
+                  <div className="settings-color-swatches">
+                    {avatarColors.map(({ value, label }) => {
+                      const id = `settings-avatar-${value.slice(1)}`
+                      return (
+                        <span className="settings-color-choice" key={value}>
+                          <input
+                            className="settings-visually-hidden"
+                            id={id}
+                            name="avatarColor"
+                            type="radio"
+                            value={value}
+                            checked={avatarColor === value}
+                            onChange={() => setAvatarColor(value)}
+                          />
+                          <label
+                            className="settings-color-swatch"
+                            htmlFor={id}
+                            style={{ '--settings-swatch': value }}
+                            title={label}
+                          >
+                            <span className="settings-visually-hidden">{label}</span>
+                          </label>
+                        </span>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
             </fieldset>

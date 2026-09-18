@@ -8,6 +8,7 @@ const initialUser = {
   email: 'avery@example.com',
   bio: 'Learning to make more room for rest and reflection.',
   avatarColor: '#4d6b58',
+  avatarSymbol: 'user-horizon',
   mood: 'calm',
   plan: 'Free',
   streak: 1,
@@ -94,7 +95,10 @@ test('settings preserves a clear desktop composition and accessible controls', a
   await page.getByText('Display name', { exact: true }).click()
   await expect(displayName).toBeFocused()
   await expect(page.getByRole('button', { name: 'Save profile' })).toBeDisabled()
-  await expect(page.getByRole('group', { name: 'Avatar color' })).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Profile mark' })).toBeVisible()
+  await expect(page.getByRole('radio', { name: 'Horizon' })).toBeChecked()
+  await page.locator('label[for="settings-symbol-user-lantern"]').click()
+  await expect(page.locator('.settings-avatar-preview use')).toHaveAttribute('href', '/avatar-symbols.svg#user-lantern')
   const forestSage = page.getByRole('radio', { name: 'Forest sage' })
   await expect(forestSage).toBeChecked()
   await forestSage.focus()
@@ -104,10 +108,9 @@ test('settings preserves a clear desktop composition and accessible controls', a
   await expect(page.getByRole('radio', { name: 'calm' })).toBeChecked()
 
   await displayName.fill('Morgan Reed')
-  await expect(page.locator('.settings-avatar-preview')).toHaveText('MR')
   await page.getByRole('button', { name: 'Save profile' }).click()
   await expect(page.getByText('Your changes were saved.')).toBeVisible()
-  expect(patches.at(-1)).toMatchObject({ displayName: 'Morgan Reed' })
+  expect(patches.at(-1)).toMatchObject({ displayName: 'Morgan Reed', avatarSymbol: 'user-lantern' })
 
   await expect(page.getByText('1 week', { exact: true })).toBeVisible()
   await expect(page.locator('.settings-page')).not.toContainText('—')

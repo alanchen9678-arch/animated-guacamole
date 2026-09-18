@@ -8,7 +8,7 @@ from django.utils import timezone
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
-from api.routes.peer import _color
+from api.routes.peer import PEER_AVATAR_COLORS, PEER_AVATAR_SYMBOLS, _peer_identity_values
 from app.models import (
     ChatUsage,
     CheckIn,
@@ -429,7 +429,11 @@ class TherapistPersistenceRegressionTests(AuthenticatedAPITestCase):
         self.assertEqual(shared_chat.data['chat']['messages'][0]['userId'], self.user.id)
 
 
-class PeerColorRegressionTests(TestCase):
-    def test_generated_peer_color_is_stable(self):
-        self.assertEqual(_color('CalmRiver17'), _color('CalmRiver17'))
-        self.assertEqual(_color('CalmRiver17'), '#1d4ed8')
+class PeerIdentityRegressionTests(TestCase):
+    def test_generated_peer_identity_is_stable_and_curated(self):
+        first = _peer_identity_values('CalmRiver17')
+        second = _peer_identity_values('CalmRiver17')
+
+        self.assertEqual(first, second)
+        self.assertIn(first[0], PEER_AVATAR_COLORS)
+        self.assertIn(first[1], PEER_AVATAR_SYMBOLS)

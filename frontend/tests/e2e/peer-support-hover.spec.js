@@ -58,15 +58,15 @@ test.beforeEach(async ({ page }) => {
     hasCurrentPersonalityAssessment: true, personality: {}, needsProfile: null,
   }) }))
   await page.route('**/api/peer/profile/', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
-    isOnboarded: true, anonymousName: 'Quiet Cedar', avatarColor: '#627967',
+    isOnboarded: true, anonymousName: 'Quiet Cedar', avatarColor: '#627967', avatarSymbol: 'peer-cove',
   }) }))
   await page.route('**/api/peer/rooms/', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
     { id: 5, name: 'Grounding Together', memberCount: 12 },
   ]) }))
   await page.route('**/api/peer/rooms/5/messages/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }))
   await page.route('**/api/peer/peers/', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
-    { userId: 11, name: 'Silver Fern', color: '#6f7f76', status: 'connected' },
-    { userId: 12, name: 'Calm Harbor', color: '#687790', status: 'none' },
+    { userId: 11, name: 'Silver Fern', color: '#6f7f76', avatarSymbol: 'peer-pine', status: 'connected' },
+    { userId: 12, name: 'Calm Harbor', color: '#687790', avatarSymbol: 'peer-beacon', status: 'none' },
   ]) }))
   await page.route('**/api/peer/dm/11/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }))
 })
@@ -80,6 +80,7 @@ test('peer match hover adds edge spacing without moving its content', async ({ p
   const copy = match.locator('.ps-peer-info')
   const button = match.getByRole('button', { name: 'Connect' })
   await expect(button).toBeVisible()
+  await expect(match.locator('.ps-anon-avatar use')).toHaveAttribute('href', '/avatar-symbols.svg#peer-beacon')
 
   const avatarBefore = await avatar.boundingBox()
   const copyBefore = await copy.boundingBox()

@@ -22,10 +22,26 @@ from app.throttles import PeerMessageThrottle
 
 WORD_A = ['Calm', 'Quiet', 'Gentle', 'Steady', 'Brave', 'Kind', 'Warm', 'Still', 'Soft', 'Clear', 'Bold', 'Light']
 WORD_N = ['Maple', 'River', 'Stone', 'Dawn', 'Forest', 'Lake', 'Ember', 'Cloud', 'Tide', 'Ridge', 'Pine', 'Brook']
-AVATAR_COLORS = [
-    '#3a6898', '#b45309', '#15803d', '#1d4ed8', '#be185d',
-    '#0891b2', '#9333ea', '#c2410c', '#4d6b58', '#a21caf', '#047857', '#2563eb',
-]
+PEER_AVATAR_COLORS = (
+    '#4d6b58',
+    '#5f7774',
+    '#506b82',
+    '#687580',
+    '#756675',
+    '#806d5b',
+    '#627967',
+    '#536b5d',
+)
+PEER_AVATAR_SYMBOLS = (
+    'peer-cove',
+    'peer-tide',
+    'peer-reed',
+    'peer-pebble',
+    'peer-beacon',
+    'peer-shell',
+    'peer-pine',
+    'peer-north-star',
+)
 MOD_RULES = [
     {
         'terms': ['fuck you', 'kill yourself', 'kys', 'kms', 'kill myself', 'murder'],
@@ -71,9 +87,33 @@ AI_MODERATION_UNAVAILABLE_MESSAGE = (
 )
 
 
-def _color(name):
-    digest = hashlib.sha256(name.encode('utf-8')).digest()
-    return AVATAR_COLORS[int.from_bytes(digest[:4], 'big') % len(AVATAR_COLORS)]
+def _peer_identity_values(seed):
+    digest = hashlib.sha256(str(seed).encode('utf-8')).digest()
+    return (
+        PEER_AVATAR_COLORS[digest[0] % len(PEER_AVATAR_COLORS)],
+        PEER_AVATAR_SYMBOLS[digest[1] % len(PEER_AVATAR_SYMBOLS)],
+    )
+
+
+def _ensure_peer_identity(profile):
+    fallback_color, fallback_symbol = _peer_identity_values(profile.peer_id)
+    update_fields = []
+    if not profile.peer_avatar_color:
+        profile.peer_avatar_color = fallback_color
+        update_fields.append('peer_avatar_color')
+    if not profile.peer_avatar_symbol:
+        profile.peer_avatar_symbol = fallback_symbol
+        update_fields.append('peer_avatar_symbol')
+    if update_fields:
+        profile.save(update_fields=update_fields)
+    return profile.peer_avatar_color, profile.peer_avatar_symbol
+
+
+def _identity_for_name(name, profiles_by_name):
+    profile = profiles_by_name.get(name)
+    if profile:
+        return _ensure_peer_identity(profile)
+    return _peer_identity_values(name)
 
 
 def _get_profile(user):
@@ -151,24 +191,26 @@ class PeerProfileView(APIView):
 
     def get(self, request):
         profile = _get_profile(request.user)
+        avatar_color, avatar_symbol = _ensure_peer_identity(profile)
         return Response({
             'anonymousName': profile.anonymous_name or '',
             'isOnboarded': profile.is_peer_onboarded,
-            'avatarColor': profile.avatar_color,
+            'avatarColor': avatar_color,
+            'avatarSymbol': avatar_symbol,
         })
 
     def post(self, request):
         profile = _get_profile(request.user)
         if not profile.anonymous_name:
-            name = _generate_anon_name()
-            profile.anonymous_name = name
-            profile.avatar_color = _color(name)
+            profile.anonymous_name = _generate_anon_name()
         profile.is_peer_onboarded = True
-        profile.save(update_fields=['anonymous_name', 'is_peer_onboarded', 'avatar_color'])
+        profile.save(update_fields=['anonymous_name', 'is_peer_onboarded'])
+        avatar_color, avatar_symbol = _ensure_peer_identity(profile)
         return Response({
             'anonymousName': profile.anonymous_name,
             'isOnboarded': profile.is_peer_onboarded,
-            'avatarColor': profile.avatar_color,
+            'avatarColor': avatar_color,
+            'avatarSymbol': avatar_symbol,
         })
 
 
@@ -211,15 +253,25 @@ class PeerRoomMessageView(APIView):
                 pass
         messages = list(qs.order_by('-created_at')[:100])
         messages.reverse()
+        names = {message.anonymous_name for message in messages}
+        profiles_by_name = {
+            profile.anonymous_name: profile
+            for profile in UserProfile.objects.filter(anonymous_name__in=names)
+        }
 
-        return Response([{
-            'id': m.id,
-            'user': m.anonymous_name,
-            'color': _color(m.anonymous_name),
-            'text': m.content,
-            'self': m.sender_id == request.user.id,
-            'timestamp': m.created_at.isoformat(),
-        } for m in messages])
+        response_messages = []
+        for message in messages:
+            avatar_color, avatar_symbol = _identity_for_name(message.anonymous_name, profiles_by_name)
+            response_messages.append({
+                'id': message.id,
+                'user': message.anonymous_name,
+                'color': avatar_color,
+                'avatarSymbol': avatar_symbol,
+                'text': message.content,
+                'self': message.sender_id == request.user.id,
+                'timestamp': message.created_at.isoformat(),
+            })
+        return Response(response_messages)
 
     def post(self, request, room_id):
         profile = _get_profile(request.user)
@@ -251,10 +303,12 @@ class PeerRoomMessageView(APIView):
             anonymous_name=profile.anonymous_name,
             content=content,
         )
+        avatar_color, avatar_symbol = _ensure_peer_identity(profile)
         return Response({
             'id': msg.id,
             'user': msg.anonymous_name,
-            'color': profile.avatar_color,
+            'color': avatar_color,
+            'avatarSymbol': avatar_symbol,
             'text': msg.content,
             'self': True,
             'timestamp': msg.created_at.isoformat(),
@@ -297,10 +351,12 @@ class PeerListView(APIView):
             else:
                 conn_status = 'none'
                 is_requester = None
+            avatar_color, avatar_symbol = _ensure_peer_identity(p)
             result.append({
                 'userId': str(p.peer_id),
                 'name': p.anonymous_name,
-                'color': p.avatar_color or _color(p.anonymous_name),
+                'color': avatar_color,
+                'avatarSymbol': avatar_symbol,
                 'status': conn_status,
                 'isRequester': is_requester,
             })

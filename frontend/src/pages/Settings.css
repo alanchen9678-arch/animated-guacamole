@@ -101,7 +101,7 @@
 .app-root .settings-avatar-control {
   display: grid;
   grid-template-columns: 68px minmax(0, 1fr);
-  align-items: center;
+  align-items: start;
   gap: var(--space-5);
 }
 
@@ -111,13 +111,92 @@
   width: 64px;
   height: 64px;
   border: 1px solid rgba(46, 42, 38, 0.2);
+  overflow: hidden;
   border-radius: 50%;
   color: #fffdf8;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background-image: var(--paper-grain-white);
+  background-size: 90px 90px;
+  background-blend-mode: soft-light;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
   font-size: 1.125rem;
   font-weight: 700;
   letter-spacing: -0.025em;
   transition: background-color var(--motion-base) var(--ease-standard);
+}
+
+.app-root .settings-avatar-options {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+}
+
+.app-root .settings-avatar-option-label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.app-root .settings-avatar-option-label:not(:first-child) {
+  margin-top: 3px;
+}
+
+.app-root .settings-symbol-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app-root .settings-symbol-choice {
+  position: relative;
+  display: block;
+}
+
+.app-root .settings-symbol-button {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 11px;
+  color: var(--accent-ink);
+  background-color: rgba(255, 253, 248, 0.5);
+  background-image: var(--paper-grain-white);
+  background-size: 90px 90px;
+  background-blend-mode: soft-light;
+  cursor: pointer;
+  transition: color var(--motion-fast) ease, border-color var(--motion-fast) ease, background var(--motion-fast) ease, box-shadow var(--motion-fast) ease, transform var(--motion-fast) ease;
+}
+
+.app-root .settings-symbol-button:hover {
+  border-color: var(--accent);
+  background-color: var(--accent-wash);
+  transform: translateY(-1px);
+}
+
+.app-root .settings-symbol-choice input:checked + .settings-symbol-button {
+  border-color: var(--accent);
+  color: #fffdf8;
+  background-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--panel-raised), 0 0 0 4px rgba(77, 107, 88, 0.34);
+}
+
+.app-root .settings-symbol-choice input:active + .settings-symbol-button,
+.app-root .settings-color-choice input:active + .settings-color-swatch {
+  transform: translateY(0) scale(0.96);
+}
+
+.app-root .settings-avatar-fieldset:disabled {
+  opacity: 0.68;
+}
+
+.app-root .settings-avatar-fieldset:disabled .settings-symbol-button,
+.app-root .settings-avatar-fieldset:disabled .settings-color-swatch {
+  cursor: wait;
+  transform: none;
 }
 
 .app-root .settings-color-swatches {
@@ -154,6 +233,7 @@
 }
 
 .app-root .settings-color-choice input:focus-visible + .settings-color-swatch,
+.app-root .settings-symbol-choice input:focus-visible + .settings-symbol-button,
 .app-root .settings-mood-choice input:focus-visible + label {
   outline: none;
   box-shadow: var(--focus-ring);
@@ -477,8 +557,23 @@
   }
 }
 
+
+@media (prefers-reduced-motion: reduce) {
+  .app-root .settings-avatar-preview,
+  .app-root .settings-symbol-button,
+  .app-root .settings-color-swatch {
+    transition: none;
+  }
+
+  .app-root .settings-symbol-button:hover,
+  .app-root .settings-symbol-choice input:active + .settings-symbol-button,
+  .app-root .settings-color-choice input:active + .settings-color-swatch {
+    transform: none;
+  }
+}
 @media (forced-colors: active) {
   .app-root .settings-color-choice input:checked + .settings-color-swatch,
+  .app-root .settings-symbol-choice input:checked + .settings-symbol-button,
   .app-root .settings-mood-choice input:checked + label {
     outline: 3px solid Highlight;
     outline-offset: 2px;

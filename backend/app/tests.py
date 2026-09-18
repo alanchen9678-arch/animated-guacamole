@@ -450,6 +450,7 @@ class AuthAPITests(TestCase):
                 'displayName': 'River Stone',
                 'bio': 'Taking things one day at a time.',
                 'avatarColor': '#123456',
+                'avatarSymbol': 'user-lantern',
             },
             format='json',
         )
@@ -464,6 +465,8 @@ class AuthAPITests(TestCase):
         self.assertEqual(self.user.profile.display_name, 'River Stone')
         self.assertEqual(self.user.profile.bio, 'Taking things one day at a time.')
         self.assertEqual(self.user.profile.avatar_color, '#123456')
+        self.assertEqual(self.user.profile.avatar_symbol, 'user-lantern')
+        self.assertEqual(response.data['avatarSymbol'], 'user-lantern')
 
 
 class CheckInAPITests(TestCase):
@@ -1081,6 +1084,27 @@ class PeerModerationAPITests(TestCase):
         peer_id = response.data[0]['userId']
         self.assertEqual(uuid.UUID(peer_id), self.other_user.profile.peer_id)
         self.assertNotEqual(peer_id, str(self.other_user.id))
+
+    def test_peer_profile_returns_a_stable_identity_separate_from_personal_avatar(self):
+        first = self.client.get(reverse('peer-profile'))
+        second = self.client.get(reverse('peer-profile'))
+
+        self.user.profile.refresh_from_db()
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.data['avatarColor'], second.data['avatarColor'])
+        self.assertEqual(first.data['avatarSymbol'], second.data['avatarSymbol'])
+        self.assertEqual(self.user.profile.avatar_color, '#3a6898')
+        self.assertEqual(first.data['avatarColor'], self.user.profile.peer_avatar_color)
+        self.assertEqual(first.data['avatarSymbol'], self.user.profile.peer_avatar_symbol)
+        self.assertTrue(first.data['avatarSymbol'].startswith('peer-'))
+
+    def test_peer_list_includes_the_anonymous_mark(self):
+        response = self.client.get(reverse('peer-list'))
+
+        self.other_user.profile.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data[0]['avatarSymbol'].startswith('peer-'))
+        self.assertEqual(response.data[0]['color'], self.other_user.profile.peer_avatar_color)
 
     def test_room_history_requires_peer_onboarding(self):
         outsider = get_user_model().objects.create_user(username='not-onboarded', password='testpass123')

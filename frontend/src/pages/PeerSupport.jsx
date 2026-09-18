@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/chat-input.jsx'
 import { AsyncButton, EmptyState, FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
+import { AvatarSymbol } from '../components/ui/avatar-symbols.jsx'
 import {
   fetchPeerProfile,
   completePeerOnboarding,
@@ -86,6 +87,7 @@ function createPendingRoomMessage(text, profile) {
     id: `pending-room-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     user: profile.anonymousName,
     color: profile.avatarColor,
+    avatarSymbol: profile.avatarSymbol,
     text,
     self: true,
     timestamp: new Date().toISOString(),
@@ -103,13 +105,22 @@ function createPendingDMMessage(text) {
   }
 }
 
-function AnonAvatar({ name, color, size = 36 }) {
+function AnonAvatar({ symbol = 'peer-cove', color = '#4d6b58', size = 36, label }) {
   return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%', background: color,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: '#fff', fontWeight: 800, fontSize: size * 0.3, flexShrink: 0,
-    }}>{(name || '?').slice(0, 2)}</div>
+    <div
+      className="ps-anon-avatar"
+      style={{
+        '--ps-avatar-color': color,
+        width: size,
+        height: size,
+        borderRadius: Math.max(9, Math.round(size * 0.3)),
+      }}
+      aria-label={label}
+      aria-hidden={label ? undefined : 'true'}
+      role={label ? 'img' : undefined}
+    >
+      <AvatarSymbol symbol={symbol} size={Math.round(size * 0.62)} />
+    </div>
   )
 }
 
@@ -225,7 +236,7 @@ function HubView({ profile, rooms, peers, setPeers, onRoom, onDM, loadingPeers }
   return (
     <section className="page">
       <div className="ps-hub-identity">
-        <AnonAvatar name={profile.anonymousName} color={profile.avatarColor} size={42} />
+        <AnonAvatar symbol={profile.avatarSymbol} color={profile.avatarColor} size={42} />
         <div>
           <p className="ps-hub-name">{profile.anonymousName}</p>
           <p className="ps-hub-name-sub">Your anonymous identity</p>
@@ -257,7 +268,7 @@ function HubView({ profile, rooms, peers, setPeers, onRoom, onDM, loadingPeers }
           <div className="ps-peers-list">
             {activeChats.map(p => (
               <div key={p.userId} className="ps-peer-card ps-peer-card--active">
-                <AnonAvatar name={p.name} color={p.color} size={48} />
+                <AnonAvatar symbol={p.avatarSymbol} color={p.color} size={48} />
                 <div className="ps-peer-info">
                   <strong>{p.name}</strong>
                   <p className="ps-peer-concerns">Active anonymous chat</p>
@@ -295,7 +306,7 @@ function HubView({ profile, rooms, peers, setPeers, onRoom, onDM, loadingPeers }
           )}
           {recommended.map(p => (
             <div key={p.userId} className="ps-peer-card">
-              <AnonAvatar name={p.name} color={p.color} size={48} />
+              <AnonAvatar symbol={p.avatarSymbol} color={p.color} size={48} />
               <div className="ps-peer-info">
                 <strong>{p.name}</strong>
               </div>
@@ -459,7 +470,7 @@ function RoomView({ profile, room, onBack }) {
         )}
         {messages.map(m => (
           <div key={m.id} className={`ps-msg-row${m.self ? ' ps-msg-row--self' : ''}`}>
-            {!m.self && <AnonAvatar name={m.user} color={m.color} size={28} />}
+            {!m.self && <AnonAvatar symbol={m.avatarSymbol} color={m.color} size={28} />}
             <div className={`ps-bubble${m.self ? ' ps-bubble--self' : ' ps-bubble--other'}${m.pending ? ' ps-bubble--pending' : ''}`}>
               {!m.self && <span className="ps-bubble-name" style={{ color: m.color }}>{m.user}</span>}
               <p className="ps-bubble-text">{m.text}</p>
@@ -467,7 +478,7 @@ function RoomView({ profile, room, onBack }) {
                 {m.pending ? 'Sending...' : new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
-            {m.self && <div className="ps-self-dot" style={{ background: profile.avatarColor }}>{profile.anonymousName.slice(0, 2)}</div>}
+            {m.self && <AnonAvatar symbol={profile.avatarSymbol} color={profile.avatarColor} size={28} />}
           </div>
         ))}
       </div>
@@ -584,7 +595,7 @@ function DMView({ peer, profile, onBack, onLeave }) {
       <div className="ps-chat-header">
         <button className="ps-back-btn" onClick={onBack}>Back</button>
         <div className="ps-chat-identity">
-          <AnonAvatar name={peer.name} color={peer.color} size={34} />
+          <AnonAvatar symbol={peer.avatarSymbol} color={peer.color} size={34} />
           <div className="ps-chat-profile-copy">
             <strong className="ps-chat-name">{peer.name}</strong>
             <span className="ps-chat-sub">Anonymous {"\u00b7"} 5s updates</span>
@@ -643,14 +654,14 @@ function DMView({ peer, profile, onBack, onLeave }) {
           const isMe = m.role === 'me'
           return (
             <div key={m.id} className={`ps-msg-row${isMe ? ' ps-msg-row--self' : ''}`}>
-              {!isMe && <AnonAvatar name={peer.name} color={peer.color} size={28} />}
+              {!isMe && <AnonAvatar symbol={peer.avatarSymbol} color={peer.color} size={28} />}
               <div className={`ps-bubble${isMe ? ' ps-bubble--self' : ' ps-bubble--other'}${m.pending ? ' ps-bubble--pending' : ''}`}>
                 <p className="ps-bubble-text">{m.text}</p>
                 <span className="ps-bubble-time">
                   {m.pending ? 'Sending...' : new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
-              {isMe && <div className="ps-self-dot" style={{ background: profile.avatarColor }}>{profile.anonymousName.slice(0, 2)}</div>}
+              {isMe && <AnonAvatar symbol={profile.avatarSymbol} color={profile.avatarColor} size={28} />}
             </div>
           )
         })}
@@ -978,7 +989,19 @@ const PS_STYLES = `
   .ps-bubble--self .ps-bubble-time { color: rgba(255,255,255,0.6); }
   .ps-bubble--pending { opacity: 0.6; filter: saturate(0.75); }
   .ps-bubble--pending .ps-bubble-time { font-style: italic; }
-  .ps-self-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.6rem; font-weight: 800; flex-shrink: 0; }
+  .ps-anon-avatar {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--ps-avatar-color) 40%, transparent);
+    color: var(--ps-avatar-color);
+    background-color: color-mix(in srgb, var(--ps-avatar-color) 13%, var(--panel-strong));
+    background-image: var(--paper-grain-white);
+    background-size: 90px 90px;
+    background-blend-mode: soft-light;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+  }
 
   /* moderation */
   .ps-mod-alert {

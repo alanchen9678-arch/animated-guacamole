@@ -19,6 +19,17 @@ from .models import UserProfile, get_user_checkin_summary, update_user_profile_i
 
 security_logger = logging.getLogger('dawn-harbor.security')
 
+USER_AVATAR_SYMBOLS = (
+    'user-horizon',
+    'user-lantern',
+    'user-ripple',
+    'user-fern',
+    'user-moon',
+    'user-compass',
+    'user-cairn',
+    'user-open-sky',
+)
+
 
 class MeUpdateSerializer(serializers.Serializer):
     firstName = serializers.CharField(required=False, allow_blank=True, max_length=150)
@@ -31,6 +42,7 @@ class MeUpdateSerializer(serializers.Serializer):
     displayName = serializers.CharField(required=False, allow_blank=True, max_length=50)
     bio = serializers.CharField(required=False, allow_blank=True, max_length=500)
     avatarColor = serializers.RegexField(required=False, regex=r'^#[0-9a-fA-F]{6}$')
+    avatarSymbol = serializers.ChoiceField(required=False, choices=USER_AVATAR_SYMBOLS)
 
 
 def _rotate_token(user):
@@ -60,6 +72,7 @@ def _user_payload(user):
         'displayName': profile.display_name,
         'bio': profile.bio,
         'avatarColor': profile.avatar_color,
+        'avatarSymbol': profile.avatar_symbol,
         'anonymousName': profile.anonymous_name or '',
         'isPeerOnboarded': profile.is_peer_onboarded,
         'needsProfile': profile.needs_profile,
@@ -195,6 +208,9 @@ class MeView(APIView):
         if 'avatarColor' in values:
             profile.avatar_color = values['avatarColor']
             profile_fields.append('avatar_color')
+        if 'avatarSymbol' in values:
+            profile.avatar_symbol = values['avatarSymbol']
+            profile_fields.append('avatar_symbol')
         if profile_fields:
             profile.save(update_fields=profile_fields)
 
