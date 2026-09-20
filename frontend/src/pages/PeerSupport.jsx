@@ -6,6 +6,8 @@ import {
   fetchPeerProfile,
   completePeerOnboarding,
   fetchPeerRooms,
+  switchPeerRoom,
+  optOutPeerRoom,
   fetchRoomMessages,
   sendRoomMessage,
   fetchPeers,
@@ -148,6 +150,19 @@ function LeaveConfirmBubble({ label, onCancel, onConfirm }) {
   )
 }
 
+function RoomActionConfirm({ label, confirmLabel, onCancel, onConfirm, disabled, tone = 'danger' }) {
+  const confirmClass = tone === 'primary' ? 'ps-confirm-primary' : 'ps-confirm-danger'
+  return (
+    <div className={'ps-leave-confirm'} role={'dialog'} aria-label={label}>
+      <p>{label}</p>
+      <div className={'ps-leave-confirm-actions'}>
+        <button className={'ps-confirm-cancel'} onClick={onCancel} disabled={disabled}>Cancel</button>
+        <button className={confirmClass} onClick={onConfirm} disabled={disabled}>{confirmLabel}</button>
+      </div>
+    </div>
+  )
+}
+
 // Onboarding
 
 function OnboardingView({ onDone, loading, error }) {
@@ -212,10 +227,10 @@ function OnboardingView({ onDone, loading, error }) {
 
 // Hub
 
-function HubView({ profile, rooms, peers, setPeers, onRoom, onDM, loadingPeers }) {
+function HubView({ profile, roomState, peers, setPeers, onRoom, onDM, loadingPeers, loadingRoom, onRefreshRoom }) {
   const activeChats  = peers.filter(p => p.status === 'connected')
   const recommended  = peers.filter(p => p.status !== 'connected' && p.status !== 'declined').slice(0, 8)
-  const room         = rooms[0]
+  const room         = roomState?.room ?? null
   const [connectError, setConnectError] = useState('')
   const [failedConnection, setFailedConnection] = useState(null)
 
@@ -255,6 +270,35 @@ function HubView({ profile, rooms, peers, setPeers, onRoom, onDM, loadingPeers }
             </div>
             <span className="ps-hub-arrow">→</span>
           </button>
+        </div>
+      )}
+
+      {loadingRoom && (
+        <div className={'ps-room-state'}>
+          <LoadingState label={'Finding your support room...'} compact skeletonLines={1} />
+        </div>
+      )}
+
+      {!loadingRoom && roomState?.status === 'waitlisted' && (
+        <div className={'ps-room-state'} aria-live={'polite'}>
+          <div>
+            <strong>You are on the {roomState.categoryLabel} waitlist</strong>
+            <p>
+              {roomState.waitlist?.reason === 'opted_out'
+                ? `We will place you when a new ${roomState.categoryLabel} support room is added.`
+                : `${roomState.categoryLabel} support rooms are currently full. We will place you when space becomes available.`}
+            </p>
+          </div>
+          <button className={'ps-room-state-action'} onClick={onRefreshRoom}>Check again</button>
+        </div>
+      )}
+
+      {!loadingRoom && roomState?.status === 'assessment_required' && (
+        <div className={'ps-room-state'}>
+          <div>
+            <strong>Complete your initial check-in</strong>
+            <p>Your support category and room are selected after the initial assessment.</p>
+          </div>
         </div>
       )}
 
@@ -326,11 +370,13 @@ function HubView({ profile, rooms, peers, setPeers, onRoom, onDM, loadingPeers }
 
 // Room chat
 
-function RoomView({ profile, room, onBack }) {
+function RoomView({ profile, room, onBack, onSwitch, onOptOut }) {
   const [messages, setMessages]     = useState([])
   const [input, setInput]           = useState('')
   const [modAlert, setModAlert]     = useState(null)
-  const [confirmLeave, setConfirmLeave] = useState(false)
+  const [confirmAction, setConfirmAction] = useState(null)
+  const [roomActionPending, setRoomActionPending] = useState(false)
+  const [roomActionError, setRoomActionError] = useState('')
   const [sending, setSending]       = useState(false)
   const [error, setError]           = useState(null)
   const [errorContext, setErrorContext] = useState('')
@@ -410,6 +456,22 @@ function RoomView({ profile, room, onBack }) {
     }
   }
 
+  async function handleRoomAction(action) {
+    if (roomActionPending) return
+    setRoomActionPending(true)
+    setRoomActionError('')
+    try {
+      if (action === 'switch') await onSwitch()
+      else await onOptOut()
+      setConfirmAction(null)
+    } catch (actionError) {
+      setRoomActionError(actionError.message || 'Unable to update your support room right now.')
+      setConfirmAction(null)
+    } finally {
+      setRoomActionPending(false)
+    }
+  }
+
   return (
     <div className="ps-chat-root">
       <div className="ps-chat-header">
@@ -423,17 +485,43 @@ function RoomView({ profile, room, onBack }) {
             <span className="ps-chat-sub">{room.memberCount} {room.memberCount === 1 ? 'member' : 'members'}</span>
           </div>
         </div>
-        <div className="ps-leave-wrap">
-          <button className="ps-leave-btn" onClick={() => setConfirmLeave(true)}>Leave room</button>
-          {confirmLeave && (
-            <LeaveConfirmBubble
-              label="Leave this room?"
-              onCancel={() => setConfirmLeave(false)}
-              onConfirm={onBack}
-            />
-          )}
+        <div className={'ps-room-actions'}>
+          <div className={'ps-leave-wrap'}>
+            <button className={'ps-switch-btn'} onClick={() => setConfirmAction('switch')} disabled={roomActionPending}>Switch room</button>
+            {confirmAction === 'switch' && (
+              <RoomActionConfirm
+                label={'Switch to another room in your support category?'}
+                confirmLabel={'Switch'}
+                tone={'primary'}
+                onCancel={() => setConfirmAction(null)}
+                onConfirm={() => handleRoomAction('switch')}
+                disabled={roomActionPending}
+              />
+            )}
+          </div>
+          <div className={'ps-leave-wrap'}>
+            <button className={'ps-leave-btn'} onClick={() => setConfirmAction('opt-out')} disabled={roomActionPending}>Leave room</button>
+            {confirmAction === 'opt-out' && (
+              <RoomActionConfirm
+                label={'Leave this room and wait for a future room?'}
+                confirmLabel={'Leave and wait'}
+                onCancel={() => setConfirmAction(null)}
+                onConfirm={() => handleRoomAction('opt-out')}
+                disabled={roomActionPending}
+              />
+            )}
+          </div>
         </div>
       </div>
+
+      {roomActionError && (
+        <FeedbackNotice
+          variant={'error'}
+          title={'Room unchanged'}
+          message={roomActionError}
+          compact
+        />
+      )}
 
       {modAlert && <ModAlert rule={modAlert} onDismiss={() => setModAlert(null)} />}
       {error && (
@@ -692,9 +780,10 @@ function DMView({ peer, profile, onBack, onLeave }) {
 
 export default function PeerSupport() {
   const [profile, setProfile]     = useState(null)
-  const [rooms, setRooms]         = useState([])
+  const [roomState, setRoomState] = useState(null)
   const [peers, setPeers]         = useState([])
   const [loadingPeers, setLoadingPeers] = useState(false)
+  const [loadingRoom, setLoadingRoom] = useState(false)
   const [view, setView]           = useState('loading')
   const [activeRoom, setActiveRoom] = useState(null)
   const [activePeer, setActivePeer] = useState(null)
@@ -722,7 +811,11 @@ export default function PeerSupport() {
   useEffect(() => {
     if (view !== 'hub') return
     setHubError('')
-    fetchPeerRooms().then(setRooms).catch((error) => setHubError(error.message || 'Unable to load support rooms.'))
+    setLoadingRoom(true)
+    fetchPeerRooms()
+      .then(setRoomState)
+      .catch((error) => setHubError(error.message || 'Unable to load support rooms.'))
+      .finally(() => setLoadingRoom(false))
     setLoadingPeers(true)
     fetchPeers().then(setPeers).catch((error) => setHubError(error.message || 'Unable to load peer matches.')).finally(() => setLoadingPeers(false))
   }, [view, hubReloadKey])
@@ -733,6 +826,7 @@ export default function PeerSupport() {
     try {
       const data = await completePeerOnboarding()
       setProfile(data)
+      if (data.roomState) setRoomState(data.roomState)
       setView('hub')
     } catch (error) {
       setOnboardingError(error.message || 'Unable to finish setup right now.')
@@ -743,6 +837,32 @@ export default function PeerSupport() {
 
   function openRoom(room) { setActiveRoom(room); setView('room') }
   function openDM(peer)   { setActivePeer(peer); setView('dm') }
+
+  async function refreshRoomState() {
+    setLoadingRoom(true)
+    setHubError('')
+    try {
+      const data = await fetchPeerRooms()
+      setRoomState(data)
+    } catch (error) {
+      setHubError(error.message || 'Unable to check room availability.')
+    } finally {
+      setLoadingRoom(false)
+    }
+  }
+
+  async function handleRoomSwitch() {
+    const data = await switchPeerRoom()
+    setRoomState(data)
+    setActiveRoom(data.room)
+  }
+
+  async function handleRoomOptOut() {
+    const data = await optOutPeerRoom()
+    setRoomState(data)
+    setActiveRoom(null)
+    setView('hub')
+  }
 
   if (view === 'loading') {
     return (
@@ -788,20 +908,25 @@ export default function PeerSupport() {
           )}
           <HubView
             profile={profile}
-            rooms={rooms}
+            roomState={roomState}
             peers={peers}
             setPeers={setPeers}
             onRoom={openRoom}
             onDM={openDM}
             loadingPeers={loadingPeers}
+            loadingRoom={loadingRoom}
+            onRefreshRoom={refreshRoomState}
           />
         </>
       )}
       {view === 'room' && profile && activeRoom && (
         <RoomView
+          key={activeRoom.id}
           profile={profile}
           room={activeRoom}
           onBack={() => setView('hub')}
+          onSwitch={handleRoomSwitch}
+          onOptOut={handleRoomOptOut}
         />
       )}
       {view === 'dm' && profile && activePeer && (
@@ -884,6 +1009,20 @@ const PS_STYLES = `
   .ps-hub-card-text strong { display: block; font-size: 0.95rem; margin-bottom: 3px; }
   .ps-hub-card-text p { margin: 0; font-size: 0.8rem; color: var(--muted); }
   .ps-hub-arrow { font-size: 1.1rem; color: var(--muted); }
+  .ps-room-state {
+    display: flex; align-items: center; justify-content: space-between; gap: 18px;
+    margin-bottom: 14px; padding: 16px 4px;
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  }
+  .ps-room-state strong { display: block; margin-bottom: 4px; font-size: 0.95rem; color: var(--ink); }
+  .ps-room-state p { margin: 0; max-width: 64ch; color: var(--muted); font-size: 0.82rem; line-height: 1.55; }
+  .ps-room-state-action, .ps-switch-btn {
+    flex-shrink: 0; padding: 7px 13px; border-radius: 999px;
+    border: 1px solid rgba(77,107,88,0.34); background: transparent;
+    color: var(--accent); font-size: 0.8rem; font-weight: 700;
+    transition: background 140ms, border-color 140ms;
+  }
+  .ps-room-state-action:hover, .ps-switch-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
   /* peers */
   .ps-section-heading {
     display: flex; align-items: center; justify-content: space-between;
@@ -953,7 +1092,9 @@ const PS_STYLES = `
     color: #dc2626; font-size: 0.8rem; font-weight: 700; transition: background 140ms;
   }
   .ps-leave-btn:hover { background: rgba(220,38,38,0.06); }
+  .ps-room-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
   .ps-leave-wrap { position: relative; margin-left: auto; }
+  .ps-room-actions .ps-leave-wrap { margin-left: 0; }
   .ps-leave-wrap .ps-leave-btn { margin-left: 0; }
   .ps-leave-confirm {
     position: absolute; top: calc(100% + 8px); right: 0; z-index: 20;
@@ -963,9 +1104,11 @@ const PS_STYLES = `
   }
   .ps-leave-confirm p { margin: 0 0 10px; color: var(--ink); font-size: 0.84rem; font-weight: 700; }
   .ps-leave-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
-  .ps-confirm-cancel, .ps-confirm-danger { border-radius: 999px; padding: 6px 12px; font-size: 0.78rem; font-weight: 700; }
+  .ps-confirm-cancel, .ps-confirm-primary, .ps-confirm-danger { border-radius: 999px; padding: 6px 12px; font-size: 0.78rem; font-weight: 700; }
   .ps-confirm-cancel { border: 1px solid var(--line); background: transparent; color: var(--muted); }
+  .ps-confirm-primary { border: 1px solid var(--accent); background: var(--accent); color: #fff; }
   .ps-confirm-danger { border: 1px solid #dc2626; background: #dc2626; color: #fff; }
+  .ps-confirm-cancel:disabled, .ps-confirm-primary:disabled, .ps-confirm-danger:disabled, .ps-switch-btn:disabled, .ps-leave-btn:disabled { opacity: 0.55; cursor: wait; }
   .ps-room-badge { width: 34px; height: 34px; border-radius: 10px; background: rgba(58,104,152,0.1); color: #3a6898; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .ps-anon-notice { padding: 9px 0; font-size: 0.74rem; color: var(--muted); border-bottom: 1px solid var(--line); text-align: center; flex-shrink: 0; }
   .ps-error-bar {
@@ -1029,6 +1172,9 @@ const PS_STYLES = `
 
   @media (max-width: 640px) {
     .ps-peer-card { flex-wrap: wrap; }
+    .ps-room-state { align-items: flex-start; flex-direction: column; gap: 12px; }
+    .ps-chat-header { flex-wrap: wrap; }
+    .ps-room-actions { width: 100%; justify-content: flex-end; }
     .ps-chat-root { height: calc(100dvh - 120px); max-height: calc(100dvh - 120px); }
     .ps-bubble { max-width: 85%; }
   }

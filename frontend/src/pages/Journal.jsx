@@ -23,6 +23,52 @@ const MOCK_MOODS = {}
 
 const MOCK_ENTRIES = {}
 
+const JOURNAL_DRAFT_VERSION = 1
+
+function getJournalDraftStorageKey(user, dateKey) {
+  return `dawn-harbor.journal.draft.v${JOURNAL_DRAFT_VERSION}:${user?.id ?? 'guest'}:${dateKey}`
+}
+
+function loadJournalDraft(storageKey) {
+  try {
+    const raw = sessionStorage.getItem(storageKey)
+    if (!raw) return null
+    const draft = JSON.parse(raw)
+    if (
+      draft?.version !== JOURNAL_DRAFT_VERSION
+      || typeof draft.entryText !== 'string'
+      || (draft.doodleData != null && typeof draft.doodleData !== 'string')
+    ) return null
+    return {
+      entryText: draft.entryText,
+      doodleData: draft.doodleData ?? null,
+    }
+  } catch {
+    return null
+  }
+}
+
+function saveJournalDraft(storageKey, entryText, doodleData) {
+  try {
+    sessionStorage.setItem(storageKey, JSON.stringify({
+      version: JOURNAL_DRAFT_VERSION,
+      entryText,
+      doodleData,
+      updatedAt: new Date().toISOString(),
+    }))
+  } catch {
+    // Draft saving is best-effort when browser storage is unavailable or full.
+  }
+}
+
+function clearJournalDraft(storageKey) {
+  try {
+    sessionStorage.removeItem(storageKey)
+  } catch {
+    // Storage may be unavailable in hardened browser contexts.
+  }
+}
+
 // ─── AI analysis ───────────────────────────────────────────────────────────────
 
 function mapJournalEntries(backendEntries) {
@@ -498,8 +544,9 @@ function DoodleCanvas({ bgColor, value, onChange, disabled = false }) {
 // ─── root journal ─────────────────────────────────────────────────────────────
 
 export default function Journal() {
-  const { token, loading: userLoading } = useUser()
+  const { token, user, loading: userLoading } = useUser()
   const todayKey = makeDateKey(new Date())
+  const draftStorageKey = getJournalDraftStorageKey(user, todayKey)
   const [moodData, setMoodData]     = useState(MOCK_MOODS)
   const [entryHistory, setEntryHistory] = useState(MOCK_ENTRIES)
   const [entryText, setEntryText]   = useState('')
@@ -517,6 +564,8 @@ export default function Journal() {
   const [saveSuccess, setSaveSuccess] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
   const [aiResponse, setAiResponse] = useState(null)
+  const [draftHydrated, setDraftHydrated] = useState(false)
+  const [draftRestored, setDraftRestored] = useState(false)
   const calendarButtonRef = useRef(null)
   const calendarDialogRef = useRef(null)
   const entryDialogRef = useRef(null)
@@ -611,7 +660,26 @@ export default function Journal() {
   }
 
   useEffect(() => {
-    if (userLoading || !token) return
+    if (userLoading) return
+
+    setDraftHydrated(false)
+    setDraftRestored(false)
+
+    const restoreDraft = () => {
+      const draft = loadJournalDraft(draftStorageKey)
+      if (!draft) return false
+      setEntryText(draft.entryText)
+      setDoodleData(draft.doodleData)
+      setSubmitted(false)
+      setDraftRestored(true)
+      return true
+    }
+
+    if (!token) {
+      restoreDraft()
+      setDraftHydrated(true)
+      return
+    }
 
     let cancelled = false
     setLoadingEntries(true)
@@ -627,12 +695,17 @@ export default function Journal() {
         setEntryHistory(serverHistory)
         setMoodData(serverMoods)
         const savedToday = serverHistory[todayKey]
-        setEntryText(savedToday?.text ?? '')
-        setDoodleData(savedToday?.doodleData ?? null)
-        setSubmitted(Boolean(savedToday?.text || savedToday?.doodleData))
+        if (!restoreDraft()) {
+          setEntryText(savedToday?.text ?? '')
+          setDoodleData(savedToday?.doodleData ?? null)
+          setSubmitted(Boolean(savedToday?.text || savedToday?.doodleData))
+        }
+        setDraftHydrated(true)
       })
       .catch((error) => {
         if (!cancelled) {
+          restoreDraft()
+          setDraftHydrated(true)
           setSaveError(error.message)
           setFeedbackContext('load')
         }
@@ -644,7 +717,16 @@ export default function Journal() {
     return () => {
       cancelled = true
     }
-  }, [token, todayKey, userLoading, reloadKey])
+  }, [draftStorageKey, token, todayKey, userLoading, reloadKey])
+
+  useEffect(() => {
+    if (!draftHydrated || submitted || savingEntry) return
+    if (!entryText.trim() && !doodleData) {
+      clearJournalDraft(draftStorageKey)
+      return
+    }
+    saveJournalDraft(draftStorageKey, entryText, doodleData)
+  }, [draftHydrated, draftStorageKey, doodleData, entryText, savingEntry, submitted])
 
   async function submit() {
     if (!hasEntryContent || savingEntry) return
@@ -677,6 +759,8 @@ export default function Journal() {
       setEntryHistory(nextHistory)
     }
 
+    clearJournalDraft(draftStorageKey)
+    setDraftRestored(false)
     setSubmitted(true)
     setAiResponse(pickResponse(tone))
     setSaveSuccess('Your journal entry was saved.')
@@ -758,6 +842,9 @@ export default function Journal() {
             message={saveError}
             onRetry={feedbackContext === 'load' ? () => setReloadKey((key) => key + 1) : feedbackContext === 'mood' ? () => setTodayMood(todayMood) : submit}
           />
+        )}
+        {draftRestored && (
+          <FeedbackNotice variant="info" message="Your unfinished journal entry was restored." compact />
         )}
       </div>
 
@@ -853,7 +940,7 @@ export default function Journal() {
               placeholder="Write anything: your thoughts, feelings, what happened today, what you're looking forward to…"
               value={entryText}
               onChange={e => setEntryText(e.target.value)}
-              disabled={submitted}
+              disabled={submitted || !draftHydrated}
             />
           </div>
         </div>
@@ -865,7 +952,7 @@ export default function Journal() {
             bgColor={JOURNAL_PAGE_COLOR}
             value={doodleData}
             onChange={setDoodleData}
-            disabled={submitted}
+            disabled={submitted || !draftHydrated}
           />
         </div>
       )}
@@ -875,7 +962,7 @@ export default function Journal() {
           <AsyncButton
             className="jn-submit-btn"
             onClick={submit}
-            disabled={!hasEntryContent || savingEntry}
+            disabled={!draftHydrated || !hasEntryContent || savingEntry}
             pending={savingEntry}
             pendingLabel="Saving entry…"
             style={{ opacity: hasEntryContent ? 1 : 0.45, cursor: hasEntryContent ? 'pointer' : 'not-allowed' }}

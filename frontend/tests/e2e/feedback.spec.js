@@ -138,6 +138,7 @@ test('failed check-in loading presents a working retry action', async ({ page })
   await page.goto('/')
 
   const errorNotice = page.getByRole('alert')
+  await expect(page.locator('.ci-hub')).toHaveCount(0)
   await expect(errorNotice).toContainText('Could not load your check-ins')
   await expect(errorNotice).toContainText('Check-ins are temporarily unavailable.')
 

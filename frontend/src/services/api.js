@@ -180,6 +180,20 @@ export async function fetchPeerRooms() {
   return apiFetch('/api/peer/rooms/')
 }
 
+export async function switchPeerRoom() {
+  return apiFetch('/api/peer/rooms/switch/', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
+}
+
+export async function optOutPeerRoom() {
+  return apiFetch('/api/peer/rooms/opt-out/', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
+}
+
 export async function fetchRoomMessages(roomId, sinceId) {
   const qs = sinceId ? `?since=${sinceId}` : ''
   return apiFetch(`/api/peer/rooms/${roomId}/messages/${qs}`)

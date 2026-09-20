@@ -9,6 +9,17 @@ from django.db.models.functions import Greatest, Least
 from django.utils import timezone
 
 
+PEER_SUPPORT_CATEGORY_CHOICES = (
+    ('anxiety', 'Anxiety'),
+    ('loneliness', 'Loneliness'),
+    ('grief', 'Grief'),
+    ('burnout', 'Burnout'),
+    ('stress', 'Stress'),
+    ('confidence', 'Low confidence'),
+)
+PEER_SUPPORT_CATEGORIES = tuple(value for value, _ in PEER_SUPPORT_CATEGORY_CHOICES)
+
+
 class UserProfile(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -27,6 +38,12 @@ class UserProfile(models.Model):
     peer_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     peer_avatar_color = models.CharField(max_length=7, blank=True, default='')
     peer_avatar_symbol = models.CharField(max_length=32, blank=True, default='')
+    peer_support_category = models.CharField(
+        max_length=20,
+        choices=PEER_SUPPORT_CATEGORY_CHOICES,
+        blank=True,
+        default='',
+    )
     personality = models.JSONField(default=dict, blank=True)
     needs_profile = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -530,13 +547,115 @@ def get_user_checkin_summary(user, today=None):
 
 class PeerRoom(models.Model):
     name = models.CharField(max_length=100)
-    topic = models.CharField(max_length=50)
+    topic = models.CharField(max_length=50, choices=PEER_SUPPORT_CATEGORY_CHOICES)
+    slot = models.PositiveSmallIntegerField(default=1)
+    capacity = models.PositiveSmallIntegerField(default=20)
     description = models.TextField(blank=True, default='')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['topic', 'slot', 'id']
+        constraints = [
+            models.CheckConstraint(condition=Q(slot__gte=1), name='peer_room_slot_at_least_one'),
+            models.CheckConstraint(condition=Q(capacity__gte=1), name='peer_room_capacity_at_least_one'),
+            models.UniqueConstraint(
+                fields=['topic', 'slot'],
+                condition=Q(is_active=True),
+                name='unique_active_peer_room_topic_slot',
+            ),
+        ]
+
     def __str__(self):
         return self.name
+
+
+class PeerRoomMembership(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = 'active', 'Active'
+        ENDED = 'ended', 'Ended'
+
+    class EndReason(models.TextChoices):
+        SWITCHED = 'switched', 'Switched rooms'
+        OPTED_OUT = 'opted_out', 'Opted out'
+        ROOM_CLOSED = 'room_closed', 'Room closed'
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='peer_room_memberships',
+    )
+    room = models.ForeignKey(PeerRoom, on_delete=models.CASCADE, related_name='memberships')
+    category = models.CharField(max_length=20, choices=PEER_SUPPORT_CATEGORY_CHOICES)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.ACTIVE)
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    end_reason = models.CharField(max_length=20, choices=EndReason.choices, blank=True, default='')
+
+    class Meta:
+        ordering = ['-assigned_at', '-id']
+        indexes = [
+            models.Index(fields=['room', 'status']),
+            models.Index(fields=['category', 'status']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user'],
+                condition=Q(status='active'),
+                name='unique_active_peer_room_membership',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.user_id} in {self.room_id} ({self.status})'
+
+
+class PeerRoomWaitlist(models.Model):
+    class Status(models.TextChoices):
+        WAITING = 'waiting', 'Waiting'
+        ASSIGNED = 'assigned', 'Assigned'
+        CANCELLED = 'cancelled', 'Cancelled'
+
+    class Reason(models.TextChoices):
+        CAPACITY = 'capacity', 'Rooms full'
+        OPTED_OUT = 'opted_out', 'Waiting for a future room'
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='peer_room_waitlist_entries',
+    )
+    category = models.CharField(max_length=20, choices=PEER_SUPPORT_CATEGORY_CHOICES)
+    reason = models.CharField(max_length=16, choices=Reason.choices, default=Reason.CAPACITY)
+    minimum_room_slot = models.PositiveSmallIntegerField(default=1)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.WAITING)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    assigned_room = models.ForeignKey(
+        PeerRoom,
+        on_delete=models.SET_NULL,
+        related_name='fulfilled_waitlist_entries',
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ['joined_at', 'id']
+        indexes = [models.Index(fields=['category', 'status', 'joined_at'])]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(minimum_room_slot__gte=1),
+                name='peer_waitlist_min_slot_at_least_one',
+            ),
+            models.UniqueConstraint(
+                fields=['user'],
+                condition=Q(status='waiting'),
+                name='unique_waiting_peer_room_entry',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.user_id} waiting for {self.category}'
 
 
 class PeerRoomMessage(models.Model):

@@ -69,8 +69,8 @@ test('log in button opens the auth dialog in login mode', async ({ page }) => {
 
   const authCard = page.locator('.auth-card')
 
-  await expect(authCard.getByRole('button', { name: 'Log in', exact: true }).first()).toBeVisible()
-  await expect(authCard.getByRole('button', { name: 'Sign up', exact: true })).toBeVisible()
+  await expect(authCard.getByRole('tab', { name: 'Log in', exact: true })).toBeVisible()
+  await expect(authCard.getByRole('tab', { name: 'Sign up', exact: true })).toBeVisible()
   await expect(authCard.locator('input[name="username"]')).toBeVisible()
   await expect(authCard.locator('input[name="password"]')).toBeVisible()
 })

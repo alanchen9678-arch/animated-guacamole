@@ -40,6 +40,7 @@ test.beforeEach(async ({ page }) => {
 test('unfinished weekly check-in restores its answers and position after reload', async ({ page }) => {
   await page.goto('/')
 
+  await expect(page.getByText('Due this week', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: /Start weekly check-in/ }).click()
   await expect(page.locator('.ci-intro-badge')).toHaveCount(0)
   await expect(page.getByText('Weekly', { exact: true })).toHaveCount(0)
@@ -47,8 +48,18 @@ test('unfinished weekly check-in restores its answers and position after reload'
   await page.getByRole('button', { name: /Begin/ }).click()
   await expect(page.getByText('Question 1 of 12')).toBeVisible()
 
-  await page.getByRole('button', { name: '7', exact: true }).click()
+  const progress = page.getByRole('progressbar', { name: 'Check-in progress' })
+  await expect(progress).toHaveAttribute('aria-valuemin', '1')
+  await expect(progress).toHaveAttribute('aria-valuemax', '12')
+  await expect(progress).toHaveAttribute('aria-valuenow', '1')
+  await expect(page.getByRole('radiogroup')).toBeVisible()
+  await expect(page.getByRole('radio')).toHaveCount(7)
+  await expect(page.locator('.ci-question-text')).toBeFocused()
+
+  await page.getByRole('radio', { name: '7: Strongly Agree' }).click()
   await expect(page.getByText('Question 2 of 12')).toBeVisible()
+  await expect(progress).toHaveAttribute('aria-valuenow', '2')
+  await expect(page.locator('.ci-question-text')).toBeFocused()
 
   const savedDraft = await page.evaluate(() => (
     JSON.parse(window.sessionStorage.getItem('dawn-harbor.checkin.draft.v1:42'))

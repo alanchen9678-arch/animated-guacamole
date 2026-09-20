@@ -14,6 +14,7 @@ from app.models import (
     start_of_week,
     update_user_profile_insights,
 )
+from app.peer_rooms import assign_peer_room, record_peer_support_category
 
 
 class CheckInCollectionView(APIView):
@@ -88,6 +89,10 @@ class CheckInCollectionView(APIView):
             request.user,
             personality=personality if entry_type in {CheckIn.CheckInType.INITIAL, 'personality'} else None,
         )
+        if entry_type == CheckIn.CheckInType.INITIAL:
+            record_peer_support_category(request.user, scores)
+            if profile.is_peer_onboarded:
+                assign_peer_room(request.user)
         checkins = request.user.checkins.order_by('check_in_date', 'created_at', 'id')
         summary = get_user_checkin_summary(request.user)
         return Response(

@@ -146,31 +146,6 @@ const CATEGORIES = [
   { id: 'confidence', label: 'Low Confidence', color: '#94a3b8', bg: 'rgba(148,163,184,0.10)', border: 'rgba(148,163,184,0.22)' },
 ]
 
-// ─── mock history ─────────────────────────────────────────────────────────────
-
-const MOCK_HISTORY = [
-  {
-    id: 'w1', date: '2026-05-18', type: 'weekly',
-    qIds: [1, 3, 11, 14, 21, 24, 31, 35, 41, 44, 51, 55],
-    scores: { anxiety: 58, loneliness: 42, grief: 31, burnout: 67, stress: 72, confidence: 48 },
-  },
-  {
-    id: 'w2', date: '2026-05-25', type: 'weekly',
-    qIds: [2, 5, 12, 16, 22, 26, 32, 36, 42, 46, 52, 56],
-    scores: { anxiety: 62, loneliness: 38, grief: 29, burnout: 71, stress: 68, confidence: 51 },
-  },
-  {
-    id: 'w3', date: '2026-06-01', type: 'weekly',
-    qIds: [6, 8, 13, 17, 23, 27, 33, 38, 43, 47, 53, 57],
-    scores: { anxiety: 55, loneliness: 44, grief: 27, burnout: 64, stress: 74, confidence: 46 },
-  },
-  {
-    id: 'w4', date: '2026-06-08', type: 'weekly',
-    qIds: [7, 9, 15, 18, 25, 28, 34, 37, 45, 48, 54, 58],
-    scores: { anxiety: 61, loneliness: 40, grief: 30, burnout: 69, stress: 70, confidence: 43 },
-  },
-]
-
 // ─── storage key ──────────────────────────────────────────────────────────────
 
 const CHECKIN_DRAFT_VERSION = 1
@@ -437,7 +412,7 @@ function fmtDate(str) {
 
 // ─── hub view ─────────────────────────────────────────────────────────────────
 
-function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, hasCurrentPersonalityAssessment, onStart }) {
+function HubView({ streak, dueThisWeek, lastCheckInDate, hasInitialAssessment, hasCurrentPersonalityAssessment, onStart }) {
   const needsPersonalityUpgrade = hasInitialAssessment && !hasCurrentPersonalityAssessment
   return (
     <div className="ci-hub">
@@ -449,7 +424,7 @@ function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, hasC
           <div className="ci-streak-sub">{lastCheckInDate ? `Last check-in ${fmtDate(lastCheckInDate)}` : 'No check-ins yet'}</div>
         </div>
 
-        <div className={`ci-due-card${(!hasCurrentPersonalityAssessment || dueToday) ? ' ci-due-card--due' : ''}`}>
+        <div className={`ci-due-card${(!hasCurrentPersonalityAssessment || dueThisWeek) ? ' ci-due-card--due' : ''}`}>
           {needsPersonalityUpgrade ? (
             <>
               <div className="ci-due-badge">Update required</div>
@@ -462,9 +437,9 @@ function HubView({ streak, dueToday, lastCheckInDate, hasInitialAssessment, hasC
               <p className="ci-due-text">Before weekly check-ins begin, complete your 40-question initial assessment to set your wellness baseline and help Dawn Harbor personalize its support.</p>
               <button className="ci-start-btn" onClick={() => onStart('initial')}>Start initial assessment</button>
             </>
-          ) : dueToday ? (
+          ) : dueThisWeek ? (
             <>
-              <div className="ci-due-badge">Due today</div>
+              <div className="ci-due-badge">Due this week</div>
               <p className="ci-due-text">Your weekly check-in is ready. It takes about 5 minutes and covers all six well-being categories for a fuller profile update.</p>
               <button className="ci-start-btn" onClick={() => onStart('weekly')}>Start weekly check-in →</button>
             </>
@@ -540,18 +515,29 @@ function SurveyView({ questions, answers, setAnswers, initialIndex = 0, onIndexC
   const [idx, setIdx] = useState(() => Math.min(Math.max(initialIndex, 0), questions.length - 1))
   const [flashChoice, setFlashChoice] = useState(null)
   const advanceTimerRef = useRef(null)
-  const q          = questions[idx]
-  const total      = questions.length
+  const questionRef = useRef(null)
+  const q = questions[idx]
+  const total = questions.length
   const isPersonality = q.dimension != null && q.options
-  const selected   = answers[q.id]
-  const pct        = (idx / total) * 100
+  const selected = answers[q.id]
+  const pct = ((idx + 1) / total) * 100
+  const questionId = `checkin-question-${q.id}`
+  const scaleHintId = `checkin-scale-hint-${q.id}`
+
+  function clearAdvanceTimer() {
+    if (!advanceTimerRef.current) return
+    clearTimeout(advanceTimerRef.current)
+    advanceTimerRef.current = null
+  }
 
   useEffect(() => () => {
-    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
+    clearAdvanceTimer()
   }, [])
 
   useEffect(() => {
     onIndexChange?.(idx)
+    const focusFrame = window.requestAnimationFrame(() => questionRef.current?.focus())
+    return () => window.cancelAnimationFrame(focusFrame)
   }, [idx, onIndexChange])
 
   function pickAndAdvance(val) {
@@ -563,32 +549,68 @@ function SurveyView({ questions, answers, setAnswers, initialIndex = 0, onIndexC
     if (!isNewAnswer) return
 
     setFlashChoice(val)
-    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
+    clearAdvanceTimer()
     advanceTimerRef.current = setTimeout(() => {
+      advanceTimerRef.current = null
       setFlashChoice(null)
       if (idx < total - 1) setIdx((current) => current + 1)
       else onDone(nextAnswers)
     }, 180)
   }
 
+  function handleRadioKeyDown(event, value, values) {
+    const currentIndex = values.indexOf(value)
+    let nextIndex = null
+
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      nextIndex = (currentIndex + 1) % values.length
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      nextIndex = (currentIndex - 1 + values.length) % values.length
+    } else if (event.key === 'Home') {
+      nextIndex = 0
+    } else if (event.key === 'End') {
+      nextIndex = values.length - 1
+    }
+
+    if (nextIndex == null) return
+    event.preventDefault()
+    const radios = event.currentTarget.parentElement?.querySelectorAll('[role="radio"]')
+    radios?.[nextIndex]?.focus()
+    pickAndAdvance(values[nextIndex])
+  }
+
   function next() {
+    clearAdvanceTimer()
+    setFlashChoice(null)
     if (idx < total - 1) setIdx(i => i + 1)
     else onDone()
   }
 
   function back() {
+    clearAdvanceTimer()
+    setFlashChoice(null)
     if (idx === 0) onBack()
     else setIdx(i => i - 1)
   }
 
+  const personalityValues = isPersonality ? q.options.map((_, index) => index) : []
+  const scaleValues = [1, 2, 3, 4, 5, 6, 7]
+
   return (
     <div className="ci-survey">
-      {/* progress */}
-      <div className="ci-prog-bar">
+      <div
+        className="ci-prog-bar"
+        role="progressbar"
+        aria-label="Check-in progress"
+        aria-valuemin={1}
+        aria-valuemax={total}
+        aria-valuenow={idx + 1}
+        aria-valuetext={`Question ${idx + 1} of ${total}`}
+      >
         <div className="ci-prog-fill" style={{ width: `${pct}%` }} />
       </div>
       <div className="ci-prog-row">
-        <span className="ci-prog-count">Question {idx + 1} of {total}</span>
+        <span className="ci-prog-count" aria-live="polite" aria-atomic="true">Question {idx + 1} of {total}</span>
         <span
           className="ci-type-badge"
           style={isPersonality
@@ -600,17 +622,20 @@ function SurveyView({ questions, answers, setAnswers, initialIndex = 0, onIndexC
         </span>
       </div>
 
-      {/* question */}
-      <p className="ci-question-text">{q.text}</p>
+      <p ref={questionRef} id={questionId} className="ci-question-text" tabIndex={-1}>{q.text}</p>
 
-      {/* answer input */}
       {isPersonality ? (
-        <div className="ci-choice-grid">
+        <div className="ci-choice-grid" role="radiogroup" aria-labelledby={questionId}>
           {q.options.map((opt, i) => (
             <button
               key={i}
+              type="button"
+              role="radio"
+              aria-checked={selected === i}
+              tabIndex={selected === i || (selected == null && i === 0) ? 0 : -1}
               className={`ci-choice-btn${selected === i ? ' ci-choice-btn--on' : ''}${flashChoice === i ? ' ci-choice-btn--flash' : ''}`}
               onClick={() => pickAndAdvance(i)}
+              onKeyDown={(event) => handleRadioKeyDown(event, i, personalityValues)}
               disabled={submitting}
             >
               {opt.text}
@@ -619,13 +644,19 @@ function SurveyView({ questions, answers, setAnswers, initialIndex = 0, onIndexC
         </div>
       ) : (
         <div className="ci-scale">
-          <div className="ci-scale-btns">
-            {[1, 2, 3, 4, 5, 6, 7].map(v => (
+          <div className="ci-scale-btns" role="radiogroup" aria-labelledby={questionId} aria-describedby={scaleHintId}>
+            {scaleValues.map(v => (
               <button
                 key={v}
+                type="button"
+                role="radio"
+                aria-checked={selected === v}
+                aria-label={`${v}: ${SCALE_LABELS[v - 1]}`}
+                tabIndex={selected === v || (selected == null && v === 1) ? 0 : -1}
                 className={`ci-scale-btn${selected === v ? ' ci-scale-btn--on' : ''}${flashChoice === v ? ' ci-scale-btn--flash' : ''}`}
                 style={selected === v ? { background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff' } : {}}
                 onClick={() => pickAndAdvance(v)}
+                onKeyDown={(event) => handleRadioKeyDown(event, v, scaleValues)}
                 disabled={submitting}
                 title={SCALE_LABELS[v - 1]}
               >
@@ -633,7 +664,7 @@ function SurveyView({ questions, answers, setAnswers, initialIndex = 0, onIndexC
               </button>
             ))}
           </div>
-          <div className="ci-scale-end-labels">
+          <div id={scaleHintId} className="ci-scale-end-labels">
             <span>Strongly Disagree</span>
             <span>Neutral</span>
             <span>Strongly Agree</span>
@@ -641,9 +672,8 @@ function SurveyView({ questions, answers, setAnswers, initialIndex = 0, onIndexC
         </div>
       )}
 
-      {/* nav */}
       <div className="ci-survey-nav">
-        <button className="ci-back-btn" onClick={back} disabled={submitting}>← Back</button>
+        <button type="button" className="ci-back-btn" onClick={back} disabled={submitting}>← Back</button>
         <AsyncButton
           className="ci-next-btn"
           onClick={next}
@@ -658,15 +688,21 @@ function SurveyView({ questions, answers, setAnswers, initialIndex = 0, onIndexC
     </div>
   )
 }
-
 // ─── results view ─────────────────────────────────────────────────────────────
 
 function ResultsView({ surveyType, scores, prevScores, onDone }) {
+  const resultsTitleRef = useRef(null)
+
+  useEffect(() => {
+    const focusFrame = window.requestAnimationFrame(() => resultsTitleRef.current?.focus())
+    return () => window.cancelAnimationFrame(focusFrame)
+  }, [])
+
   if (surveyType !== 'weekly') {
     return (
       <div className="ci-results ci-results--initial">
         <div className="ci-results-header">
-          <h3 className="ci-results-title">Thanks. Your check-in is complete.</h3>
+          <h3 ref={resultsTitleRef} className="ci-results-title" tabIndex={-1}>Thanks. Your check-in is complete.</h3>
           <p className="ci-results-sub">
             Your answers help Dawn Harbor adapt suggestions and approaches to what may work better for you over time.
           </p>
@@ -689,7 +725,7 @@ function ResultsView({ surveyType, scores, prevScores, onDone }) {
   return (
     <div className="ci-results">
       <div className="ci-results-header">
-        <h3 className="ci-results-title">{title}</h3>
+        <h3 ref={resultsTitleRef} className="ci-results-title" tabIndex={-1}>{title}</h3>
         <p className="ci-results-sub">{summary}</p>
       </div>
 
@@ -719,13 +755,13 @@ export default function CheckIns() {
   const [draftRestored, setDraftRestored] = useState(false)
   const [latestScores, setLatestScores] = useState(null)
   const [latestPrevScores, setLatestPrevScores] = useState(null)
-  const [history,  setHistory]  = useState(MOCK_HISTORY)
+  const [history,  setHistory]  = useState([])
   const [serverSummary, setServerSummary] = useState({
-    streak: getWeeklyStreak(MOCK_HISTORY),
-    dueToday: isWeeklyCheckInDue(MOCK_HISTORY),
-    lastCheckInDate: getLatestEntry(MOCK_HISTORY)?.date ?? null,
-    hasInitialAssessment: MOCK_HISTORY.some((entry) => entry.type === 'initial'),
-    hasCurrentPersonalityAssessment: true,
+    streak: 0,
+    dueThisWeek: false,
+    lastCheckInDate: null,
+    hasInitialAssessment: false,
+    hasCurrentPersonalityAssessment: false,
   })
   const [loadingState, setLoadingState] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
@@ -741,13 +777,13 @@ export default function CheckIns() {
     if (userLoading) return
     setHistoryLoaded(false)
     if (!token) {
-      setHistory(MOCK_HISTORY)
+      setHistory([])
       setServerSummary({
-        streak: getWeeklyStreak(MOCK_HISTORY),
-        dueToday: isWeeklyCheckInDue(MOCK_HISTORY),
-        lastCheckInDate: getLatestEntry(MOCK_HISTORY)?.date ?? null,
-        hasInitialAssessment: MOCK_HISTORY.some((entry) => entry.type === 'initial'),
-        hasCurrentPersonalityAssessment: true,
+        streak: 0,
+        dueThisWeek: false,
+        lastCheckInDate: null,
+        hasInitialAssessment: false,
+        hasCurrentPersonalityAssessment: false,
       })
       setHistoryLoaded(true)
       return
@@ -764,7 +800,7 @@ export default function CheckIns() {
         setHistory(data.history?.length ? data.history : [])
         setServerSummary({
           streak: data.streak ?? 0,
-          dueToday: Boolean(data.dueThisWeek),
+          dueThisWeek: Boolean(data.dueThisWeek),
           lastCheckInDate: data.lastCheckInDate ?? null,
           hasInitialAssessment: Boolean(data.hasInitialAssessment),
           hasCurrentPersonalityAssessment: data.hasCurrentPersonalityAssessment === true,
@@ -772,6 +808,14 @@ export default function CheckIns() {
       })
       .catch((error) => {
         if (!cancelled) {
+          setHistory([])
+          setServerSummary({
+            streak: 0,
+            dueThisWeek: false,
+            lastCheckInDate: null,
+            hasInitialAssessment: false,
+            hasCurrentPersonalityAssessment: false,
+          })
           setSaveError(error.message)
           setErrorContext('load')
         }
@@ -789,7 +833,7 @@ export default function CheckIns() {
   }, [token, userLoading, reloadKey])
 
   useEffect(() => {
-    if (!historyLoaded || draftRestoreAttemptRef.current === draftStorageKey) return
+    if (!historyLoaded || errorContext === 'load' || draftRestoreAttemptRef.current === draftStorageKey) return
     draftRestoreAttemptRef.current = draftStorageKey
     const draft = loadCheckInDraft(draftStorageKey)
     if (!draft) return
@@ -798,7 +842,7 @@ export default function CheckIns() {
       draft.surveyType !== 'weekly' && serverSummary.hasCurrentPersonalityAssessment
     ) || (
       draft.surveyType === 'weekly'
-      && (!serverSummary.hasCurrentPersonalityAssessment || !serverSummary.dueToday)
+      && (!serverSummary.hasCurrentPersonalityAssessment || !serverSummary.dueThisWeek)
     )
     if (isNoLongerValid) {
       clearCheckInDraft(draftStorageKey)
@@ -811,7 +855,7 @@ export default function CheckIns() {
     setDraftIndex(draft.currentIndex)
     setDraftRestored(true)
     setView('survey')
-  }, [draftStorageKey, historyLoaded, serverSummary])
+  }, [draftStorageKey, errorContext, historyLoaded, serverSummary])
 
   useEffect(() => {
     if (view !== 'survey' || !questions.length) return
@@ -872,7 +916,7 @@ export default function CheckIns() {
         setHistory(data.history?.length ? data.history : [])
         setServerSummary({
           streak: data.streak ?? 0,
-          dueToday: Boolean(data.dueThisWeek),
+          dueThisWeek: Boolean(data.dueThisWeek),
           lastCheckInDate: data.lastCheckInDate ?? null,
           hasInitialAssessment: Boolean(data.hasInitialAssessment),
           hasCurrentPersonalityAssessment: data.hasCurrentPersonalityAssessment === true,
@@ -905,7 +949,7 @@ export default function CheckIns() {
       setHistory(nextHistory)
       setServerSummary({
         streak: getWeeklyStreak(nextHistory),
-        dueToday: isWeeklyCheckInDue(nextHistory),
+        dueThisWeek: isWeeklyCheckInDue(nextHistory),
         lastCheckInDate: getLatestEntry(nextHistory)?.date ?? null,
         hasInitialAssessment: nextHistory.some((entry) => entry.type === 'initial'),
         hasCurrentPersonalityAssessment: surveyType !== 'weekly' || serverSummary.hasCurrentPersonalityAssessment,
@@ -930,7 +974,7 @@ export default function CheckIns() {
     [serverSummary],
   )
   const streak = useMemo(() => serverSummary.streak, [serverSummary])
-  const dueToday = useMemo(() => serverSummary.dueToday, [serverSummary])
+  const dueThisWeek = useMemo(() => serverSummary.dueThisWeek, [serverSummary])
   const latestEntryDate = useMemo(() => serverSummary.lastCheckInDate, [serverSummary])
   return (
     <section className="page ci-page">
@@ -955,10 +999,10 @@ export default function CheckIns() {
         <FeedbackNotice variant="info" message="Your unfinished check-in was restored." compact />
       )}
 
-      {view === 'hub' && (
+      {view === 'hub' && historyLoaded && !loadingState && errorContext !== 'load' && (
         <HubView
           streak={streak}
-          dueToday={dueToday}
+          dueThisWeek={dueThisWeek}
           lastCheckInDate={latestEntryDate}
           hasInitialAssessment={hasInitialAssessment}
           hasCurrentPersonalityAssessment={hasCurrentPersonalityAssessment}
@@ -1207,6 +1251,8 @@ const CI_STYLES = `
     margin: 0; font-size: 1.1rem; font-weight: 600;
     color: var(--ink); line-height: 1.5; letter-spacing: -0.01em;
   }
+  .ci-question-text:focus-visible,
+  .ci-results-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-radius: 4px; }
 
   /* personality choice buttons */
   .ci-choice-grid { display: flex; flex-direction: column; gap: 10px; }

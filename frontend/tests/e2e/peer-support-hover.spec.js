@@ -60,9 +60,13 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/api/peer/profile/', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
     isOnboarded: true, anonymousName: 'Quiet Cedar', avatarColor: '#627967', avatarSymbol: 'peer-cove',
   }) }))
-  await page.route('**/api/peer/rooms/', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
-    { id: 5, name: 'Grounding Together', memberCount: 12 },
-  ]) }))
+  await page.route('**/api/peer/rooms/', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+    status: 'assigned',
+    category: 'anxiety',
+    categoryLabel: 'Anxiety',
+    room: { id: 5, name: 'Grounding Together', memberCount: 12, capacity: 20 },
+    waitlist: null,
+  }) }))
   await page.route('**/api/peer/rooms/5/messages/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }))
   await page.route('**/api/peer/peers/', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
     { userId: 11, name: 'Silver Fern', color: '#6f7f76', avatarSymbol: 'peer-pine', status: 'connected' },

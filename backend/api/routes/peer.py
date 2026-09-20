@@ -12,11 +12,19 @@ from rest_framework.views import APIView
 
 from ai_engine.pipeline import moderate_peer_message
 from app.models import (
+    PEER_SUPPORT_CATEGORIES,
     PeerConnection,
     PeerDM,
     PeerRoom,
+    PeerRoomMembership,
     PeerRoomMessage,
     UserProfile,
+)
+from app.peer_rooms import (
+    assign_peer_room,
+    opt_out_to_waitlist,
+    switch_peer_room,
+    user_has_room_access,
 )
 from app.throttles import PeerMessageThrottle
 
@@ -140,17 +148,6 @@ def _generate_anon_name():
     return f"User{random.randint(1000, 9999)}"
 
 
-def _get_default_room():
-    room, _ = PeerRoom.objects.get_or_create(
-        topic='anxiety',
-        defaults={
-            'name': 'Anxiety Support Room',
-            'description': 'A safe space for those dealing with anxiety to connect and support each other.',
-        },
-    )
-    return room
-
-
 def _connection_status(user, other_id):
     conn = PeerConnection.objects.filter(
         Q(requester=user, recipient_id=other_id) |
@@ -197,6 +194,7 @@ class PeerProfileView(APIView):
             'isOnboarded': profile.is_peer_onboarded,
             'avatarColor': avatar_color,
             'avatarSymbol': avatar_symbol,
+            'peerSupportCategory': profile.peer_support_category,
         })
 
     def post(self, request):
@@ -206,11 +204,14 @@ class PeerProfileView(APIView):
         profile.is_peer_onboarded = True
         profile.save(update_fields=['anonymous_name', 'is_peer_onboarded'])
         avatar_color, avatar_symbol = _ensure_peer_identity(profile)
+        room_state = assign_peer_room(request.user)
         return Response({
             'anonymousName': profile.anonymous_name,
             'isOnboarded': profile.is_peer_onboarded,
             'avatarColor': avatar_color,
             'avatarSymbol': avatar_symbol,
+            'peerSupportCategory': room_state.get('category', ''),
+            'roomState': room_state,
         })
 
 
@@ -220,15 +221,46 @@ class PeerRoomListView(APIView):
     def get(self, request):
         if not _get_profile(request.user).is_peer_onboarded:
             return Response({'error': 'Complete peer onboarding first.'}, status=status.HTTP_403_FORBIDDEN)
-        room = _get_default_room()
-        member_count = PeerRoomMessage.objects.filter(room=room).values('sender').distinct().count()
-        return Response([{
-            'id': room.id,
-            'name': room.name,
-            'topic': room.topic,
-            'description': room.description,
-            'memberCount': max(member_count, 1),
-        }])
+        return Response(assign_peer_room(request.user))
+
+
+class PeerRoomSwitchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        profile = _get_profile(request.user)
+        if not profile.is_peer_onboarded:
+            return Response({'error': 'Complete peer onboarding first.'}, status=status.HTTP_403_FORBIDDEN)
+        if not PeerRoomMembership.objects.filter(
+            user=request.user,
+            status=PeerRoomMembership.Status.ACTIVE,
+        ).exists():
+            return Response({'error': 'You do not have an active room to switch.'}, status=status.HTTP_400_BAD_REQUEST)
+        state, switched = switch_peer_room(request.user)
+        if not switched:
+            return Response(
+                {
+                    'error': 'The other support rooms are currently full. You are still in your current room.',
+                    'state': state,
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(state)
+
+
+class PeerRoomOptOutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        profile = _get_profile(request.user)
+        if not profile.is_peer_onboarded:
+            return Response({'error': 'Complete peer onboarding first.'}, status=status.HTTP_403_FORBIDDEN)
+        if not PeerRoomMembership.objects.filter(
+            user=request.user,
+            status=PeerRoomMembership.Status.ACTIVE,
+        ).exists():
+            return Response({'error': 'You do not have an active room to leave.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(opt_out_to_waitlist(request.user))
 
 
 class PeerRoomMessageView(APIView):
@@ -243,6 +275,8 @@ class PeerRoomMessageView(APIView):
             room = PeerRoom.objects.get(id=room_id, is_active=True)
         except PeerRoom.DoesNotExist:
             return Response({'error': 'Room not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not user_has_room_access(request.user, room.id):
+            return Response({'error': 'You are not assigned to this room.'}, status=status.HTTP_403_FORBIDDEN)
 
         since_id = request.query_params.get('since')
         qs = room.room_messages.all()
@@ -281,6 +315,8 @@ class PeerRoomMessageView(APIView):
             room = PeerRoom.objects.get(id=room_id, is_active=True)
         except PeerRoom.DoesNotExist:
             return Response({'error': 'Room not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not user_has_room_access(request.user, room.id):
+            return Response({'error': 'You are not assigned to this room.'}, status=status.HTTP_403_FORBIDDEN)
 
         content = request.data.get('content', '').strip()
         if not content:
@@ -319,16 +355,9 @@ class PeerListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        if not _get_profile(request.user).is_peer_onboarded:
+        profile = _get_profile(request.user)
+        if not profile.is_peer_onboarded:
             return Response({'error': 'Complete peer onboarding first.'}, status=status.HTTP_403_FORBIDDEN)
-        profiles = (
-            UserProfile.objects
-            .filter(is_peer_onboarded=True)
-            .exclude(anonymous_name='')
-            .exclude(anonymous_name__isnull=True)
-            .exclude(user=request.user)
-            .select_related('user')[:30]
-        )
 
         sent = {
             c.recipient_id: c.status
@@ -338,6 +367,21 @@ class PeerListView(APIView):
             c.requester_id: c.status
             for c in PeerConnection.objects.filter(recipient=request.user)
         }
+        connected_ids = {
+            user_id for user_id, connection_status in {**sent, **received}.items()
+            if connection_status == PeerConnection.Status.CONNECTED
+        }
+        category_filter = Q(user_id__in=connected_ids)
+        if profile.peer_support_category in PEER_SUPPORT_CATEGORIES:
+            category_filter |= Q(peer_support_category=profile.peer_support_category)
+        profiles = (
+            UserProfile.objects
+            .filter(category_filter, is_peer_onboarded=True)
+            .exclude(anonymous_name='')
+            .exclude(anonymous_name__isnull=True)
+            .exclude(user=request.user)
+            .select_related('user')[:30]
+        )
 
         result = []
         for p in profiles:
@@ -392,6 +436,15 @@ class PeerConnectView(APIView):
             existing.status = PeerConnection.Status.CONNECTED
             existing.save(update_fields=['status', 'updated_at'])
             return Response({'status': 'connected'})
+
+        if (
+            not requester_profile.peer_support_category
+            or requester_profile.peer_support_category != target_profile.peer_support_category
+        ):
+            return Response(
+                {'error': 'Peer recommendations are limited to your support category.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         conn = PeerConnection.objects.create(
             requester=request.user,

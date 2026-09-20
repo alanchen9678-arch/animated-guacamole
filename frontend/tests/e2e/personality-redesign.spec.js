@@ -66,7 +66,7 @@ test('initial assessment stores continuous signals without revealing a personali
 
   for (let question = 1; question <= 10; question += 1) {
     await expect(page.getByText(`Question ${question} of 40`)).toBeVisible()
-    await page.getByRole('button', { name: '4', exact: true }).click()
+    await page.getByRole('radio', { name: '4: Neutral', exact: true }).click()
   }
 
   await expect(page.getByText('Being around other people often gives me a boost of energy.')).toBeVisible()
@@ -74,7 +74,7 @@ test('initial assessment stores continuous signals without revealing a personali
 
   for (let question = 11; question <= 40; question += 1) {
     await expect(page.getByText(`Question ${question} of 40`)).toBeVisible()
-    await page.getByRole('button', { name: 'Somewhat like me', exact: true }).click()
+    await page.getByRole('radio', { name: 'Somewhat like me', exact: true }).click()
   }
 
   await expect(page.getByRole('heading', { name: 'Thanks. Your check-in is complete.' })).toBeVisible()
@@ -168,7 +168,7 @@ test('legacy users are locked into the new assessment without replacing wellness
 
   for (let question = 1; question <= 30; question += 1) {
     await expect(page.getByText(`Question ${question} of 30`)).toBeVisible()
-    await page.getByRole('button', { name: 'It depends / somewhere in between', exact: true }).click()
+    await page.getByRole('radio', { name: 'It depends / somewhere in between', exact: true }).click()
   }
 
   await expect(page.getByRole('heading', { name: 'Thanks. Your check-in is complete.' })).toBeVisible()

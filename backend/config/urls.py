@@ -12,6 +12,8 @@ from api.routes.peer import (
     PeerProfileView,
     PeerRoomListView,
     PeerRoomMessageView,
+    PeerRoomOptOutView,
+    PeerRoomSwitchView,
 )
 from api.routes.therapist import (
     TherapistAppointmentDetailView,
@@ -37,6 +39,8 @@ urlpatterns = [
     path('api/auth/me/', MeView.as_view(), name='auth-me'),
     path('api/peer/profile/', PeerProfileView.as_view(), name='peer-profile'),
     path('api/peer/rooms/', PeerRoomListView.as_view(), name='peer-rooms'),
+    path('api/peer/rooms/switch/', PeerRoomSwitchView.as_view(), name='peer-room-switch'),
+    path('api/peer/rooms/opt-out/', PeerRoomOptOutView.as_view(), name='peer-room-opt-out'),
     path('api/peer/rooms/<int:room_id>/messages/', PeerRoomMessageView.as_view(), name='peer-room-messages'),
     path('api/peer/peers/', PeerListView.as_view(), name='peer-list'),
     path('api/peer/connect/<uuid:peer_id>/', PeerConnectView.as_view(), name='peer-connect'),

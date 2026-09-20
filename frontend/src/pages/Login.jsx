@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { TextReveal } from '../components/ui/cascade-text.jsx'
 import { AsyncButton, FeedbackNotice } from '../components/ui/feedback.jsx'
 import { useNavigation } from '../context/NavigationContext.jsx'
 import { useUser } from '../context/UserContext.jsx'
+import { useAccessibleDialog } from '../hooks/use-accessible-dialog.js'
 
 export default function Login({ initialMode = 'login', onClose }) {
   const { navigate } = useNavigation()
@@ -11,6 +12,24 @@ export default function Login({ initialMode = 'login', onClose }) {
   const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '', firstName: '' })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const overlayRef = useRef(null)
+  const dialogRef = useRef(null)
+  const initialFocusRef = useRef(null)
+
+  useAccessibleDialog({
+    open: true,
+    containerRef: overlayRef,
+    dialogRef,
+    initialFocusRef,
+    onClose,
+  })
+
+  useEffect(() => {
+    const focusFrame = window.requestAnimationFrame(() => {
+      initialFocusRef.current?.focus()
+    })
+    return () => window.cancelAnimationFrame(focusFrame)
+  }, [mode])
 
   function update(event) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
@@ -220,11 +239,32 @@ export default function Login({ initialMode = 'login', onClose }) {
           width: min(420px, calc(100vw - 32px));
           margin: 16px;
         }
+        .auth-visually-hidden {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
+        }
       `}</style>
 
-      <div className="auth-overlay" onClick={(event) => event.target === event.currentTarget && onClose()}>
-        <div className="auth-card-wrap">
+      <div ref={overlayRef} className="auth-overlay" onClick={(event) => event.target === event.currentTarget && onClose()}>
+        <div
+          ref={dialogRef}
+          className="auth-card-wrap"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="auth-dialog-title"
+          tabIndex={-1}
+        >
           <div className="auth-card">
+            <h2 id="auth-dialog-title" className="auth-visually-hidden">
+              {mode === 'login' ? 'Log in to Dawn Harbor' : 'Create your Dawn Harbor account'}
+            </h2>
             <div className="auth-logo">
               <TextReveal
                 as="span"
@@ -237,11 +277,14 @@ export default function Login({ initialMode = 'login', onClose }) {
               />
             </div>
 
-            <div className="auth-tabs">
+            <div className="auth-tabs" role="tablist" aria-label="Account access">
               <button
                 className={`auth-tab${mode === 'login' ? ' active' : ''}`}
                 onClick={() => switchMode('login')}
                 type="button"
+                role="tab"
+                aria-selected={mode === 'login'}
+                aria-controls="auth-form-panel"
               >
                 Log in
               </button>
@@ -249,16 +292,21 @@ export default function Login({ initialMode = 'login', onClose }) {
                 className={`auth-tab${mode === 'register' ? ' active' : ''}`}
                 onClick={() => switchMode('register')}
                 type="button"
+                role="tab"
+                aria-selected={mode === 'register'}
+                aria-controls="auth-form-panel"
               >
                 Sign up
               </button>
             </div>
 
-            <form onSubmit={submit}>
+            <form id="auth-form-panel" role="tabpanel" onSubmit={submit}>
               {mode === 'register' && (
                 <div className="auth-field">
-                  <label>First name</label>
+                  <label htmlFor="auth-first-name">First name</label>
                   <input
+                    ref={mode === 'register' ? initialFocusRef : undefined}
+                    id="auth-first-name"
                     name="firstName"
                     value={form.firstName}
                     onChange={update}
@@ -269,8 +317,10 @@ export default function Login({ initialMode = 'login', onClose }) {
               )}
 
               <div className="auth-field">
-                <label>Username</label>
+                <label htmlFor="auth-username">Username</label>
                 <input
+                  ref={mode === 'login' ? initialFocusRef : undefined}
+                  id="auth-username"
                   name="username"
                   value={form.username}
                   onChange={update}
@@ -282,8 +332,9 @@ export default function Login({ initialMode = 'login', onClose }) {
 
               {mode === 'register' && (
                 <div className="auth-field">
-                  <label>Email (optional)</label>
+                  <label htmlFor="auth-email">Email (optional)</label>
                   <input
+                    id="auth-email"
                     name="email"
                     type="email"
                     value={form.email}
@@ -295,8 +346,9 @@ export default function Login({ initialMode = 'login', onClose }) {
               )}
 
               <div className="auth-field">
-                <label>Password</label>
+                <label htmlFor="auth-password">Password</label>
                 <input
+                  id="auth-password"
                   name="password"
                   type="password"
                   value={form.password}
@@ -309,8 +361,9 @@ export default function Login({ initialMode = 'login', onClose }) {
 
               {mode === 'register' && (
                 <div className="auth-field">
-                  <label>Confirm password</label>
+                  <label htmlFor="auth-confirm-password">Confirm password</label>
                   <input
+                    id="auth-confirm-password"
                     name="confirm"
                     type="password"
                     value={form.confirm}
@@ -349,7 +402,7 @@ export default function Login({ initialMode = 'login', onClose }) {
             </p>
           </div>
 
-          <button className="auth-close" onClick={onClose} aria-label="Close">×</button>
+          <button type="button" className="auth-close" onClick={onClose} aria-label="Close">×</button>
         </div>
       </div>
     </>

@@ -11,7 +11,9 @@ from .models import (
     PeerConnection,
     PeerDM,
     PeerRoom,
+    PeerRoomMembership,
     PeerRoomMessage,
+    PeerRoomWaitlist,
     TherapistAppointment,
     TherapistBooking,
     TherapistMatch,
@@ -38,6 +40,13 @@ class SensitiveModelAdmin(admin.ModelAdmin):
         return request.user.is_superuser
 
 
+@admin.register(PeerRoom)
+class PeerRoomAdmin(SensitiveModelAdmin):
+    list_display = ('name', 'topic', 'slot', 'capacity', 'is_active')
+    list_filter = ('topic', 'is_active')
+    ordering = ('topic', 'slot')
+
+
 for model in (
     UserProfile,
     CheckIn,
@@ -51,7 +60,8 @@ for model in (
     TherapistMatch,
     TherapistBooking,
     TherapistAppointment,
-    PeerRoom,
+    PeerRoomMembership,
+    PeerRoomWaitlist,
     PeerRoomMessage,
     PeerDM,
     PeerConnection,

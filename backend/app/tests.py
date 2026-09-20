@@ -19,6 +19,7 @@ from .models import (
     PeerConnection,
     PeerDM,
     PeerRoom,
+    PeerRoomMembership,
     PeerRoomMessage,
     UserProfile,
     TherapistMatch,
@@ -543,6 +544,7 @@ class CheckInAPITests(TestCase):
         self.assertNotIn('personality', response.data)
         self.assertEqual(self.user.profile.needs_profile['basis'], 'initial_assessment')
         self.assertEqual(self.user.profile.needs_profile['concerns']['stress'], 44)
+        self.assertEqual(self.user.profile.peer_support_category, 'confidence')
 
     def test_post_initial_checkin_rejects_legacy_archetype_payload(self):
         response = self.client.post(
@@ -1070,7 +1072,14 @@ class PeerModerationAPITests(TestCase):
             avatar_color='#4d6b58',
             is_peer_onboarded=True,
         )
-        self.room = PeerRoom.objects.create(name='Anxiety Support Room', topic='anxiety')
+        self.room = PeerRoom.objects.filter(topic='anxiety', slot=1, is_active=True).first()
+        if not self.room:
+            self.room = PeerRoom.objects.create(name='Anxiety Support Room', topic='anxiety')
+        PeerRoomMembership.objects.create(
+            user=self.user,
+            room=self.room,
+            category='anxiety',
+        )
         PeerConnection.objects.create(
             requester=self.user,
             recipient=self.other_user,

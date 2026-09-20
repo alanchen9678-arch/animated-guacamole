@@ -8,6 +8,7 @@ import { NavigationProvider, useNavigation } from './context/NavigationContext.j
 import { pageConfig } from './routes/AppRoutes.jsx'
 import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
+import { useAccessibleDialog } from './hooks/use-accessible-dialog.js'
 import './app.css'
 import './quiet-pages.css'
 
@@ -71,11 +72,33 @@ function AppShell() {
   const contentRef = useRef(null)
   const notifAnchorRef = useRef(null)
   const notifButtonRef = useRef(null)
+  const dailyPromptBackdropRef = useRef(null)
+  const dailyPromptDialogRef = useRef(null)
+  const dailyPromptHeadingRef = useRef(null)
+  const checkinPromptBackdropRef = useRef(null)
+  const checkinPromptDialogRef = useRef(null)
+  const checkinPromptHeadingRef = useRef(null)
 
   const isLoggedIn = !!user
   const hasCurrentPersonalityAssessment = user?.hasCurrentPersonalityAssessment === true
   const assessmentLocked = isLoggedIn && !hasCurrentPersonalityAssessment
   const activeShellPage = assessmentLocked && activePage !== 'checkins' ? 'checkins' : activePage
+
+  useAccessibleDialog({
+    open: isLoggedIn && showDailyPrompt,
+    containerRef: dailyPromptBackdropRef,
+    dialogRef: dailyPromptDialogRef,
+    initialFocusRef: dailyPromptHeadingRef,
+    onClose: dismissDailyPrompt,
+  })
+
+  useAccessibleDialog({
+    open: isLoggedIn && showCheckinPrompt && !showDailyPrompt,
+    containerRef: checkinPromptBackdropRef,
+    dialogRef: checkinPromptDialogRef,
+    initialFocusRef: checkinPromptHeadingRef,
+    onClose: () => dismissCheckinPrompt(false),
+  })
 
   // dynamic notifications
   const notifications = useMemo(
@@ -288,19 +311,28 @@ function AppShell() {
 
       {/* ── daily journal prompt ── */}
       {isLoggedIn && showDailyPrompt && (
-        <div className="djp-backdrop" onClick={dismissDailyPrompt}>
-          <div className="djp-card" onClick={e => e.stopPropagation()}>
+        <div ref={dailyPromptBackdropRef} className="djp-backdrop" onClick={dismissDailyPrompt}>
+          <div
+            ref={dailyPromptDialogRef}
+            className="djp-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="daily-journal-prompt-title"
+            aria-describedby="daily-journal-prompt-description"
+            tabIndex={-1}
+            onClick={e => e.stopPropagation()}
+          >
             <div className="djp-top">
-              <div className="djp-icon">✦</div>
+              <div className="djp-icon" aria-hidden="true">✦</div>
               <div>
-                <strong className="djp-title">Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}</strong>
+                <h2 ref={dailyPromptHeadingRef} id="daily-journal-prompt-title" className="djp-title" tabIndex={-1}>Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}</h2>
                 <p className="djp-sub">Take a moment to write in your journal today.</p>
               </div>
             </div>
-            <p className="djp-body">Even a few sentences about how you're feeling can help Dawn Harbor support you better. Your entries are private.</p>
+            <p id="daily-journal-prompt-description" className="djp-body">Even a few sentences about how you're feeling can help Dawn Harbor support you better. Your entries are private.</p>
             <div className="djp-actions">
-              <button className="djp-skip" onClick={dismissDailyPrompt}>Maybe later</button>
-              <button className="djp-go" onClick={openJournalFromPrompt}>Open journal →</button>
+              <button type="button" className="djp-skip" onClick={dismissDailyPrompt}>Maybe later</button>
+              <button type="button" className="djp-go" onClick={openJournalFromPrompt}>Open journal →</button>
             </div>
           </div>
           <style>{`
@@ -329,7 +361,8 @@ function AppShell() {
               display: flex; align-items: center; justify-content: center;
               box-shadow: 0 6px 18px rgba(77,107,88,0.28);
             }
-            .djp-title { display: block; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+            .djp-title { display: block; margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+            .djp-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
             .djp-sub   { margin: 3px 0 0; font-size: 0.84rem; color: var(--muted); }
             .djp-body  { margin: 0; font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
             .djp-actions { display: flex; gap: 10px; align-items: center; }
@@ -353,19 +386,28 @@ function AppShell() {
 
       {/* ── check-in overdue prompt ── */}
       {isLoggedIn && showCheckinPrompt && !showDailyPrompt && (
-        <div className="cip-backdrop" onClick={() => dismissCheckinPrompt(false)}>
-          <div className="cip-card" onClick={e => e.stopPropagation()}>
+        <div ref={checkinPromptBackdropRef} className="cip-backdrop" onClick={() => dismissCheckinPrompt(false)}>
+          <div
+            ref={checkinPromptDialogRef}
+            className="cip-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="overdue-checkin-prompt-title"
+            aria-describedby="overdue-checkin-prompt-description"
+            tabIndex={-1}
+            onClick={e => e.stopPropagation()}
+          >
             <div className="cip-top">
-              <div className="cip-icon">◎</div>
+              <div className="cip-icon" aria-hidden="true">◎</div>
               <div>
-                <strong className="cip-title">Your weekly check-in is overdue</strong>
+                <h2 ref={checkinPromptHeadingRef} id="overdue-checkin-prompt-title" className="cip-title" tabIndex={-1}>Your weekly check-in is overdue</h2>
                 <p className="cip-sub">It's been a while since your last check-in.</p>
               </div>
             </div>
-            <p className="cip-body">Regular check-ins help Dawn Harbor detect changes in your well-being early and support you more effectively. It only takes about 4 minutes.</p>
+            <p id="overdue-checkin-prompt-description" className="cip-body">Regular check-ins help Dawn Harbor detect changes in your well-being early and support you more effectively. It only takes about 4 minutes.</p>
             <div className="cip-actions">
-              <button className="cip-skip" onClick={() => dismissCheckinPrompt(false)}>Maybe later</button>
-              <button className="cip-go" onClick={() => dismissCheckinPrompt(true)}>Start check-in →</button>
+              <button type="button" className="cip-skip" onClick={() => dismissCheckinPrompt(false)}>Maybe later</button>
+              <button type="button" className="cip-go" onClick={() => dismissCheckinPrompt(true)}>Start check-in →</button>
             </div>
           </div>
           <style>{`
@@ -394,7 +436,8 @@ function AppShell() {
               display: flex; align-items: center; justify-content: center;
               box-shadow: 0 6px 18px rgba(77,107,88,0.28);
             }
-            .cip-title { display: block; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+            .cip-title { display: block; margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+            .cip-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
             .cip-sub   { margin: 3px 0 0; font-size: 0.84rem; color: var(--muted); }
             .cip-body  { margin: 0; font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
             .cip-actions { display: flex; gap: 10px; align-items: center; }
