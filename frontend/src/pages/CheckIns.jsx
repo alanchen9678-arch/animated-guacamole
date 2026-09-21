@@ -982,7 +982,7 @@ export default function CheckIns() {
 
       <header className="page-header">
         <h2>Check-Ins</h2>
-        <p>Short, regular surveys that track your well-being across six dimensions so Dawn Harbor can support you proactively.</p>
+        <p>Track your well-being across six dimensions through short, regular surveys.</p>
       </header>
 
       {saveError && (

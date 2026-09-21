@@ -80,11 +80,16 @@ test('peer match hover adds edge spacing without moving its content', async ({ p
   await page.goto('/')
 
   await expect(page.getByRole('heading', { level: 2, name: 'Peer Support' })).toBeVisible()
-  await expect(page.getByText('Join your support room and connect privately with anonymous peers in your support category.')).toBeVisible()
-  await expect(page.locator('.ps-page-header')).toBeVisible()
+  const pageSubtitle = page.getByText('Join your support room and connect privately with anonymous peers.')
+  await expect(pageSubtitle).toBeVisible()
+  await expect(pageSubtitle).toHaveCSS('white-space', 'nowrap')
+  await expect(page.locator('.ps-page-header')).toHaveClass(/page-header/)
+  await expect(page.locator('.ps-page-header')).toHaveCSS('border-bottom-style', 'solid')
+  await expect(page.getByRole('heading', { level: 2, name: 'Peer Support' })).toHaveCSS('font-size', '32px')
+  await expect(page.getByRole('heading', { level: 2, name: 'Peer Support' })).toHaveCSS('font-weight', '650')
   await expect(page.locator('.ps-hub-identity')).toContainText('Your anonymous identity')
 
-  const match = page.locator('.ps-match-row').filter({ hasText: 'Calm Harbor' })
+  const match = page.locator('.ps-peer-card').filter({ hasText: 'Calm Harbor' })
   const avatar = match.locator(':scope > div').first()
   const copy = match.locator('.ps-peer-info')
   const button = match.getByRole('button', { name: 'Connect' })
@@ -103,9 +108,8 @@ test('peer match hover adds edge spacing without moving its content', async ({ p
   expect(Math.abs(copyAfter.x - copyBefore.x)).toBeLessThan(1)
   expect(matchBox.x + matchBox.width - buttonBox.x - buttonBox.width).toBeCloseTo(14, 0)
 
-  const activeChat = page.locator('.ps-chat-row').filter({ hasText: 'Silver Fern' })
-  await expect(activeChat).toContainText('Open chat')
-  await activeChat.click()
+  const activeChat = page.locator('.ps-peer-card--active').filter({ hasText: 'Silver Fern' })
+  await activeChat.getByRole('button', { name: 'Message' }).click()
   await expect(page.locator('.ps-chat-name')).toHaveText('Silver Fern')
 })
 
@@ -113,7 +117,8 @@ test('peer match hover stays contained on mobile', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
 
-  const match = page.locator('.ps-match-row').filter({ hasText: 'Calm Harbor' })
+  await expect(page.locator('.ps-page-header p')).toHaveCSS('white-space', 'normal')
+  const match = page.locator('.ps-peer-card').filter({ hasText: 'Calm Harbor' })
   await match.hover()
 
   const cardBox = await match.boundingBox()
@@ -134,8 +139,8 @@ test('group and direct peer chats share the full-width chat workspace', async ({
   await expectPeerChatLayout(page)
 
   await page.getByRole('button', { name: 'Back' }).click()
-  const activeChat = page.locator('.ps-chat-row').filter({ hasText: 'Silver Fern' })
-  await activeChat.click()
+  const activeChat = page.locator('.ps-peer-card--active').filter({ hasText: 'Silver Fern' })
+  await activeChat.getByRole('button', { name: 'Message' }).click()
   await expect(page.locator('.ps-chat-name')).toHaveText('Silver Fern')
   await expectPeerChatLayout(page)
 })

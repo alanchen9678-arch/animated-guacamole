@@ -19,6 +19,21 @@ const user = {
   needsProfile: { overall_score: 42, concern_scores: {} },
 }
 
+async function expectSingleLinePageSubtitle(locator) {
+  await expect(locator).toHaveCSS('white-space', 'nowrap')
+  const metrics = await locator.evaluate((element) => {
+    const styles = getComputedStyle(element)
+    return {
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      height: element.getBoundingClientRect().height,
+      lineHeight: parseFloat(styles.lineHeight),
+    }
+  })
+  expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1)
+  expect(metrics.height).toBeLessThanOrEqual(metrics.lineHeight + 1)
+}
+
 test('dashboard pages share the home typography hierarchy and secondary color', async ({ page }) => {
   await page.addInitScript(() => {
     const now = new Date()
@@ -51,10 +66,15 @@ test('dashboard pages share the home typography hierarchy and secondary color', 
   await expect(page.getByRole('heading', { name: 'Profile' })).toHaveCSS('font-size', '16px')
   await expect(page.getByRole('heading', { name: 'Profile' })).toHaveCSS('font-weight', '600')
   await expect(page.getByText('Manage your account, profile, and mood.')).toHaveCSS('color', 'rgb(91, 96, 92)')
+  await expectSingleLinePageSubtitle(page.locator('.settings-page-header p'))
+
+  await page.getByRole('button', { name: 'Home', exact: true }).click()
+  await expectSingleLinePageSubtitle(page.locator('.home-page > .page-header p'))
 
   await page.getByRole('button', { name: 'Journal', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Thought Journal' })).toHaveCSS('font-size', '32px')
   await expect(page.getByRole('heading', { name: 'Thought Journal' })).toHaveCSS('font-weight', '650')
+  await expectSingleLinePageSubtitle(page.locator('.jn-page-header p'))
   const journalGeometry = await page.locator('.jn-page').evaluate((journalPage) => {
     const pageRect = journalPage.getBoundingClientRect()
     const content = journalPage.closest('.content')
@@ -76,7 +96,9 @@ test('dashboard pages share the home typography hierarchy and secondary color', 
   await expect(page.getByRole('heading', { name: 'Mental Health Library' })).toHaveCSS('font-size', '32px')
   await expect(page.getByRole('heading', { name: 'Mental Health Library' })).toHaveCSS('font-weight', '650')
   await expect(page.locator('.il-card-title').first()).toHaveCSS('font-weight', '600')
-  await expect(page.locator('.il-page-sub')).toHaveCSS('color', 'rgb(91, 96, 92)')
+  await expect(page.locator('.il-page-header p')).toHaveCSS('color', 'rgb(91, 96, 92)')
+  await expect(page.locator('.il-page-header')).toHaveClass(/page-header/)
+  await expectSingleLinePageSubtitle(page.locator('.il-page-header p'))
 
   await page.getByRole('button', { name: 'Chatbot', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Your 24/7 Mental Wellness Companion' })).toHaveCSS('font-size', '32px')
@@ -147,6 +169,7 @@ test('dashboard pages share the home typography hierarchy and secondary color', 
   await page.getByRole('button', { name: 'Check-Ins', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Check-Ins' })).toHaveCSS('font-size', '32px')
   await expect(page.getByRole('heading', { name: 'Check-Ins' })).toHaveCSS('font-weight', '650')
+  await expectSingleLinePageSubtitle(page.locator('.ci-page > .page-header p'))
   await expect(page.locator('.ci-hub-personality')).toHaveCount(0)
   await expect(page.getByText('The Architect')).toHaveCount(0)
   const checkInsGeometry = await page.locator('.ci-page').evaluate((checkInsPage) => {

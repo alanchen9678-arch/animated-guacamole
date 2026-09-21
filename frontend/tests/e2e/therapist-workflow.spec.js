@@ -143,6 +143,16 @@ test('global therapist sharing and care history persist through the therapist wo
   })
 
   await page.goto('/')
+  const therapistSubtitle = page.locator('.tm-page > .page-header p')
+  await expect(therapistSubtitle).toHaveCSS('white-space', 'nowrap')
+  const therapistSubtitleMetrics = await therapistSubtitle.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+    height: element.getBoundingClientRect().height,
+    lineHeight: parseFloat(getComputedStyle(element).lineHeight),
+  }))
+  expect(therapistSubtitleMetrics.scrollWidth).toBeLessThanOrEqual(therapistSubtitleMetrics.clientWidth + 1)
+  expect(therapistSubtitleMetrics.height).toBeLessThanOrEqual(therapistSubtitleMetrics.lineHeight + 1)
   const globalSharing = page.getByLabel('Global therapist privacy and data sharing')
   await expect(globalSharing).toHaveCount(1)
   await expect(globalSharing).toContainText('apply to every current and future therapist connection')

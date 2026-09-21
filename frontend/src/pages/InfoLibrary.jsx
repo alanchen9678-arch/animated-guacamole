@@ -522,10 +522,10 @@ export default function InfoLibrary() {
 
   return (
     <section className='page il-page'>
-      <header className='il-page-header'>
-        <h2 className='il-page-title'>Mental Health Library</h2>
-        <p className='il-page-sub'>
-          Clear introductions to eight conditions and condition groups, with a quiz to reinforce what you learn.
+      <header className='page-header il-page-header'>
+        <h2>Mental Health Library</h2>
+        <p>
+          Explore eight mental health topics and reinforce what you learn with a short quiz.
         </p>
       </header>
 

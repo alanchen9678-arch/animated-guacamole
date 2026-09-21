@@ -250,10 +250,10 @@ function HubView({ profile, roomState, peers, setPeers, onRoom, onDM, loadingPee
 
   return (
     <section className="page ps-hub-page">
-      <header className="ps-page-header">
-        <h2 className="ps-heading">Peer Support</h2>
-        <p className="ps-page-sub">
-          Join your support room and connect privately with anonymous peers in your support category.
+      <header className="page-header ps-page-header">
+        <h2>Peer Support</h2>
+        <p>
+          Join your support room and connect privately with anonymous peers.
         </p>
       </header>
 
@@ -311,41 +311,33 @@ function HubView({ profile, roomState, peers, setPeers, onRoom, onDM, loadingPee
 
       {/* Active chats */}
       {activeChats.length > 0 && (
-        <section className="ps-peer-section" aria-labelledby="ps-active-chats-heading">
-          <header className="ps-section-heading">
-            <div>
-              <h3 id="ps-active-chats-heading">Active chats</h3>
-              <p>Continue conversations with connected peers.</p>
-            </div>
-            <span>{activeChats.length} {activeChats.length === 1 ? 'conversation' : 'conversations'}</span>
-          </header>
-          <div className="ps-peers-list ps-peers-list--chats" role="list">
+        <div>
+          <div className="ps-section-heading">
+            <span>Active chats</span>
+            <strong>{activeChats.length}</strong>
+          </div>
+          <div className="ps-peers-list">
             {activeChats.map(p => (
-              <div key={p.userId} role="listitem">
-                <button className="ps-chat-row" type="button" onClick={() => onDM(p)}>
-                  <AnonAvatar symbol={p.avatarSymbol} color={p.color} size={46} />
-                  <span className="ps-peer-info">
-                    <strong>{p.name}</strong>
-                    <span className="ps-peer-concerns">Connected peer</span>
-                  </span>
-                  <span className="ps-chat-row-action">Open chat <span aria-hidden="true">→</span></span>
-                </button>
+              <div key={p.userId} className="ps-peer-card ps-peer-card--active">
+                <AnonAvatar symbol={p.avatarSymbol} color={p.color} size={48} />
+                <div className="ps-peer-info">
+                  <strong>{p.name}</strong>
+                  <p className="ps-peer-concerns">Active anonymous chat</p>
+                </div>
+                <button className="ps-req-btn ps-req-btn--on" onClick={() => onDM(p)}>Message</button>
               </div>
             ))}
           </div>
-        </section>
+        </div>
       )}
 
       {/* Peer matches */}
-      <section className="ps-peer-section" aria-labelledby="ps-peer-matches-heading">
-        <header className="ps-section-heading">
-          <div>
-            <h3 id="ps-peer-matches-heading">Peer matches</h3>
-            <p>People in your support category.</p>
-          </div>
-          <span>{recommended.length} {recommended.length === 1 ? 'match' : 'matches'}</span>
-        </header>
-        <div className="ps-peers-list ps-peers-list--matches" role="list">
+      <div>
+        <div className="ps-section-heading">
+          <span>Peer matches</span>
+          <strong>{recommended.length}</strong>
+        </div>
+        <div className="ps-peers-list">
           {connectError && (
             <FeedbackNotice
               variant="error"
@@ -364,7 +356,7 @@ function HubView({ profile, roomState, peers, setPeers, onRoom, onDM, loadingPee
             />
           )}
           {recommended.map(p => (
-            <div key={p.userId} className="ps-match-row" role="listitem">
+            <div key={p.userId} className="ps-peer-card">
               <AnonAvatar symbol={p.avatarSymbol} color={p.color} size={48} />
               <div className="ps-peer-info">
                 <strong>{p.name}</strong>
@@ -377,7 +369,7 @@ function HubView({ profile, roomState, peers, setPeers, onRoom, onDM, loadingPee
             </div>
           ))}
         </div>
-      </section>
+      </div>
 
     </section>
   )
@@ -972,15 +964,14 @@ const PS_STYLES = `
     letter-spacing: -0.03em;
   }
   .ps-sub { margin: 0 0 24px; color: var(--muted); font-size: var(--type-body); font-weight: 400; line-height: 1.65; max-width: 60ch; }
-  .ps-page-header { margin-bottom: 22px; }
-  .ps-page-header .ps-heading { margin-bottom: 7px; }
-  .ps-page-sub {
-    max-width: 62ch;
+  .ps-page-header {
+    width: 100%;
+    max-width: none;
     margin: 0;
-    color: var(--muted);
-    font-size: var(--type-body);
-    line-height: 1.6;
+    padding-bottom: var(--space-5);
+    border-bottom: 1px solid var(--line-strong);
   }
+  .ps-page-header p { max-width: 46ch; }
   .ps-primary-btn {
     padding: 13px 32px; border-radius: 999px; border: none;
     background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 700;
@@ -1048,60 +1039,28 @@ const PS_STYLES = `
   }
   .ps-room-state-action:hover, .ps-switch-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
   /* peers */
-  .ps-peer-section { margin-top: 28px; }
   .ps-section-heading {
-    display: flex; align-items: end; justify-content: space-between; gap: 24px;
-    margin: 0; padding-bottom: 11px; border-bottom: 1px solid var(--line-strong);
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 16px 0 10px; color: var(--muted);
+    font-size: 0.76rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
   }
-  .ps-section-heading h3 {
-    margin: 0;
-    color: var(--ink);
-    font-size: 1rem;
-    font-weight: 650;
-    letter-spacing: -0.015em;
+  .ps-section-heading strong {
+    display: flex; align-items: center; justify-content: center;
+    min-width: 24px; height: 24px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent); font-size: 0.74rem;
   }
-  .ps-section-heading p {
-    margin: 3px 0 0;
-    color: var(--muted);
-    font-size: 0.77rem;
-    line-height: 1.45;
-  }
-  .ps-section-heading > span {
-    flex: none;
-    color: var(--muted-soft);
-    font-size: 0.72rem;
-    font-weight: 600;
-  }
-  .ps-peers-list { display: grid; gap: 0; }
-  .ps-chat-row,
-  .ps-match-row {
+  .ps-peers-list { display: grid; gap: 12px; }
+  .ps-peer-card {
     display: flex; align-items: center; gap: 14px;
-    width: 100%; min-height: 72px; padding: 14px 4px;
-    border: 0; border-bottom: 1px solid var(--line);
-    border-radius: 0; background: transparent; box-shadow: none;
-    color: var(--ink); text-align: left;
-    transition: background-color var(--motion-fast), box-shadow var(--motion-fast);
+    background: var(--panel-strong); border: 1px solid var(--line);
+    border-radius: 18px; padding: 16px 18px;
+    box-shadow: var(--shadow);
+    transition: transform 140ms;
   }
-  .ps-chat-row { cursor: pointer; }
-  .ps-chat-row:hover,
-  .ps-match-row:hover {
-    background: var(--accent-wash);
-    box-shadow: inset 3px 0 0 var(--accent);
-  }
-  .ps-chat-row-action {
-    margin-left: auto;
-    color: var(--accent-ink);
-    font-size: 0.78rem;
-    font-weight: 650;
-    white-space: nowrap;
-  }
-  .ps-chat-row-action > span {
-    display: inline-block;
-    margin-left: 5px;
-    transition: transform var(--motion-fast);
-  }
-  .ps-chat-row:hover .ps-chat-row-action > span {
-    transform: translateX(2px);
+  .ps-peer-card:hover { transform: translateY(-1px); }
+  .ps-peer-card--active {
+    border-color: rgba(77,107,88,0.26);
+    background: rgba(210,228,220,0.34);
   }
   .ps-active-empty {
     border: 1px dashed var(--line); border-radius: 18px;
@@ -1112,9 +1071,9 @@ const PS_STYLES = `
     text-align: center; color: var(--muted); font-size: 0.88rem;
     padding: 40px 0;
   }
-  .ps-peer-info { display: block; flex: 1; min-width: 0; }
+  .ps-peer-info { flex: 1; }
   .ps-peer-info strong { display: block; font-size: 0.95rem; margin-bottom: 3px; }
-  .ps-peer-concerns { display: block; margin: 0; font-size: 0.78rem; color: var(--muted); }
+  .ps-peer-concerns { margin: 0; font-size: 0.78rem; color: var(--muted); }
   .ps-req-btn {
     padding: 8px 16px; border-radius: 999px;
     border: 1.5px solid var(--accent); background: transparent;
@@ -1124,13 +1083,6 @@ const PS_STYLES = `
   .ps-req-btn:hover { background: var(--accent); color: #fff; }
   .ps-req-btn--on { background: var(--accent); color: #fff; }
   .ps-req-pending { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
-
-  @media (min-width: 880px) {
-    .ps-peers-list--matches {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      column-gap: 32px;
-    }
-  }
 
   /* chat shell */
   .ps-chat-root {
@@ -1234,7 +1186,7 @@ const PS_STYLES = `
   }
 
   @media (max-width: 640px) {
-    .ps-chat-row, .ps-match-row { flex-wrap: wrap; }
+    .ps-peer-card { flex-wrap: wrap; }
     .ps-room-state { align-items: flex-start; flex-direction: column; gap: 12px; }
     .ps-chat-header { flex-wrap: wrap; }
     .ps-room-actions { width: 100%; justify-content: flex-end; }

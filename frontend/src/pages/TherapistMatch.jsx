@@ -593,7 +593,7 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind, onRefresh,
       <section className="page tm-page">
         <header className="page-header">
           <h2>Therapist Match</h2>
-          <p>Complete your initial assessment to unlock matching. You can manage therapist data sharing below.</p>
+          <p>Complete your initial assessment to unlock matching and manage therapist data sharing.</p>
         </header>
 
         <div className="tm-profile-grid">

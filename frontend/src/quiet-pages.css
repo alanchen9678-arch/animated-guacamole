@@ -15,7 +15,7 @@
 
 .app-root :where(.home-greeting, .intro-heading, .ci-intro-title, .ci-question-text,
   .ci-results-title, .jn-page-header h2, .tm-heading, .tm-detail-name,
-  .ps-heading, .il-page-title, .il-results-heading) {
+  .ps-heading, .il-results-heading) {
   font-family: inherit;
   letter-spacing: -0.035em;
 }
@@ -1419,19 +1419,13 @@
 .app-root .ps-center-wrap--wide { max-width: 780px; }
 .app-root .ps-eyebrow { padding: 0; border-radius: 0; background: transparent; }
 .app-root .ps-page-header {
-  margin-bottom: 22px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--line-strong);
 }
-.app-root .ps-page-sub {
-  color: var(--ink-soft);
-}
-.app-root .ps-hub-identity {
-  margin: 0 0 4px;
-  padding: 0 2px 18px;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0;
-  background: transparent;
-}
+.app-root .ps-page-header p { max-width: 46ch; }
 .app-root .ps-hub-cards { gap: 0; border-block: 1px solid var(--line-strong); }
 .app-root .ps-hub-card {
   padding: 22px 2px;
@@ -1519,8 +1513,7 @@
   cursor: not-allowed;
   opacity: 0.45;
 }
-.app-root .ps-chat-row,
-.app-root .ps-match-row {
+.app-root .ps-peer-card {
   padding: 16px 2px;
   border: 0;
   border-bottom: 1px solid var(--line);
@@ -1529,18 +1522,10 @@
   box-shadow: none;
   transition: background-color var(--motion-fast), box-shadow var(--motion-fast);
 }
-.app-root .ps-chat-row:hover,
-.app-root .ps-match-row:hover,
-.app-root .ps-chat-row:focus-visible,
-.app-root .ps-match-row:focus-within {
-  transform: none;
-  background: var(--accent-wash);
-  box-shadow: inset 3px 0 0 var(--accent);
-}
-.app-root .ps-chat-row:hover,
-.app-root .ps-match-row:hover,
-.app-root .ps-chat-row:focus-visible,
-.app-root .ps-match-row:focus-within {
+.app-root .ps-peer-card:hover,
+.app-root .ps-peer-card--active { transform: none; background: var(--accent-wash); box-shadow: inset 3px 0 0 var(--accent); }
+.app-root .ps-peer-card:hover,
+.app-root .ps-peer-card--active {
   width: calc(100% + 24px);
   margin-inline: -12px;
   padding-inline: 14px;
@@ -1647,6 +1632,13 @@
   }
 }
 
+@media (min-width: 960px) {
+  .app-root .page > .page-header p {
+    max-width: none;
+    white-space: nowrap;
+  }
+}
+
 @media (max-width: 639px) {
   .app-root .ps-chat-header {
     margin: -26px -18px 0;
@@ -1750,7 +1742,7 @@
 
 /* Keep keyboard focus consistent even where legacy rules used outlines. */
 .app-root :where(.feature-card, .prompt-action, .ci-choice-btn, .ci-scale-btn,
-  .jn-tab-btn, .jn-calendar-btn, .tm-result-card, .ps-hub-card, .ps-chat-row, .ps-match-row,
+  .jn-tab-btn, .jn-calendar-btn, .tm-result-card, .ps-hub-card, .ps-peer-card,
   .il-tab, .il-card-header, .il-option, .mood-chip):focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
@@ -1781,12 +1773,9 @@
   .app-root .ci-intro-stats { grid-template-columns: 1fr; }
   .app-root .ci-stat { border-right: 0; border-bottom: 1px solid var(--line); }
   .app-root .ci-stat:last-child { border-bottom: 0; }
-  .app-root .ps-chat-row,
-  .app-root .ps-match-row { padding-inline: 14px; }
-  .app-root .ps-chat-row:hover,
-  .app-root .ps-match-row:hover,
-  .app-root .ps-chat-row:focus-visible,
-  .app-root .ps-match-row:focus-within {
+  .app-root .ps-peer-card { padding-inline: 14px; }
+  .app-root .ps-peer-card:hover,
+  .app-root .ps-peer-card--active {
     width: 100%;
     margin-inline: 0;
   }

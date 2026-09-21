@@ -14,27 +14,6 @@
   border: 0;
 }
 
-.app-root .il-page-header {
-  display: grid;
-  gap: 6px;
-  max-width: 760px;
-}
-
-.app-root .il-page-title {
-  margin: 0;
-  font-size: var(--type-page-title);
-  font-weight: var(--weight-page-title);
-  line-height: 1.12;
-  letter-spacing: -0.035em;
-}
-
-.app-root .il-page-sub {
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--type-body);
-  line-height: 1.55;
-}
-
 .app-root .il-tabs {
   display: flex;
   width: fit-content;
