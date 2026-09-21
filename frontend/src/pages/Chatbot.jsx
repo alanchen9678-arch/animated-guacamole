@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { useReducedMotion } from 'motion/react'
 
 import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/chat-input.jsx'
+import { DawnHarborAvatar } from '../components/ui/avatar-symbols.jsx'
 import { fetchChatHistory, sendChatMessage } from '../services/api.js'
 import { FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
 
@@ -45,7 +47,7 @@ function defaultGreeting() {
 function TypingIndicator() {
   return (
     <div className="msg-row msg-row--ai" role="status" aria-live="polite" aria-label="Dawn Harbor is typing">
-      <div className="msg-avatar" aria-hidden="true">D</div>
+      <div className="msg-avatar" aria-hidden="true"><DawnHarborAvatar size={18} /></div>
       <div className="bubble bubble--ai typing-bubble">
         <span className="dot" />
         <span className="dot" />
@@ -61,7 +63,7 @@ function Message({ msg }) {
   return (
     <div className={`msg-row${isUser ? ' msg-row--user' : ' msg-row--ai'}`}>
       <span className="chat-speaker-label">{isUser ? 'You' : 'Dawn Harbor'}</span>
-      {!isUser && <div className="msg-avatar" aria-hidden="true">D</div>}
+      {!isUser && <div className="msg-avatar" aria-hidden="true"><DawnHarborAvatar size={18} /></div>}
       <div className={`bubble${isUser ? ' bubble--user' : ' bubble--ai'}`}>
         <p className="bubble-text">{msg.text}</p>
         <span className="bubble-time">{msg.time}</span>
@@ -87,9 +89,10 @@ function ChatbotIntro({ onStart }) {
           <div className="disclaimer-box">
             <div className="disclaimer-icon">!</div>
             <p>
-              Dawn Harbor&apos;s chatbot is <strong>not a replacement for professional mental health
-              care.</strong> If someone seems at risk, they should be directed to a crisis line,
-              emergency services, or a licensed clinician.
+              Dawn Harbor&apos;s chatbot is an automated wellness tool, <strong>not professional or
+              emergency care.</strong> It is not monitored by a clinician. If you need crisis support
+              in the U.S., <a href="tel:988">call 988</a> or <a href="sms:988">text 988</a>. If you are
+              in immediate physical danger, <a href="tel:911">call 911</a>.
             </p>
           </div>
 
@@ -103,6 +106,7 @@ function ChatbotIntro({ onStart }) {
 }
 
 function ChatbotChat() {
+  const reduceMotion = useReducedMotion()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoadingHistory, setIsLoadingHistory] = useState(true)
@@ -162,9 +166,12 @@ function ChatbotChat() {
 
   useEffect(() => {
     const messagesEl = messagesRef.current
-    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' })
+    messagesEl?.scrollTo({
+      top: messagesEl.scrollHeight,
+      behavior: reduceMotion ? 'auto' : 'smooth',
+    })
     if (!isTyping) inputRef.current?.focus()
-  }, [messages, isTyping])
+  }, [messages, isTyping, reduceMotion])
 
   async function sendMessage() {
     const text = input.trim()
@@ -240,6 +247,13 @@ function ChatbotChat() {
           />
         </ChatInput>
       </div>
+      <aside className="chat-safety-note" aria-label="Chatbot safety information">
+        <span>Dawn Harbor is automated and not monitored by a clinician.</span>
+        <span>
+          U.S. crisis support: <a href="tel:988">call</a> or <a href="sms:988">text 988</a>.
+          {' '}Immediate physical danger: <a href="tel:911">call 911</a>.
+        </span>
+      </aside>
     </div>
   )
 }
@@ -313,6 +327,12 @@ const styles = `
     margin-top: 1px;
   }
   .disclaimer-box p { margin: 0; font-size: 0.88rem; color: #78350f; line-height: 1.55; }
+  .disclaimer-box a {
+    color: inherit;
+    font-weight: 750;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
   .start-btn {
     white-space: nowrap;
     padding: 14px 36px;
@@ -356,7 +376,7 @@ const styles = `
     min-height: 0;
     overflow-y: auto;
     scrollbar-gutter: stable;
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
   }
   .chat-conversation {
     width: 100%;
@@ -443,6 +463,23 @@ const styles = `
     background: transparent;
     flex: none;
     box-shadow: 0 -8px 24px rgba(46, 42, 38, 0.04);
+  }
+  .chat-safety-note {
+    display: flex;
+    width: min(100%, var(--chat-column-width));
+    margin-inline: auto;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 7px 9px 3px;
+    color: var(--muted);
+    font-size: 0.68rem;
+    line-height: 1.4;
+  }
+  .chat-safety-note a {
+    color: var(--accent-ink);
+    font-weight: 700;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
   }
   .chat-compose { width: 100%; }
   .chat-textarea {
@@ -596,6 +633,20 @@ const styles = `
   @media (max-width: 640px) {
     .chat-root { height: calc(100vh - 140px); }
     .bubble { max-width: 85%; }
+    .chat-safety-note {
+      display: grid;
+      gap: 2px;
+      padding-inline: 8px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .msg-row,
+    .dot {
+      animation: none;
+    }
+    .dot {
+      opacity: 0.72;
+    }
   }
 `
 

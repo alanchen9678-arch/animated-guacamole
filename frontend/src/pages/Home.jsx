@@ -281,7 +281,7 @@ export default function Home() {
         <div className="today-stat">
           <div className="label">Mood</div>
           <div className="value" style={{ textTransform: 'capitalize' }}>
-            {user?.mood || '-'}
+            {user?.mood?.trim() || 'Not set'}
           </div>
         </div>
         <div className="today-stat">

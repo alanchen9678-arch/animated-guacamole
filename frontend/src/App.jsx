@@ -16,7 +16,7 @@ const features = [
   { id: 'chatbot',   title: 'AI Chatbot',       desc: "Talk through what's on your mind with Dawn Harbor's AI, available around the clock.",          tag: '24/7'        },
   { id: 'checkins',  title: 'Check-Ins',         desc: 'Quick daily surveys that monitor your mental wellness and flag changes early.',            tag: 'Daily'       },
   { id: 'journal',   title: 'Thought Journal',   desc: "A private, open-ended space to process your feelings and daily experiences.",             tag: 'Private'     },
-  { id: 'therapist', title: 'Therapist Match',   desc: 'Get paired with a licensed professional whose style and focus suit your needs.',          tag: 'Licensed'    },
+  { id: 'therapist', title: 'Therapist Match',   desc: 'Explore a guided matching demo with sample therapist profiles tailored to your preferences.', tag: 'Demo' },
   { id: 'community', title: 'Peer Support',      desc: "Connect anonymously with others who understand what you're going through.",               tag: 'Anonymous'   },
   { id: 'library',   title: 'Info Library',      desc: 'Explore clear guides to common mental health conditions, then test your understanding with a short quiz.', tag: 'Interactive' },
 ]

@@ -22,6 +22,17 @@ export const PEER_AVATAR_SYMBOLS = [
   { id: 'peer-north-star', label: 'North Star' },
 ]
 
+export function DawnHarborAvatar({ size = 24, title, className = '' }) {
+  return (
+    <AvatarSymbol
+      symbol="brand-harbor"
+      size={size}
+      title={title}
+      className={className}
+    />
+  )
+}
+
 export function AvatarSymbol({ symbol, size = 24, title, className = '' }) {
   return (
     <svg

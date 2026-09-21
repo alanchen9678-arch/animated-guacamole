@@ -42,7 +42,7 @@ export default function FeatureStories({ features }) {
       <motion.header className='landing-features-intro' variants={revealItem} {...motionProps}>
         <h2 id='landing-features-title'>Support for the way you feel, reflect, and connect.</h2>
         <p>
-          Dawn Harbor brings private reflection, guided check-ins, trusted care, and community into one calm workspace.
+          Dawn Harbor brings private reflection, guided check-ins, care exploration, and community into one calm workspace.
         </p>
       </motion.header>
 

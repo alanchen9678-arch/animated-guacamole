@@ -1,4 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="brand-harbor" viewBox="0 0 24 24">
+    <path fill="currentColor" opacity=".18" d="M3.5 14.25h17V20h-17z"/>
+    <path fill="currentColor" d="M15.3 5.25h3.15l1.15 10.5h-5.45zM13.45 15.3h6.85v2h-6.85z"/>
+    <path fill="currentColor" opacity=".72" d="m16.85 2.5 2.9 2.75h-5.8z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M3.5 16.2c1.5-.85 3-.85 4.5 0s3 .85 4.5 0M3.5 19.1c1.5-.85 3-.85 4.5 0s3 .85 4.5 0"/>
+  </symbol>
+  <symbol id="provider-sprig" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="8.5" fill="currentColor" opacity=".16"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M8.1 18.7c3.05-3.45 4.55-7.45 4.5-12"/>
+    <path fill="currentColor" d="M12.45 9.1c2.85-.15 4.65-1.15 5.4-3-.05 2.9-1.85 4.55-5.4 4.95zM11.55 12.1c-3.05.05-5.05-.9-6-2.85-.05 2.95 1.8 4.6 5.55 4.95zM10.65 15.45c-2.35.2-3.95-.45-4.8-1.95.1 2.35 1.55 3.65 4.35 3.9z"/>
+  </symbol>
   <symbol id="user-horizon" viewBox="0 0 24 24">
     <path fill="currentColor" opacity=".18" d="M5 15.75a7 7 0 0 1 14 0v2H5z"/>
     <path fill="currentColor" d="M4 16h16v2H4zM8.25 15.75a3.75 3.75 0 0 1 7.5 0zM11.15 4.5h1.7v4h-1.7z"/>

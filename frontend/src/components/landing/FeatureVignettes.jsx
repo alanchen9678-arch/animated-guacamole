@@ -1,3 +1,5 @@
+import { AvatarSymbol, DawnHarborAvatar } from '../ui/avatar-symbols.jsx'
+
 const MOOD_DAYS = [
   { day: 'M', date: '10', mood: 'calm' },
   { day: 'T', date: '11', mood: 'happy' },
@@ -11,7 +13,7 @@ function ChatbotVignette() {
     <div className='fv-chat' aria-hidden='true'>
       <div className='fv-chat-thread'>
         <div className='fv-chat-row fv-chat-row--dawn-harbor'>
-          <span className='fv-avatar fv-avatar--dawn-harbor'>D</span>
+          <span className='fv-avatar fv-avatar--dawn-harbor'><DawnHarborAvatar size={18} /></span>
           <div className='fv-message fv-message--dawn-harbor'>
             <span className='fv-speaker'>Dawn Harbor</span>
             <p>What feels most present for you today?</p>
@@ -26,7 +28,7 @@ function ChatbotVignette() {
         </div>
 
         <div className='fv-chat-row fv-chat-row--dawn-harbor'>
-          <span className='fv-avatar fv-avatar--dawn-harbor'>D</span>
+          <span className='fv-avatar fv-avatar--dawn-harbor'><DawnHarborAvatar size={18} /></span>
           <div className='fv-message fv-message--dawn-harbor'>
             <span className='fv-speaker'>Dawn Harbor</span>
             <p>We can take it one piece at a time. What would feel helpful to name first?</p>
@@ -116,15 +118,15 @@ function TherapistVignette() {
     <div className='fv-therapist' aria-hidden='true'>
       <div className='fv-therapist-profile'>
         <div className='fv-therapist-person'>
-          <span className='fv-avatar fv-avatar--therapist'>PS</span>
+          <span className='fv-avatar fv-avatar--therapist'><AvatarSymbol symbol='provider-sprig' size={28} /></span>
           <div>
-            <strong>Dr. Priya Sharma</strong>
-            <span>PhD, LMFT<br />San Francisco, CA</span>
+            <strong>Priya Sharma</strong>
+            <span>Sample therapist profile<br />San Francisco, CA</span>
           </div>
         </div>
 
         <div className='fv-fit-score'>
-          <span>Fit score</span>
+          <span>Example fit</span>
           <strong>94.2</strong>
         </div>
 
@@ -134,7 +136,7 @@ function TherapistVignette() {
           <span>Burnout</span>
         </div>
 
-        <div className='fv-connect'>Connect with therapist</div>
+        <div className='fv-connect'>Explore sample match</div>
       </div>
 
       <div className='fv-scheduling'>
@@ -152,7 +154,7 @@ function PeerSupportVignette() {
   return (
     <div className='fv-community' aria-hidden='true'>
       <div className='fv-community-identity'>
-        <span className='fv-avatar fv-avatar--peer'>QC</span>
+        <span className='fv-avatar fv-avatar--peer'><AvatarSymbol symbol='peer-cove' size={25} /></span>
         <div>
           <strong>Quiet Cedar</strong>
           <span>Your anonymous identity</span>
@@ -169,7 +171,7 @@ function PeerSupportVignette() {
           <span className='fv-row-action'>Join</span>
         </div>
         <div className='fv-community-row'>
-          <span className='fv-avatar fv-avatar--small'>CR</span>
+          <span className='fv-avatar fv-avatar--small'><AvatarSymbol symbol='peer-tide' size={20} /></span>
           <div>
             <strong>Calm River</strong>
             <span>Active anonymous chat</span>
@@ -177,7 +179,7 @@ function PeerSupportVignette() {
           <span className='fv-row-action fv-row-action--active'>Message</span>
         </div>
         <div className='fv-community-row'>
-          <span className='fv-avatar fv-avatar--small fv-avatar--soft'>GS</span>
+          <span className='fv-avatar fv-avatar--small fv-avatar--soft'><AvatarSymbol symbol='peer-pebble' size={20} /></span>
           <div>
             <strong>Gentle Stone</strong>
             <span>Peer match</span>
