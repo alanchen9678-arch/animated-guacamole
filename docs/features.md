@@ -22,4 +22,4 @@ Users receive anonymous profiles, join topic rooms, connect, and exchange direct
 
 ## Information library
 
-The library summarizes common mental-health conditions and links to source material. Quiz feedback shows the correct answer, and completing a quiz records an idempotent daily streak.
+The library summarizes common mental-health conditions and links to source material. Quiz feedback shows the correct answer, and the active quiz attempt is preserved in browser session storage for the current session. The backend retains a library-progress endpoint, but the current interface does not record or display a completion streak.
