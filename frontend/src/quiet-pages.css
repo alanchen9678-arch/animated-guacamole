@@ -33,6 +33,7 @@
 .app-root .tm-regen-btn,
 .app-root .tm-view-btn,
 .app-root .ps-primary-btn,
+.app-root .ps-room-state-action,
 .app-root .ps-req-btn,
 .app-root .il-primary-btn,
 .app-root .il-next-btn,
@@ -1742,7 +1743,7 @@
 
 /* Keep keyboard focus consistent even where legacy rules used outlines. */
 .app-root :where(.feature-card, .prompt-action, .ci-choice-btn, .ci-scale-btn,
-  .jn-tab-btn, .jn-calendar-btn, .tm-result-card, .ps-hub-card, .ps-peer-card,
+  .jn-tab-btn, .jn-calendar-btn, .tm-result-card, .ps-hub-card, .ps-peer-card, .ps-room-state-action,
   .il-tab, .il-card-header, .il-option, .mood-chip):focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);

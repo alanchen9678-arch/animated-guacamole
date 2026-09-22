@@ -280,6 +280,52 @@ def opt_out_to_waitlist(user):
     return _waitlisted_state(category, waitlist_entry)
 
 
+@transaction.atomic
+def rejoin_peer_room(user):
+    profile = _profile_for_update(user)
+    membership = _active_membership_for_update(user)
+    if membership and membership.room.is_active:
+        return _assigned_state(membership), False
+    if membership:
+        membership.status = PeerRoomMembership.Status.ENDED
+        membership.ended_at = timezone.now()
+        membership.end_reason = PeerRoomMembership.EndReason.ROOM_CLOSED
+        membership.save(update_fields=['status', 'ended_at', 'end_reason'])
+
+    waitlist_entry = (
+        PeerRoomWaitlist.objects
+        .select_for_update()
+        .filter(user=user, status=PeerRoomWaitlist.Status.WAITING)
+        .first()
+    )
+    if not waitlist_entry:
+        return _nonmember_state('not_waitlisted', profile.peer_support_category), False
+
+    category = waitlist_entry.category
+    rooms = list(
+        PeerRoom.objects
+        .select_for_update()
+        .filter(topic=category, is_active=True)
+        .order_by('slot', 'id')
+    )
+    counts = _member_counts(rooms)
+    available_rooms = [room for room in rooms if counts[room.id] < room.capacity]
+    if not available_rooms:
+        return _waitlisted_state(category, waitlist_entry), False
+
+    room = random.choice(available_rooms)
+    membership = PeerRoomMembership.objects.create(
+        user=user,
+        room=room,
+        category=category,
+    )
+    waitlist_entry.status = PeerRoomWaitlist.Status.ASSIGNED
+    waitlist_entry.resolved_at = timezone.now()
+    waitlist_entry.assigned_room = room
+    waitlist_entry.save(update_fields=['status', 'resolved_at', 'assigned_room'])
+    return _assigned_state(membership), True
+
+
 def user_has_room_access(user, room_id):
     return PeerRoomMembership.objects.filter(
         user=user,

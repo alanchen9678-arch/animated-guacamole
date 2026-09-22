@@ -13,6 +13,7 @@ from api.routes.peer import (
     PeerRoomListView,
     PeerRoomMessageView,
     PeerRoomOptOutView,
+    PeerRoomRejoinView,
     PeerRoomSwitchView,
 )
 from api.routes.therapist import (
@@ -41,6 +42,7 @@ urlpatterns = [
     path('api/peer/rooms/', PeerRoomListView.as_view(), name='peer-rooms'),
     path('api/peer/rooms/switch/', PeerRoomSwitchView.as_view(), name='peer-room-switch'),
     path('api/peer/rooms/opt-out/', PeerRoomOptOutView.as_view(), name='peer-room-opt-out'),
+    path('api/peer/rooms/rejoin/', PeerRoomRejoinView.as_view(), name='peer-room-rejoin'),
     path('api/peer/rooms/<int:room_id>/messages/', PeerRoomMessageView.as_view(), name='peer-room-messages'),
     path('api/peer/peers/', PeerListView.as_view(), name='peer-list'),
     path('api/peer/connect/<uuid:peer_id>/', PeerConnectView.as_view(), name='peer-connect'),

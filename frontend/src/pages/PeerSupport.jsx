@@ -8,6 +8,7 @@ import {
   fetchPeerRooms,
   switchPeerRoom,
   optOutPeerRoom,
+  rejoinPeerRoom,
   fetchRoomMessages,
   sendRoomMessage,
   fetchPeers,
@@ -227,7 +228,7 @@ function OnboardingView({ onDone, loading, error }) {
 
 // Hub
 
-function HubView({ profile, roomState, peers, setPeers, onRoom, onDM, loadingPeers, loadingRoom, onRefreshRoom }) {
+function HubView({ profile, roomState, peers, setPeers, onRoom, onDM, loadingPeers, loadingRoom, onRefreshRoom, onRejoinRoom, rejoiningRoom, rejoinError }) {
   const activeChats  = peers.filter(p => p.status === 'connected')
   const recommended  = peers.filter(p => p.status !== 'connected' && p.status !== 'declined').slice(0, 8)
   const room         = roomState?.room ?? null
@@ -292,11 +293,18 @@ function HubView({ profile, roomState, peers, setPeers, onRoom, onDM, loadingPee
             <strong>You are on the {roomState.categoryLabel} waitlist</strong>
             <p>
               {roomState.waitlist?.reason === 'opted_out'
-                ? `We will place you when a new ${roomState.categoryLabel} support room is added.`
+                ? 'Rejoin now if a current room has space, or remain here to wait for a future room.'
                 : `${roomState.categoryLabel} support rooms are currently full. We will place you when space becomes available.`}
             </p>
+            {rejoinError && <p className="ps-room-state-error" role="alert">{rejoinError}</p>}
           </div>
-          <button className={'ps-room-state-action'} onClick={onRefreshRoom}>Check again</button>
+          {roomState.waitlist?.reason === 'opted_out' ? (
+            <button className={'ps-room-state-action'} onClick={onRejoinRoom} disabled={rejoiningRoom} aria-busy={rejoiningRoom || undefined}>
+              {rejoiningRoom ? 'Rejoining...' : 'Rejoin peer support'}
+            </button>
+          ) : (
+            <button className={'ps-room-state-action'} onClick={onRefreshRoom}>Check again</button>
+          )}
         </div>
       )}
 
@@ -800,6 +808,8 @@ export default function PeerSupport() {
   const [profileReloadKey, setProfileReloadKey] = useState(0)
   const [hubError, setHubError] = useState('')
   const [hubReloadKey, setHubReloadKey] = useState(0)
+  const [rejoiningRoom, setRejoiningRoom] = useState(false)
+  const [rejoinError, setRejoinError] = useState('')
 
   useEffect(() => {
     setView('loading')
@@ -855,6 +865,20 @@ export default function PeerSupport() {
       setHubError(error.message || 'Unable to check room availability.')
     } finally {
       setLoadingRoom(false)
+    }
+  }
+
+  async function handleRoomRejoin() {
+    setRejoiningRoom(true)
+    setRejoinError('')
+    try {
+      const data = await rejoinPeerRoom()
+      setRoomState(data)
+    } catch (error) {
+      if (error.data?.state) setRoomState(error.data.state)
+      setRejoinError(error.message || 'Unable to rejoin peer support right now.')
+    } finally {
+      setRejoiningRoom(false)
     }
   }
 
@@ -923,6 +947,9 @@ export default function PeerSupport() {
             loadingPeers={loadingPeers}
             loadingRoom={loadingRoom}
             onRefreshRoom={refreshRoomState}
+            onRejoinRoom={handleRoomRejoin}
+            rejoiningRoom={rejoiningRoom}
+            rejoinError={rejoinError}
           />
         </>
       )}
@@ -1031,13 +1058,22 @@ const PS_STYLES = `
   }
   .ps-room-state strong { display: block; margin-bottom: 4px; font-size: 0.95rem; color: var(--ink); }
   .ps-room-state p { margin: 0; max-width: 64ch; color: var(--muted); font-size: 0.82rem; line-height: 1.55; }
-  .ps-room-state-action, .ps-switch-btn {
+  .ps-room-state .ps-room-state-error { margin-top: 6px; color: #9f3c36; font-weight: 600; }
+  .ps-room-state-action {
+    flex-shrink: 0; padding: 8px 16px; border-radius: var(--radius-control);
+    border: 1.5px solid var(--accent); background: transparent;
+    color: var(--accent); font-size: 0.82rem; font-weight: 700;
+    white-space: nowrap; transition: background 140ms, color 140ms, border-color 140ms;
+  }
+  .ps-switch-btn {
     flex-shrink: 0; padding: 7px 13px; border-radius: 999px;
     border: 1px solid rgba(77,107,88,0.34); background: transparent;
     color: var(--accent); font-size: 0.8rem; font-weight: 700;
     transition: background 140ms, border-color 140ms;
   }
-  .ps-room-state-action:hover, .ps-switch-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .ps-room-state-action:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ps-room-state-action:disabled { cursor: wait; opacity: 0.58; }
+  .ps-switch-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
   /* peers */
   .ps-section-heading {
     display: flex; align-items: center; justify-content: space-between;

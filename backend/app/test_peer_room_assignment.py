@@ -14,6 +14,7 @@ from app.peer_rooms import (
     assign_peer_room,
     opt_out_to_waitlist,
     promote_waitlisted_users,
+    rejoin_peer_room,
     switch_peer_room,
 )
 
@@ -123,6 +124,48 @@ class PeerRoomAssignmentTests(TestCase):
         waitlist.refresh_from_db()
         self.assertEqual(waitlist.status, PeerRoomWaitlist.Status.ASSIGNED)
 
+    def test_opted_out_user_can_explicitly_rejoin_an_existing_room(self):
+        user = self.make_user('returning-member')
+        PeerRoomMembership.objects.create(user=user, room=self.room_one, category='anxiety')
+        opt_out_to_waitlist(user)
+
+        state, rejoined = rejoin_peer_room(user)
+
+        self.assertTrue(rejoined)
+        self.assertEqual(state['status'], 'assigned')
+        self.assertIn(state['room']['id'], {self.room_one.id, self.room_two.id})
+        self.assertEqual(PeerRoomMembership.objects.filter(user=user, status='active').count(), 1)
+        self.assertEqual(
+            PeerRoomWaitlist.objects.get(user=user, status='assigned').assigned_room_id,
+            state['room']['id'],
+        )
+
+    def test_opted_out_user_stays_waitlisted_when_both_rooms_are_full(self):
+        self.room_one.capacity = 1
+        self.room_one.save(update_fields=['capacity'])
+        self.room_two.capacity = 1
+        self.room_two.save(update_fields=['capacity'])
+        user = self.make_user('waiting-returner')
+        PeerRoomMembership.objects.create(user=user, room=self.room_one, category='anxiety')
+        opt_out_to_waitlist(user)
+        PeerRoomMembership.objects.create(
+            user=self.make_user('room-one-replacement'),
+            room=self.room_one,
+            category='anxiety',
+        )
+        PeerRoomMembership.objects.create(
+            user=self.make_user('room-two-occupant'),
+            room=self.room_two,
+            category='anxiety',
+        )
+
+        state, rejoined = rejoin_peer_room(user)
+
+        self.assertFalse(rejoined)
+        self.assertEqual(state['status'], 'waitlisted')
+        self.assertFalse(PeerRoomMembership.objects.filter(user=user, status='active').exists())
+        self.assertTrue(PeerRoomWaitlist.objects.filter(user=user, status='waiting').exists())
+
 
 class PeerRoomAPIAccessTests(TestCase):
     def setUp(self):
@@ -155,6 +198,61 @@ class PeerRoomAPIAccessTests(TestCase):
         self.assertEqual(response.data['status'], 'assigned')
         self.assertEqual(response.data['category'], 'anxiety')
         self.assertEqual(response.data['room']['capacity'], 20)
+
+    def test_opted_out_user_can_rejoin_through_the_api(self):
+        PeerRoomMembership.objects.create(
+            user=self.user,
+            room=self.anxiety_room,
+            category='anxiety',
+        )
+        self.client.post(reverse('peer-room-opt-out'), {}, format='json')
+
+        response = self.client.post(reverse('peer-room-rejoin'), {}, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['status'], 'assigned')
+        self.assertIn(response.data['room']['id'], {self.anxiety_room.id, self.other_anxiety_room.id})
+
+    def test_rejoin_api_is_idempotent_for_an_already_assigned_user(self):
+        PeerRoomMembership.objects.create(
+            user=self.user,
+            room=self.anxiety_room,
+            category='anxiety',
+        )
+
+        response = self.client.post(reverse('peer-room-rejoin'), {}, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['status'], 'assigned')
+        self.assertEqual(response.data['room']['id'], self.anxiety_room.id)
+        self.assertEqual(
+            PeerRoomMembership.objects.filter(user=self.user, status='active').count(),
+            1,
+        )
+
+    def test_rejoin_api_keeps_user_waitlisted_when_rooms_are_full(self):
+        self.anxiety_room.capacity = 1
+        self.anxiety_room.save(update_fields=['capacity'])
+        self.other_anxiety_room.capacity = 1
+        self.other_anxiety_room.save(update_fields=['capacity'])
+        PeerRoomMembership.objects.create(user=self.user, room=self.anxiety_room, category='anxiety')
+        self.client.post(reverse('peer-room-opt-out'), {}, format='json')
+        PeerRoomMembership.objects.create(
+            user=self.make_user('replacement-member', 'anxiety'),
+            room=self.anxiety_room,
+            category='anxiety',
+        )
+        PeerRoomMembership.objects.create(
+            user=self.make_user('second-room-member', 'anxiety'),
+            room=self.other_anxiety_room,
+            category='anxiety',
+        )
+
+        response = self.client.post(reverse('peer-room-rejoin'), {}, format='json')
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.data['state']['status'], 'waitlisted')
+        self.assertIn('still on the waitlist', response.data['error'])
 
     def test_messages_require_membership_in_the_requested_room(self):
         PeerRoomMembership.objects.create(

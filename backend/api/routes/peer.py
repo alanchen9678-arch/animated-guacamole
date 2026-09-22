@@ -23,6 +23,7 @@ from app.models import (
 from app.peer_rooms import (
     assign_peer_room,
     opt_out_to_waitlist,
+    rejoin_peer_room,
     switch_peer_room,
     user_has_room_access,
 )
@@ -261,6 +262,30 @@ class PeerRoomOptOutView(APIView):
         ).exists():
             return Response({'error': 'You do not have an active room to leave.'}, status=status.HTTP_400_BAD_REQUEST)
         return Response(opt_out_to_waitlist(request.user))
+
+
+class PeerRoomRejoinView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        profile = _get_profile(request.user)
+        if not profile.is_peer_onboarded:
+            return Response({'error': 'Complete peer onboarding first.'}, status=status.HTTP_403_FORBIDDEN)
+
+        state, rejoined = rejoin_peer_room(request.user)
+        if state['status'] == 'assigned':
+            return Response(state)
+        if state['status'] == 'not_waitlisted':
+            return Response({'error': 'You are not currently on the room waitlist.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not rejoined:
+            return Response(
+                {
+                    'error': f"All current {state['categoryLabel']} support rooms are full. You are still on the waitlist.",
+                    'state': state,
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(state)
 
 
 class PeerRoomMessageView(APIView):

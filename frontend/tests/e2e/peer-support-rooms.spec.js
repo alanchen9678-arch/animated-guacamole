@@ -59,6 +59,9 @@ test('waitlisted room state occupies the room position and can be checked again'
   await page.goto('/')
 
   await expect(page.getByText('You are on the Anxiety waitlist')).toBeVisible()
+  const checkAgain = page.getByRole('button', { name: 'Check again' })
+  await expect(checkAgain).toHaveCSS('border-radius', '10px')
+  await expect(checkAgain).toHaveCSS('font-size', '13.12px')
   await expect(page.getByText(/currently full/)).toBeVisible()
   await page.getByRole('button', { name: 'Check again' }).click()
   await expect(page.getByRole('button', { name: /Anxiety Support Room 1/ })).toBeVisible()
@@ -97,6 +100,13 @@ test('room controls switch rooms and leave for a future-room waitlist', async ({
     }
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(currentState) })
   })
+  await page.route('**/api/peer/rooms/rejoin/', (route) => {
+    currentState = {
+      ...assigned,
+      room: { id: 5, name: 'Anxiety Support Room 1', memberCount: 13, capacity: 20 },
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(currentState) })
+  })
 
   await page.goto('/')
   await page.getByRole('button', { name: /Anxiety Support Room 1/ }).click()
@@ -107,5 +117,37 @@ test('room controls switch rooms and leave for a future-room waitlist', async ({
   await page.getByRole('button', { name: 'Leave room' }).click()
   await page.getByRole('button', { name: 'Leave and wait' }).click()
   await expect(page.getByText('You are on the Anxiety waitlist')).toBeVisible()
-  await expect(page.getByText(/new Anxiety support room is added/)).toBeVisible()
+  await expect(page.getByText(/Rejoin now if a current room has space/)).toBeVisible()
+  await page.getByRole('button', { name: 'Rejoin peer support' }).click()
+  await expect(page.getByRole('button', { name: /Anxiety Support Room 1/ })).toBeVisible()
+})
+
+
+test('an opted-out user remains waitlisted when both rooms are full', async ({ page }) => {
+  await stubPeerSupportShell(page)
+  const waitlisted = {
+    status: 'waitlisted',
+    category: 'anxiety',
+    categoryLabel: 'Anxiety',
+    room: null,
+    waitlist: { reason: 'opted_out', joinedAt: '2026-09-20T12:00:00Z' },
+  }
+  await page.route('**/api/peer/rooms/', (route) => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify(waitlisted),
+  }))
+  await page.route('**/api/peer/rooms/rejoin/', (route) => route.fulfill({
+    status: 409,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      error: 'All current Anxiety support rooms are full. You are still on the waitlist.',
+      state: waitlisted,
+    }),
+  }))
+
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Rejoin peer support' }).click()
+
+  await expect(page.getByText('All current Anxiety support rooms are full. You are still on the waitlist.')).toBeVisible()
+  await expect(page.getByText('You are on the Anxiety waitlist')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Rejoin peer support' })).toBeEnabled()
 })

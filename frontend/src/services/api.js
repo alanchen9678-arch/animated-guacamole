@@ -194,6 +194,13 @@ export async function optOutPeerRoom() {
   })
 }
 
+export async function rejoinPeerRoom() {
+  return apiFetch('/api/peer/rooms/rejoin/', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
+}
+
 export async function fetchRoomMessages(roomId, sinceId) {
   const qs = sinceId ? `?since=${sinceId}` : ''
   return apiFetch(`/api/peer/rooms/${roomId}/messages/${qs}`)

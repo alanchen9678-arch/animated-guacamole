@@ -59,6 +59,7 @@ Match IDs are checked against the authenticated user. These endpoints do not con
 
 - `GET|POST /api/peer/profile/`
 - `GET /api/peer/rooms/`
+- `POST /api/peer/rooms/rejoin/` - explicitly rejoin an available current room in the user's support category; if all current rooms are full, the user remains waitlisted.
 - `GET|POST /api/peer/rooms/:id/messages/`
 - `GET /api/peer/peers/`
 - `POST /api/peer/connect/:userId/`
