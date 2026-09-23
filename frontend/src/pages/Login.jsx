@@ -5,7 +5,7 @@ import { useNavigation } from '../context/NavigationContext.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { useAccessibleDialog } from '../hooks/use-accessible-dialog.js'
 
-export default function Login({ initialMode = 'login', onClose }) {
+export default function Login({ initialMode = 'login', onClose, notice = '', successPage = 'home' }) {
   const { navigate } = useNavigation()
   const { login, register } = useUser()
   const [mode, setMode] = useState(initialMode)
@@ -59,7 +59,7 @@ export default function Login({ initialMode = 'login', onClose }) {
         await register(form.username, form.email, form.password, form.firstName)
       }
 
-      navigate(mode === 'register' ? 'checkins' : 'home')
+      navigate(mode === 'register' ? 'checkins' : successPage)
       onClose()
     } catch (err) {
       setError(err.message)
@@ -301,6 +301,14 @@ export default function Login({ initialMode = 'login', onClose }) {
             </div>
 
             <form id="auth-form-panel" role="tabpanel" onSubmit={submit}>
+              {mode === 'login' && notice && (
+                <FeedbackNotice
+                  variant="warning"
+                  title="Session expired"
+                  message={notice}
+                  compact
+                />
+              )}
               {mode === 'register' && (
                 <div className="auth-field">
                   <label htmlFor="auth-first-name">First name</label>

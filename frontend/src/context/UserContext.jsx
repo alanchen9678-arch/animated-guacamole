@@ -1,10 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 
 import { API_BASE_URL } from '../services/config'
+import { SESSION_EXPIRED_EVENT, SESSION_EXPIRED_MESSAGE } from '../services/api.js'
 
 const API = `${API_BASE_URL}/api/auth`
 const TOKEN_STORAGE_KEY = 'dawn-harbor_token'
 const LEGACY_SENSITIVE_KEYS = ['dawn-harbor.journal.entries', 'dawn-harbor.journal.moods']
+const SESSION_DRAFT_PREFIXES = ['dawn-harbor.checkin.draft.', 'dawn-harbor.journal.draft.']
 
 function getInitialToken() {
   const sessionToken = sessionStorage.getItem(TOKEN_STORAGE_KEY)
@@ -18,13 +20,19 @@ function getInitialToken() {
   return sessionToken
 }
 
-function clearSessionData() {
+function clearAuthToken() {
   sessionStorage.removeItem(TOKEN_STORAGE_KEY)
   localStorage.removeItem(TOKEN_STORAGE_KEY)
+}
+
+function clearSessionData() {
+  clearAuthToken()
   LEGACY_SENSITIVE_KEYS.forEach((key) => localStorage.removeItem(key))
   for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
     const key = sessionStorage.key(index)
-    if (key?.startsWith('dawn-harbor.checkin.draft.')) sessionStorage.removeItem(key)
+    if (SESSION_DRAFT_PREFIXES.some((prefix) => key?.startsWith(prefix))) {
+      sessionStorage.removeItem(key)
+    }
   }
 }
 
@@ -34,6 +42,14 @@ export function UserProvider({ children }) {
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(getInitialToken)
   const [loading, setLoading] = useState(() => Boolean(sessionStorage.getItem(TOKEN_STORAGE_KEY)))
+  const [sessionExpired, setSessionExpired] = useState('')
+
+  const expireSession = useCallback((message = SESSION_EXPIRED_MESSAGE) => {
+    clearAuthToken()
+    setToken(null)
+    setUser(null)
+    setSessionExpired(message)
+  }, [])
 
   const refreshUser = useCallback(async (tokenOverride = token) => {
     if (!tokenOverride) {
@@ -42,17 +58,27 @@ export function UserProvider({ children }) {
     }
 
     const res = await fetch(`${API}/me/`, { headers: { Authorization: `Token ${tokenOverride}` } })
+    const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      clearSessionData()
-      setToken(null)
-      setUser(null)
-      throw new Error('Unable to load user.')
+      if (res.status === 401) {
+        expireSession()
+        throw new Error(SESSION_EXPIRED_MESSAGE)
+      }
+      throw new Error(data.error || data.detail || 'Unable to load user.')
     }
 
-    const data = await res.json()
     setUser(data)
     return data
-  }, [token])
+  }, [expireSession, token])
+
+  useEffect(() => {
+    function handleSessionExpired(event) {
+      expireSession(event.detail?.message || SESSION_EXPIRED_MESSAGE)
+    }
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired)
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired)
+  }, [expireSession])
 
   useEffect(() => {
     if (!token) { setLoading(false); return }
@@ -62,10 +88,11 @@ export function UserProvider({ children }) {
   }, [token, refreshUser])
 
   const _persist = (tok, userData) => {
-    clearSessionData()
+    clearAuthToken()
     sessionStorage.setItem(TOKEN_STORAGE_KEY, tok)
     setToken(tok)
     setUser(userData)
+    setSessionExpired('')
   }
 
   const login = useCallback(async (username, password) => {
@@ -100,6 +127,7 @@ export function UserProvider({ children }) {
     clearSessionData()
     setToken(null)
     setUser(null)
+    setSessionExpired('')
   }, [token])
 
   const updateProfile = useCallback(async (fields) => {
@@ -113,13 +141,16 @@ export function UserProvider({ children }) {
       body: JSON.stringify(fields),
     })
     const data = await res.json()
-    if (!res.ok) throw new Error(data.error || 'Update failed.')
+    if (!res.ok) {
+      if (res.status === 401) expireSession()
+      throw new Error(res.status === 401 ? SESSION_EXPIRED_MESSAGE : data.error || 'Update failed.')
+    }
     setUser(data)
     return data
-  }, [])
+  }, [expireSession])
 
   return (
-    <UserContext.Provider value={{ user, token, loading, login, register, logout, updateProfile, refreshUser }}>
+    <UserContext.Provider value={{ user, token, loading, sessionExpired, login, register, logout, updateProfile, refreshUser }}>
       {children}
     </UserContext.Provider>
   )

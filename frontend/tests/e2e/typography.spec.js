@@ -101,8 +101,8 @@ test('dashboard pages share the home typography hierarchy and secondary color', 
   await expectSingleLinePageSubtitle(page.locator('.il-page-header p'))
 
   await page.getByRole('button', { name: 'Chatbot', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Your 24/7 Mental Wellness Companion' })).toHaveCSS('font-size', '32px')
-  await expect(page.getByRole('heading', { name: 'Your 24/7 Mental Wellness Companion' })).toHaveCSS('font-weight', '650')
+  await expect(page.getByRole('heading', { name: 'Your AI Wellness Companion' })).toHaveCSS('font-size', '32px')
+  await expect(page.getByRole('heading', { name: 'Your AI Wellness Companion' })).toHaveCSS('font-weight', '650')
   await expect(page.locator('.intro-body')).toHaveCSS('color', 'rgb(91, 96, 92)')
   await expect(page.getByText('Honest, not just agreeable')).toHaveCount(0)
   await expect(page.getByText('Personalized to you')).toHaveCount(0)

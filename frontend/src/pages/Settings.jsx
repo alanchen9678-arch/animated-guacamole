@@ -218,7 +218,7 @@ export default function Settings() {
             <div className="settings-field">
               <label htmlFor="settings-bio">Bio</label>
               <p className="settings-field-help" id="settings-bio-help">
-                Optional. Shared with your therapist if privacy allows.
+                Optional profile note. It is not shown to peers.
               </p>
               <textarea
                 className="settings-input settings-textarea"

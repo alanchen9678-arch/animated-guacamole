@@ -77,7 +77,7 @@ function ChatbotIntro({ onStart }) {
     <section className="page">
       <div className="intro-wrap">
         <p className="intro-eyebrow">Dawn Harbor · AI Chatbot</p>
-        <h2 className="intro-heading">Your 24/7 Mental Wellness Companion</h2>
+        <h2 className="intro-heading">Your AI Wellness Companion</h2>
 
         <p className="intro-body">
           Dawn Harbor gives you access to an interactive AI chatbot you can reach any time of day or

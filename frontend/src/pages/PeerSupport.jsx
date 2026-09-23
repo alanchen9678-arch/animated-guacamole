@@ -33,7 +33,7 @@ const MOD_RULES = [
     terms: ['suicide','suicidal','kill myself','end my life','end it all','want to die','dont want to live','do not want to live'],
     patterns: [],
     label: 'We noticed something serious',
-    message: "It sounds like you might be in a really dark place right now. You are not alone. Please reach out to the 988 Suicide & Crisis Lifeline (call or text 988, available 24/7). You can also connect with a therapist through Dawn Harbor's Therapist Match.",
+    message: 'It sounds like you might be in a really dark place right now. You are not alone. Please call or text 988 for the Suicide & Crisis Lifeline. If there is immediate danger, call 911 or your local emergency number. Therapist Match is only a guided demo and does not contact a provider.',
     color: '#dc2626', bg: 'rgba(220,38,38,0.06)', border: 'rgba(220,38,38,0.22)',
   },
   {
@@ -78,7 +78,7 @@ const GUIDELINES = [
   'Do not harass, bully, or demean other community members.',
   'Do not give medical advice or encourage others to stop taking medication.',
   'If someone expresses a crisis, encourage them to seek professional help.',
-  'Conversations are AI-moderated 24/7. Serious or repeated violations may result in removal.',
+  'Messages are screened by automated safety checks before they are sent. These checks are not a substitute for human moderation or emergency support.',
 ]
 
 function ts() {
@@ -175,9 +175,9 @@ function OnboardingView({ onDone, loading, error }) {
       <section className="page">
         <div className="ps-center-wrap">
           <p className="ps-eyebrow">Almost there</p>
-          <h2 className="ps-heading">Assigning your anonymous identity</h2>
+          <h2 className="ps-heading">Assigning your peer identity</h2>
           <p className="ps-sub">
-            You will receive a unique anonymous name. No one will ever know your real identity.
+            You will receive a separate peer name and symbol. Other peers will not see your account name, but Dawn Harbor links this identity to your account so the feature can work.
           </p>
           {error && <FeedbackNotice variant="error" title="Could not enter the community" message={error} compact />}
           <AsyncButton
@@ -254,7 +254,7 @@ function HubView({ profile, roomState, peers, setPeers, onRoom, onDM, loadingPee
       <header className="page-header ps-page-header">
         <h2>Peer Support</h2>
         <p>
-          Join your support room and connect privately with anonymous peers.
+          Join your support room and connect with peers through your separate peer identity.
         </p>
       </header>
 
@@ -262,7 +262,7 @@ function HubView({ profile, roomState, peers, setPeers, onRoom, onDM, loadingPee
         <AnonAvatar symbol={profile.avatarSymbol} color={profile.avatarColor} size={42} />
         <div>
           <p className="ps-hub-name">{profile.anonymousName}</p>
-          <p className="ps-hub-name-sub">Your anonymous identity</p>
+          <p className="ps-hub-name-sub">Your peer identity</p>
         </div>
       </div>
 
@@ -330,7 +330,7 @@ function HubView({ profile, roomState, peers, setPeers, onRoom, onDM, loadingPee
                 <AnonAvatar symbol={p.avatarSymbol} color={p.color} size={48} />
                 <div className="ps-peer-info">
                   <strong>{p.name}</strong>
-                  <p className="ps-peer-concerns">Active anonymous chat</p>
+                  <p className="ps-peer-concerns">Active peer chat</p>
                 </div>
                 <button className="ps-req-btn ps-req-btn--on" onClick={() => onDM(p)}>Message</button>
               </div>
@@ -701,7 +701,7 @@ function DMView({ peer, profile, onBack, onLeave }) {
           <AnonAvatar symbol={peer.avatarSymbol} color={peer.color} size={34} />
           <div className="ps-chat-profile-copy">
             <strong className="ps-chat-name">{peer.name}</strong>
-            <span className="ps-chat-sub">Anonymous {"\u00b7"} 5s updates</span>
+            <span className="ps-chat-sub">Peer identity {"\u00b7"} 5s updates</span>
           </div>
         </div>
         <div className="ps-leave-wrap">
@@ -717,7 +717,7 @@ function DMView({ peer, profile, onBack, onLeave }) {
       </div>
 
       <div className="ps-anon-notice">
-        Anonymous chat. Do not share personal info, contact details, or social media handles.
+        Peer chat. Do not share personal info, contact details, or social media handles.
       </div>
 
       {modAlert && <ModAlert rule={modAlert} onDismiss={() => setModAlert(null)} />}

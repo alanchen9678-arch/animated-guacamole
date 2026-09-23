@@ -80,14 +80,14 @@ test('peer match hover adds edge spacing without moving its content', async ({ p
   await page.goto('/')
 
   await expect(page.getByRole('heading', { level: 2, name: 'Peer Support' })).toBeVisible()
-  const pageSubtitle = page.getByText('Join your support room and connect privately with anonymous peers.')
+  const pageSubtitle = page.getByText('Join your support room and connect with peers through your separate peer identity.')
   await expect(pageSubtitle).toBeVisible()
   await expect(pageSubtitle).toHaveCSS('white-space', 'nowrap')
   await expect(page.locator('.ps-page-header')).toHaveClass(/page-header/)
   await expect(page.locator('.ps-page-header')).toHaveCSS('border-bottom-style', 'solid')
   await expect(page.getByRole('heading', { level: 2, name: 'Peer Support' })).toHaveCSS('font-size', '32px')
   await expect(page.getByRole('heading', { level: 2, name: 'Peer Support' })).toHaveCSS('font-weight', '650')
-  await expect(page.locator('.ps-hub-identity')).toContainText('Your anonymous identity')
+  await expect(page.locator('.ps-hub-identity')).toContainText('Your peer identity')
 
   const match = page.locator('.ps-peer-card').filter({ hasText: 'Calm Harbor' })
   const avatar = match.locator(':scope > div').first()

@@ -9,7 +9,7 @@ const FEATURE_PRESENTATION = {
   checkins: { label: 'A weekly check-in question with a seven-point scale and streak summary', layout: 'reverse' },
   journal: { label: 'A journal notebook paired with a mood calendar', layout: 'wide' },
   therapist: { label: 'A therapist profile with fit score, connection action, and separate scheduling information', layout: 'offset' },
-  community: { label: 'An anonymous peer support identity with a support room and peer connections', layout: 'reverse' },
+  community: { label: 'A separate peer support identity with a support room and peer connections', layout: 'reverse' },
   library: { label: 'Mental health library topics paired with a short knowledge check', layout: 'wide' },
 }
 
@@ -42,7 +42,7 @@ export default function FeatureStories({ features }) {
       <motion.header className='landing-features-intro' variants={revealItem} {...motionProps}>
         <h2 id='landing-features-title'>Support for the way you feel, reflect, and connect.</h2>
         <p>
-          Dawn Harbor brings private reflection, guided check-ins, care exploration, and community into one calm workspace.
+          Dawn Harbor brings personal reflection, guided check-ins, care exploration, and community into one calm workspace.
         </p>
       </motion.header>
 

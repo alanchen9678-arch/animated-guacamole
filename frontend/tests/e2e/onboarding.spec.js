@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }) => {
 test('logged-out onboarding shows key content', async ({ page }) => {
   await page.goto('/')
 
-  await expect(page.getByRole('heading', { name: /your calm, always-on mental wellness companion\./i })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /your calm, everyday mental wellness companion\./i })).toBeVisible()
   await expect(page.locator('.landing-hero').getByRole('button', { name: 'Get started free' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Log in' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Support for the way you feel, reflect, and connect.' })).toBeVisible()

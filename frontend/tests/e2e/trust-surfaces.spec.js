@@ -17,6 +17,9 @@ test('public landing uses accurate therapist copy, social metadata, and symbol a
   await expect(page.getByText('Get paired with a licensed professional')).toHaveCount(0)
   await expect(page.getByText('trusted care')).toHaveCount(0)
   await expect(page.getByText('Explore a guided matching demo with sample therapist profiles tailored to your preferences.')).toBeVisible()
+  await expect(page.getByText('Short weekly surveys that help you notice changes in your well-being over time.')).toBeVisible()
+  await expect(page.getByText('A reflective space for daily experiences, private unless you choose to share entries.')).toBeVisible()
+  await expect(page.getByText('Connect with others through a separate peer-facing name and symbol.')).toBeVisible()
   await expect(page.locator('.fv-therapist-person')).toContainText('Sample therapist profile')
   await expect(page.getByText('Explore sample match')).toBeVisible()
 
@@ -106,6 +109,7 @@ test('returning chatbot users retain direct safety guidance and reduced-motion s
   await page.goto('/')
 
   await expect(page.getByRole('heading', { name: 'Your 24/7 Mental Wellness Companion' })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Your AI Wellness Companion' })).toHaveCount(0)
   const safety = page.getByLabel('Chatbot safety information')
   await expect(safety).toBeVisible()
   await expect(safety).toContainText('not monitored by a clinician')

@@ -396,13 +396,13 @@ function generateInsight(scores, prevScores) {
     const rising = CATEGORIES.filter(c => scores[c.id] - prevScores[c.id] > 10)
     if (rising.length) {
       const names = rising.map(c => c.label.toLowerCase()).join(' and ')
-      return `Your ${names} score${rising.length > 1 ? 's have' : ' has'} risen notably since last week. That pattern is worth paying attention to. The AI Chatbot or Therapist Match can help you unpack what's going on.`
+      return `Your ${names} score${rising.length > 1 ? 's have' : ' has'} risen notably since last week. That pattern may be worth reflecting on. The AI Chatbot can help you think it through, and Therapist Match offers a guided sample matching experience.`
     }
   }
   const avg = Object.values(scores).reduce((a, b) => a + b, 0) / CATEGORIES.length
-  if (avg < 35) return "Your scores look healthy across the board this week. Keep doing what you're doing, and come back next week to keep the streak going."
-  if (scores[top.id] >= 75) return `Your ${top.label.toLowerCase()} is scoring in the ${scoreBand(scores[top.id]).label.toLowerCase()} range. Dawn Harbor's AI Chatbot and Therapist Match are here whenever you're ready for support.`
-  return "Thanks for completing this check-in. Your results are tracked over time so Dawn Harbor can spot patterns and reach out when things start to shift."
+  if (avg < 35) return 'Your reported scores are in the lower range this week. Come back next week to keep noticing patterns over time.'
+  if (scores[top.id] >= 75) return `Your reported ${top.label.toLowerCase()} score is in the ${scoreBand(scores[top.id]).label.toLowerCase()} range. You can use the AI Chatbot to reflect, or seek support from a qualified professional outside Dawn Harbor.`
+  return 'Thanks for completing this check-in. Your results are tracked over time so you can notice patterns and changes.'
 }
 
 function fmtDate(str) {

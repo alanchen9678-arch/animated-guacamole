@@ -1,5 +1,15 @@
 import { API_BASE_URL } from './config'
 
+export const SESSION_EXPIRED_EVENT = 'dawn-harbor:session-expired'
+export const SESSION_EXPIRED_MESSAGE = 'Your session expired. Please sign in again to continue.'
+
+export function announceSessionExpired() {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT, {
+    detail: { message: SESSION_EXPIRED_MESSAGE },
+  }))
+}
+
 function getAuthHeaders() {
   const token = sessionStorage.getItem('dawn-harbor_token')
   return token ? { Authorization: `Token ${token}` } : {}
@@ -16,16 +26,20 @@ function getErrorMessage(data) {
 }
 
 async function apiFetch(path, opts = {}) {
+  const authHeaders = getAuthHeaders()
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...opts,
     headers: {
       'Content-Type': 'application/json',
-      ...getAuthHeaders(),
+      ...authHeaders,
       ...opts.headers,
     },
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
+    if (res.status === 401 && authHeaders.Authorization) {
+      announceSessionExpired()
+    }
     const error = new Error(getErrorMessage(data))
     error.status = res.status
     error.data = data

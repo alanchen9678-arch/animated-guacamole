@@ -157,7 +157,7 @@ function PeerSupportVignette() {
         <span className='fv-avatar fv-avatar--peer'><AvatarSymbol symbol='peer-cove' size={25} /></span>
         <div>
           <strong>Quiet Cedar</strong>
-          <span>Your anonymous identity</span>
+          <span>Your peer identity</span>
         </div>
       </div>
 
@@ -174,7 +174,7 @@ function PeerSupportVignette() {
           <span className='fv-avatar fv-avatar--small'><AvatarSymbol symbol='peer-tide' size={20} /></span>
           <div>
             <strong>Calm River</strong>
-            <span>Active anonymous chat</span>
+            <span>Active peer chat</span>
           </div>
           <span className='fv-row-action fv-row-action--active'>Message</span>
         </div>

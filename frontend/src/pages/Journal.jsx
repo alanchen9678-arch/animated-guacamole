@@ -98,11 +98,11 @@ const NEGATIVE_TERMS = ['sad','anxious','stressed','exhausted','overwhelmed','dr
 const AI_RESPONSES = {
   crisis: {
     tone: 'crisis',
-    text: "I'm very concerned about what you've written. Please reach out for support right now. You don't have to face this alone. Call or text 988 (Suicide & Crisis Lifeline, available 24/7) or connect with a licensed therapist through Dawn Harbor's Therapist Match.",
+    text: "I'm very concerned about what you've written. Please reach out for support right now. You don't have to face this alone. Call or text 988 for the Suicide & Crisis Lifeline. If there is immediate danger, call 911 or your local emergency number. Therapist Match is only a guided demo and does not contact a provider.",
   },
   alert: {
     tone: 'alert',
-    text: "I noticed some patterns in your entry that I want to gently check in about. It's okay to not be okay. If these feelings are persisting, speaking with a therapist might really help. Dawn Harbor's Therapist Match can connect you with someone suited to exactly what you're going through.",
+    text: "I noticed some difficult language in your entry. If these feelings persist, consider speaking with a qualified professional you trust. Dawn Harbor's Therapist Match can help you explore sample profiles, but it does not contact a provider.",
   },
   positive: [
     "I love reading this. It sounds like you're building some real momentum. Hold onto that feeling.",

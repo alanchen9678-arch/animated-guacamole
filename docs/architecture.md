@@ -4,10 +4,10 @@ Dawn Harbor is a React single-page application backed by a Django REST API.
 
 ## Request flow
 
-1. React stores the DRF token in `localStorage` and sends it as `Authorization: Token …`.
+1. React stores the DRF token in browser `sessionStorage` and sends it as `Authorization: Token …`. Expired sessions return users to a login dialog without deleting recoverable drafts.
 2. Django's global REST policy requires authentication unless an auth view explicitly permits anonymous access.
 3. Route-specific serializers validate payloads before models are changed.
-4. User-owned querysets scope journal, chat, peer, and therapist data to the authenticated account. AI and therapist message rows also store the account user ID directly for durable ownership and efficient auditing. Peer messages retain their direct sender relationship while peer-facing APIs remain anonymous.
+4. User-owned querysets scope journal, chat, peer, and therapist data to the authenticated account. AI and therapist message rows also store the account user ID directly for durable ownership and efficient auditing. Peer messages retain their direct sender relationship while peer-facing APIs expose only the separate peer identity.
 
 ## Backend
 

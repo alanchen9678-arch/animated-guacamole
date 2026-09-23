@@ -10,15 +10,15 @@ Authenticated chat stores the newest 100 messages for display and sends the late
 
 ## Journal
 
-Each user can store one entry per day with text, mood, and a doodle. Local storage supports offline/anonymous UI state; authenticated state is reconciled with the backend. Optional chatbot and journal sharing controls are private by default. Keyword-based support prompts include 988 guidance for crisis language.
+Each authenticated user can store one entry per day with text, mood, and a doodle. In-progress entries are kept in browser session storage, while saved entries are persisted to the account. Optional chatbot and journal sharing controls are off by default. Keyword-based support prompts include 988 guidance for crisis language.
 
 ## Therapist match
 
-Matching ranks a bundled demo directory against needs and user preferences. Saved matches, booking-request history, therapist chat, and appointment history persist to the account. Outstanding requests can be cancelled; upcoming appointments can be reviewed, edited, or cancelled; overlapping appointments are rejected. Appointment times display their saved timezone. Account-wide therapist-sharing controls live on the Therapist Match homepage and apply to every current and future match and booking; individual bookings cannot override them. A privacy-aware preview lists the exact check-ins, recent journal entries, and recent AI-chat messages that would be shared. Booking sends an internal request only; no external therapist or payment system is connected.
+Matching ranks a bundled demo directory against needs and user preferences. Saved demo matches, request history, simulated therapist chat, and demo appointment history persist to the account. Outstanding requests can be cancelled; upcoming appointments can be reviewed, edited, or cancelled; overlapping appointments are rejected. Appointment times display their saved timezone. Account-wide therapist-sharing controls live on the Therapist Match homepage and apply to every current and future demo connection. These records remain inside Dawn Harbor; no external therapist or payment system is connected.
 
 ## Peer support
 
-Users receive anonymous profiles, join topic rooms, connect, and exchange direct messages. Generated colors are stable across server restarts. Contact sharing, harassment, and unsafe advice are blocked locally; configured AI moderation supplies a second safety check.
+Users receive peer-facing pseudonymous profiles, join topic rooms, connect, and exchange direct messages. Dawn Harbor still links each peer identity to its owning account. Generated colors are stable across server restarts. Contact sharing, harassment, and unsafe advice are checked locally; configured AI moderation supplies a second automated check.
 
 ## Information library
 

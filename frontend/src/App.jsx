@@ -13,11 +13,11 @@ import './app.css'
 import './quiet-pages.css'
 
 const features = [
-  { id: 'chatbot',   title: 'AI Chatbot',       desc: "Talk through what's on your mind with Dawn Harbor's AI, available around the clock.",          tag: '24/7'        },
-  { id: 'checkins',  title: 'Check-Ins',         desc: 'Quick daily surveys that monitor your mental wellness and flag changes early.',            tag: 'Daily'       },
-  { id: 'journal',   title: 'Thought Journal',   desc: "A private, open-ended space to process your feelings and daily experiences.",             tag: 'Private'     },
+  { id: 'chatbot',   title: 'AI Chatbot',       desc: "Talk through what's on your mind with Dawn Harbor's automated wellness chatbot.",          tag: 'AI'          },
+  { id: 'checkins',  title: 'Check-Ins',         desc: 'Short weekly surveys that help you notice changes in your well-being over time.',           tag: 'Weekly'      },
+  { id: 'journal',   title: 'Thought Journal',   desc: 'A reflective space for daily experiences, private unless you choose to share entries.',    tag: 'Your space'  },
   { id: 'therapist', title: 'Therapist Match',   desc: 'Explore a guided matching demo with sample therapist profiles tailored to your preferences.', tag: 'Demo' },
-  { id: 'community', title: 'Peer Support',      desc: "Connect anonymously with others who understand what you're going through.",               tag: 'Anonymous'   },
+  { id: 'community', title: 'Peer Support',      desc: 'Connect with others through a separate peer-facing name and symbol.',                      tag: 'Peer identity' },
   { id: 'library',   title: 'Info Library',      desc: 'Explore clear guides to common mental health conditions, then test your understanding with a short quiz.', tag: 'Interactive' },
 ]
 
@@ -63,7 +63,7 @@ function getTodayKey() {
 
 function AppShell() {
   const { activePage, navigate }    = useNavigation()
-  const { user, loading }   = useUser()
+  const { user, loading, sessionExpired } = useUser()
   const [showAuth, setShowAuth]     = useState(false)
   const [authMode, setAuthMode]     = useState('login')
   const [notifOpen, setNotifOpen]   = useState(false)
@@ -78,6 +78,7 @@ function AppShell() {
   const checkinPromptBackdropRef = useRef(null)
   const checkinPromptDialogRef = useRef(null)
   const checkinPromptHeadingRef = useRef(null)
+  const sessionReturnPageRef = useRef(activePage)
 
   const isLoggedIn = !!user
   const hasCurrentPersonalityAssessment = user?.hasCurrentPersonalityAssessment === true
@@ -200,6 +201,13 @@ function AppShell() {
   }
 
   useEffect(() => {
+    if (!sessionExpired) return
+    sessionReturnPageRef.current = activePage
+    setAuthMode('login')
+    setShowAuth(true)
+  }, [activePage, sessionExpired])
+
+  useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     contentRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [activeShellPage, isLoggedIn])
@@ -212,7 +220,14 @@ function AppShell() {
     <div className={`app-root${isLoggedIn ? ' app-root--dashboard' : ''}`}>
 
 
-      {showAuth && <Login initialMode={authMode} onClose={() => setShowAuth(false)} />}
+      {showAuth && (
+        <Login
+          initialMode={authMode}
+          notice={sessionExpired}
+          successPage={sessionExpired ? sessionReturnPageRef.current : 'home'}
+          onClose={() => setShowAuth(false)}
+        />
+      )}
 
       {/* ── top bar ── */}
       <header className="topbar">
@@ -268,7 +283,7 @@ function AppShell() {
               <h1>
                 <WhisperText
                   as="span"
-                  text="Your calm, always-on mental wellness companion."
+                  text="Your calm, everyday mental wellness companion."
                   className="landing-whisper"
                 />
               </h1>
@@ -290,7 +305,7 @@ function AppShell() {
                 </div>
                 <div className="product-visual-tools" aria-label="Dawn Harbor tools">
                   <div className="product-visual-tool"><span>Mood</span><strong>Pick a mood</strong></div>
-                  <div className="product-visual-tool"><span>Journal</span><strong>Private</strong></div>
+                  <div className="product-visual-tool"><span>Journal</span><strong>Sharing off</strong></div>
                   <div className="product-visual-tool"><span>Check-in</span><strong>Due this week</strong></div>
                 </div>
               </div>
@@ -302,7 +317,7 @@ function AppShell() {
           <section className={'landing-endcap'} aria-labelledby={'landing-endcap-title'}>
             <div className={'landing-endcap-copy'}>
               <h2 id={'landing-endcap-title'}>Ready when you are.</h2>
-              <p>Create your private Dawn Harbor space.</p>
+              <p>Create your personal Dawn Harbor space.</p>
             </div>
             <button className={'btn-primary-lg'} onClick={() => openAuth('register')}>Get started free</button>
           </section>
@@ -329,7 +344,7 @@ function AppShell() {
                 <p className="djp-sub">Take a moment to write in your journal today.</p>
               </div>
             </div>
-            <p id="daily-journal-prompt-description" className="djp-body">Even a few sentences about how you're feeling can help Dawn Harbor support you better. Your entries are private.</p>
+            <p id="daily-journal-prompt-description" className="djp-body">Even a few sentences can help you reflect. Your entries stay private unless you turn on optional sharing.</p>
             <div className="djp-actions">
               <button type="button" className="djp-skip" onClick={dismissDailyPrompt}>Maybe later</button>
               <button type="button" className="djp-go" onClick={openJournalFromPrompt}>Open journal →</button>
@@ -404,7 +419,7 @@ function AppShell() {
                 <p className="cip-sub">It's been a while since your last check-in.</p>
               </div>
             </div>
-            <p id="overdue-checkin-prompt-description" className="cip-body">Regular check-ins help Dawn Harbor detect changes in your well-being early and support you more effectively. It only takes about 4 minutes.</p>
+            <p id="overdue-checkin-prompt-description" className="cip-body">Regular check-ins can help you notice changes in your well-being over time. This one takes about 4 minutes.</p>
             <div className="cip-actions">
               <button type="button" className="cip-skip" onClick={() => dismissCheckinPrompt(false)}>Maybe later</button>
               <button type="button" className="cip-go" onClick={() => dismissCheckinPrompt(true)}>Start check-in →</button>

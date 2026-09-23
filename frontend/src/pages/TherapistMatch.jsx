@@ -74,7 +74,7 @@ const CORE_THERAPISTS = [
     languages: ['English', 'Hindi'],
     mode: ['online', 'in-person'],
     rating: 4.9, reviews: 48, yearsExp: 12,
-    availability: 'Next available: Tomorrow',
+    availability: 'Example availability: Weekday mornings',
     bio: 'Dr. Sharma specializes in cognitive-behavioral therapy (CBT) for anxiety and burnout, with 12 years of experience helping high-achieving professionals find sustainable balance. Her approach is warm but direct. She will tell you what you need to hear.',
   },
   {
@@ -87,7 +87,7 @@ const CORE_THERAPISTS = [
     languages: ['English'],
     mode: ['in-person'],
     rating: 4.7, reviews: 31, yearsExp: 9,
-    availability: 'Next available: Mon Jun 17',
+    availability: 'Example availability: Weekday afternoons',
     bio: 'Dr. Walker brings a compassionate, relationship-focused lens to grief and social isolation. With a background in attachment theory, he helps clients build genuine connection and process loss at their own pace.',
   },
   {
@@ -100,7 +100,7 @@ const CORE_THERAPISTS = [
     languages: ['English', 'Spanish'],
     mode: ['online'],
     rating: 4.8, reviews: 62, yearsExp: 15,
-    availability: 'Next available: Today',
+    availability: 'Example availability: Select evenings',
     bio: 'Dr. Rodriguez focuses on building resilience and self-efficacy in clients navigating chronic stress and career burnout. Fluent in Spanish and English, she sees clients across California via telehealth.',
   },
   {
@@ -113,7 +113,7 @@ const CORE_THERAPISTS = [
     languages: ['English', 'Mandarin'],
     mode: ['online', 'in-person'],
     rating: 4.9, reviews: 87, yearsExp: 11,
-    availability: 'Next available: Wed Jun 18',
+    availability: 'Example availability: Flexible weekdays',
     bio: 'Dr. Chen is a bilingual therapist (English / Mandarin) specializing in anxiety disorders and social isolation. He uses an integrative approach combining CBT, ACT, and mindfulness-based techniques.',
   },
   {
@@ -126,7 +126,7 @@ const CORE_THERAPISTS = [
     languages: ['English'],
     mode: ['in-person', 'online'],
     rating: 4.8, reviews: 54, yearsExp: 14,
-    availability: 'Next available: Thu Jun 19',
+    availability: 'Example availability: Select weekends',
     bio: 'Dr. Johnson draws on narrative therapy and somatic approaches to help clients process grief and professional burnout. She is known for holding difficult emotions with exceptional warmth and steadiness.',
   },
   {
@@ -139,7 +139,7 @@ const CORE_THERAPISTS = [
     languages: ['English', 'Spanish'],
     mode: ['online'],
     rating: 4.6, reviews: 29, yearsExp: 7,
-    availability: 'Next available: Tomorrow',
+    availability: 'Example availability: Weekday mornings',
     bio: 'Dr. Brown helps clients break free from anxiety-driven avoidance patterns using evidence-based exposure therapy and motivational enhancement techniques. Available exclusively online across Texas.',
   },
   {
@@ -152,7 +152,7 @@ const CORE_THERAPISTS = [
     languages: ['English'],
     mode: ['in-person', 'online'],
     rating: 4.7, reviews: 41, yearsExp: 10,
-    availability: 'Next available: Mon Jun 17',
+    availability: 'Example availability: Weekday afternoons',
     bio: 'Dr. Park specializes in helping clients rediscover their sense of identity after burnout and build genuine self-worth. Her practice is warm, structured, and goal-oriented with clear milestones.',
   },
   {
@@ -165,7 +165,7 @@ const CORE_THERAPISTS = [
     languages: ['English', 'Spanish'],
     mode: ['online'],
     rating: 4.8, reviews: 36, yearsExp: 8,
-    availability: 'Next available: Today',
+    availability: 'Example availability: Select evenings',
     bio: 'Dr. Green is a grief specialist and anxiety therapist practising in Florida. Her telehealth practice makes high-quality care accessible statewide. She is known for creating an immediately safe and non-judgmental space.',
   },
 ]
@@ -207,11 +207,11 @@ const LAST_NAMES = [
 
 const COLOR_PALETTE = ['#3a6898', '#4d6b58', '#b45309', '#1d4ed8', '#be185d', '#15803d', '#9333ea', '#0891b2', '#c2410c', '#0f766e']
 const AVAILABILITY_OPTIONS = [
-  'Next available: Today',
-  'Next available: Tomorrow',
-  'Next available: This week',
-  'Next available: Within 3 days',
-  'Next available: Accepting new clients now',
+  'Example availability: Weekday mornings',
+  'Example availability: Weekday afternoons',
+  'Example availability: Select evenings',
+  'Example availability: Flexible weekdays',
+  'Example availability: Select weekends',
 ]
 
 const THERAPIST_ARCHETYPES = [
@@ -342,7 +342,7 @@ function buildGeneratedTherapists() {
         reviews,
         yearsExp,
         availability,
-        bio: `${name} ${archetype.bio} They currently serve clients based in ${stateCode}${archetype.mode.includes('in-person') ? `, with appointments centered in ${city}` : ''}.`,
+        bio: `${name} ${archetype.bio} This sample profile is configured for ${stateCode}${archetype.mode.includes('in-person') ? `, with example in-person availability in ${city}` : ''}.`,
       }
     })
   })
@@ -472,10 +472,19 @@ function BackBtn({ onClick, label = 'Back' }) {
 
 function Stars({ rating }) {
   return (
-    <span className="tm-rating" aria-label={`${rating} out of 5 rating`}>
+    <span className="tm-rating" aria-label={`Sample rating: ${rating} out of 5`}>
       <strong>{rating}</strong>
       <span aria-hidden="true"> / 5</span>
     </span>
+  )
+}
+
+function DemoDisclosure() {
+  return (
+    <aside className="tm-demo-disclosure" role="note" aria-label="Therapist Match demo notice">
+      <strong>Guided matching demo</strong>
+      <span>Profiles, replies, requests, and appointments are simulated and stay inside Dawn Harbor. No provider is contacted.</span>
+    </aside>
   )
 }
 
@@ -492,7 +501,7 @@ function ActiveTherapistChats({ chats, onOpen }) {
       {chats.length === 0 ? (
         <EmptyState
           title="No active therapist chats"
-          description="Therapists you connect with through Find a Therapist will appear here."
+          description="Sample profiles you connect with in this demo will appear here."
           compact
         />
       ) : (
@@ -619,7 +628,7 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind, onRefresh,
     <section className="page tm-page">
       <header className="page-header">
         <h2>Therapist Match</h2>
-        <p>Review your therapist sharing settings, then find a therapist who fits your profile.</p>
+        <p>Review your sharing settings, then explore sample profiles matched to your needs.</p>
       </header>
 
       <div className="tm-profile-grid">
@@ -663,7 +672,7 @@ function NeedsProfileView({ profile, activeChats, onOpenChat, onFind, onRefresh,
       </div>
 
       <button className="tm-primary-btn" onClick={onFind}>
-        Find a Therapist →
+        Explore sample matches →
       </button>
     </section>
   )
@@ -696,7 +705,7 @@ function PreferencesView({ prefs, onBack, onChange, onMatch }) {
       <BackBtn onClick={onBack} label="Needs Profile" />
       <header className="page-header">
         <h2>Your preferences</h2>
-        <p>We'll use these to filter and rank therapists for you.</p>
+        <p>We'll use these to filter and rank sample profiles for you.</p>
       </header>
 
       <div className="tm-prefs-sections">
@@ -768,7 +777,7 @@ function ResultsView({ matches, prefs, activeChats, onSelect, onOpenConnected, o
         <BackBtn onClick={onBack} label="Preferences" />
         <EmptyState
           title="No matches found"
-          description={`No therapists licensed in ${prefs.state} match your current filters. Try adjusting your language or insurance preferences.`}
+          description={`No sample profiles in ${prefs.state} match your current filters. Try adjusting your language or insurance preferences.`}
           actionLabel="Adjust preferences"
           onAction={onBack}
         />
@@ -782,8 +791,8 @@ function ResultsView({ matches, prefs, activeChats, onSelect, onOpenConnected, o
     <section className="page tm-page">
       <BackBtn onClick={onBack} label="Preferences" />
       <header className="page-header">
-        <h2>Your top {matches.length} match{matches.length !== 1 ? 'es' : ''}</h2>
-        <p>Ranked by how well each therapist aligns with your needs profile and preferences.</p>
+        <h2>Your top {matches.length} sample match{matches.length !== 1 ? 'es' : ''}</h2>
+        <p>Ranked by how well each sample profile aligns with your needs and preferences.</p>
       </header>
 
       <div className="tm-results-list">
@@ -807,14 +816,14 @@ function ResultsView({ matches, prefs, activeChats, onSelect, onOpenConnected, o
               </div>
               <div className="tm-result-meta">
                 <Stars rating={t.rating} />
-                <span>{t.reviews} reviews</span>
+                <span>{t.reviews} sample reviews</span>
                 <span>{t.yearsExp} years experience</span>
                 <span>{t.availability}</span>
               </div>
               <div className="tm-result-detail-row">
                 <span>{t.languages.join(', ')}</span>
                 <span className="tm-session-format">{t.mode.join(' / ')}</span>
-                <span>{t.priceRange}</span>
+                <span>Sample rate: {t.priceRange}</span>
               </div>
             </div>
 
@@ -879,7 +888,7 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
               <p className="tm-detail-creds">{t.credentials.license} · {t.credentials.location}</p>
               <div className="tm-detail-rating">
                 <Stars rating={t.rating} />
-                <span>{t.reviews} reviews</span>
+                <span>{t.reviews} sample reviews</span>
               </div>
             </div>
           </div>
@@ -913,7 +922,7 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
               <dd className="tm-session-format">{t.mode.join(' / ')}</dd>
             </div>
             <div className="tm-detail-row">
-              <dt className="tm-dr-label">Price</dt>
+              <dt className="tm-dr-label">Sample rate</dt>
               <dd>{t.priceRange}</dd>
             </div>
             <div className="tm-detail-row">
@@ -935,11 +944,11 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
               <div className="tm-booked-confirm">
                 <FeedbackNotice
                   variant="success"
-                  title="Connection requested"
-                  message={`Your request has been sent to ${t.name}. You can continue the conversation in chat.`}
+                  title="Demo connection saved"
+                  message="Your request was saved inside Dawn Harbor. No provider was contacted."
                 />
                 <span className="tm-status tm-status--requested">{booked.status}</span>
-                <p className="tm-booking-next-step">Appointments are scheduled separately after you connect.</p>
+                <p className="tm-booking-next-step">You can explore the simulated chat. Demo appointments are managed separately.</p>
                 <button className="tm-primary-btn tm-primary-btn--full tm-primary-btn--spaced" onClick={onChat}>
                   Open chat →
                 </button>
@@ -1291,7 +1300,7 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
       ))
       setAppointmentExpanded(false)
       setShowApptForm(false)
-      setWorkflowNotice(editingAppointmentId ? 'Appointment updated.' : 'Appointment confirmed and saved.')
+      setWorkflowNotice(editingAppointmentId ? 'Demo appointment updated.' : 'Demo appointment saved.')
       resetAppointmentForm()
     } catch (error) {
       const conflict = error.data?.conflict
@@ -1357,7 +1366,7 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
       const updated = await cancelTherapistAppointment(t.matchId, appointmentId)
       setAppointments((current) => current.map((item) => item.id === updated.id ? updated : item))
       setCancellingAppointmentId(null)
-      setWorkflowNotice('Appointment cancelled.')
+      setWorkflowNotice('Demo appointment cancelled.')
     } catch (error) {
       setWorkflowError(error.message || 'Unable to cancel the appointment.')
     } finally {
@@ -1380,7 +1389,7 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
           <Avatar initials={t.initials} color={t.color} size={36} />
           <span className="tm-chat-profile-copy">
             <strong className="tm-chat-name">{t.name}</strong>
-            <span className="tm-chat-status">{t.credentials.license} - {t.credentials.location}</span>
+            <span className="tm-chat-status">Sample profile - simulated chat</span>
           </span>
         </button>
         <div className="tm-chat-actions">
@@ -1391,8 +1400,8 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
           >
             Care history ({bookings.length + appointments.length})
           </button>
-          <button className="tm-appt-trigger" onClick={openAppointmentForm} title="Schedule appointment">
-            Schedule appointment
+          <button className="tm-appt-trigger" onClick={openAppointmentForm} title="Schedule demo appointment">
+            Schedule demo appointment
           </button>
           {activeConnectionRequest && (
             <button
@@ -1448,16 +1457,16 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
       )}
 
       {showCareHistory && (
-        <section className="tm-care-history" aria-label="Connection requests and appointments">
+        <section className="tm-care-history" aria-label="Demo connection requests and appointments">
           <div className="tm-care-section">
-            <h3>Connection requests</h3>
+            <h3>Demo connection requests</h3>
             {bookings.length === 0 ? (
-              <EmptyState title="No connection requests" description="Connection requests will remain here with their latest status." compact />
+              <EmptyState title="No demo connection requests" description="Saved demo requests will remain here with their latest status." compact />
             ) : bookings.map((booking) => (
               <article className="tm-care-item" key={booking.id}>
                 <div>
                   <div className="tm-care-item-title">
-                    <strong>Connection request</strong>
+                    <strong>Demo connection request</strong>
                     <StatusBadge status={booking.status} />
                   </div>
                   <p>{new Date(booking.createdAt).toLocaleString()} · {booking.insuranceProvider || 'No insurance listed'}</p>
@@ -1468,9 +1477,9 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
           </div>
 
           <div className="tm-care-section">
-            <h3>Upcoming appointments</h3>
+            <h3>Upcoming demo appointments</h3>
             {upcomingAppointments.length === 0 ? (
-              <EmptyState title="No upcoming appointments" description="Confirmed appointments will appear here." compact />
+              <EmptyState title="No upcoming demo appointments" description="Saved demo appointments will appear here." compact />
             ) : upcomingAppointments.map((appointment) => (
               <article className="tm-care-item" key={appointment.id}>
                 <div>
@@ -1506,9 +1515,9 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
           </div>
 
           <div className="tm-care-section">
-            <h3>Previous appointments</h3>
+            <h3>Previous demo appointments</h3>
             {previousAppointments.length === 0 ? (
-              <EmptyState title="No previous appointments" description="Past and cancelled appointments will remain here." compact />
+              <EmptyState title="No previous demo appointments" description="Past and cancelled demo appointments will remain here." compact />
             ) : previousAppointments.map((appointment) => (
               <article className="tm-care-item" key={appointment.id}>
                 <div>
@@ -1527,7 +1536,7 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
 
       {showApptForm && (
         <div className="tm-appt-form">
-          <strong style={{ fontSize: '0.9rem' }}>{editingAppointmentId ? 'Edit appointment' : 'Schedule an appointment'}</strong>
+          <strong style={{ fontSize: '0.9rem' }}>{editingAppointmentId ? 'Edit demo appointment' : 'Schedule a demo appointment'}</strong>
           {!appointmentConfirming ? (
             <>
               <label className="tm-form-field">
@@ -1570,7 +1579,7 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
             </>
           ) : (
             <div className="tm-appointment-confirm">
-              <p className="tm-section-label">Confirm appointment details</p>
+              <p className="tm-section-label">Confirm demo appointment details</p>
               <strong>{apptTitle}</strong>
               <p>{formatAppointmentDate(apptDate, apptTimezone)}</p>
               <p>{apptDuration} minutes · {formatTimezone(apptTimezone)}</p>
@@ -1583,7 +1592,7 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
                   pending={appointmentSaving}
                   pendingLabel="Saving appointment…"
                 >
-                  Confirm and save
+                  Save demo appointment
                 </AsyncButton>
                 <button className="tm-outline-btn" onClick={() => setAppointmentConfirming(false)} disabled={appointmentSaving}>Go back</button>
               </div>
@@ -1676,7 +1685,7 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
                 <h2 className="tm-detail-name">{t.name}</h2>
                 <p className="tm-detail-creds">{t.credentials.license} - {t.credentials.location}</p>
                 <Stars rating={t.rating} />
-                <span style={{ marginLeft: 8, fontSize: '0.82rem', color: 'var(--muted)' }}>{t.reviews} reviews</span>
+                <span style={{ marginLeft: 8, fontSize: '0.82rem', color: 'var(--muted)' }}>{t.reviews} sample reviews</span>
               </div>
             </div>
 
@@ -1701,7 +1710,7 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
                 <span style={{ textTransform: 'capitalize' }}>{t.mode.join(' / ')}</span>
               </div>
               <div className="tm-detail-row">
-                <span className="tm-dr-label">Price</span>
+                <span className="tm-dr-label">Sample rate</span>
                 <span>{t.priceRange}</span>
               </div>
               <div className="tm-detail-row">
@@ -1896,6 +1905,7 @@ export default function TherapistMatch() {
   return (
     <>
       <style>{TM_STYLES}</style>
+      {view !== 'chat' && <DemoDisclosure />}
       {(privacyLoading || chatsLoading) && <LoadingState label="Loading therapist information…" compact />}
       {privacyError && (
         <FeedbackNotice
@@ -1929,6 +1939,23 @@ export default function TherapistMatch() {
 
 const TM_STYLES = `
   /* layout */
+  .tm-demo-disclosure {
+    width: min(100%, 980px);
+    margin: 0 auto 16px;
+    padding: 0 0 12px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+  .tm-demo-disclosure strong {
+    color: var(--accent);
+    font-weight: 700;
+    white-space: nowrap;
+  }
   .tm-page {
     min-height: calc(100vh - 220px);
     align-content: start;
@@ -1938,6 +1965,13 @@ const TM_STYLES = `
     display: grid;
     grid-template-columns: 1.2fr 1fr;
     gap: 16px;
+  }
+  @media (max-width: 640px) {
+    .tm-demo-disclosure {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 3px;
+    }
   }
   .tm-overall-card {
     display: none;

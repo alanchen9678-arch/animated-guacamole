@@ -143,6 +143,9 @@ test('global therapist sharing and care history persist through the therapist wo
   })
 
   await page.goto('/')
+  const demoNotice = page.getByRole('note', { name: 'Therapist Match demo notice' })
+  await expect(demoNotice).toContainText('Guided matching demo')
+  await expect(demoNotice).toContainText('No provider is contacted')
   const therapistSubtitle = page.locator('.tm-page > .page-header p')
   await expect(therapistSubtitle).toHaveCSS('white-space', 'nowrap')
   const therapistSubtitleMetrics = await therapistSubtitle.evaluate((element) => ({
@@ -177,7 +180,7 @@ test('global therapist sharing and care history persist through the therapist wo
   await expect(journalSharingToggle).toBeEnabled()
   expect(privacySettings.allowJournalAccess).toBe(true)
   await expect(page.getByText('Exactly what your therapist can see')).toHaveCount(0)
-  await page.getByRole('button', { name: /Find a Therapist/ }).click()
+  await page.getByRole('button', { name: /Explore sample matches/ }).click()
   await page.getByRole('button', { name: 'Select state' }).click()
   await page.locator('.dawn-harbor-dropdown-item').filter({ hasText: 'CA' }).click()
   await page.getByRole('button', { name: 'Select insurance provider' }).click()
@@ -239,8 +242,8 @@ test('global therapist sharing and care history persist through the therapist wo
   await expect(page.locator('.tm-chat-input-bar')).toHaveCSS('padding-left', '8px')
 
   await page.getByRole('button', { name: /Care history/ }).click()
-  const careHistory = page.getByRole('region', { name: 'Connection requests and appointments' })
-  await expect(page.getByRole('heading', { name: 'Connection requests' })).toBeVisible()
+  const careHistory = page.getByRole('region', { name: 'Demo connection requests and appointments' })
+  await expect(page.getByRole('heading', { name: 'Demo connection requests' })).toBeVisible()
   await expect(careHistory.getByText('Upcoming session')).toBeVisible()
   await expect(careHistory.getByText('Previous session')).toBeVisible()
 
@@ -253,18 +256,18 @@ test('global therapist sharing and care history persist through the therapist wo
   let appointmentForm = page.locator('.tm-appt-form')
   await appointmentForm.getByLabel('Title').fill('Updated session')
   await appointmentForm.getByRole('button', { name: 'Review date and time' }).click()
-  await appointmentForm.getByRole('button', { name: 'Confirm and save' }).click()
-  await expect(page.getByText('Appointment updated.')).toBeVisible()
+  await appointmentForm.getByRole('button', { name: 'Save demo appointment' }).click()
+  await expect(page.getByText('Demo appointment updated.')).toBeVisible()
 
   await page.getByRole('button', { name: /Care history/ }).click()
-  const updatedItem = page.getByRole('region', { name: 'Connection requests and appointments' })
+  const updatedItem = page.getByRole('region', { name: 'Demo connection requests and appointments' })
     .locator('.tm-care-item')
     .filter({ hasText: 'Updated session' })
   await updatedItem.getByRole('button', { name: 'Cancel' }).click()
   await updatedItem.getByRole('button', { name: 'Yes, cancel' }).click()
   await expect(updatedItem.getByText('cancelled', { exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Schedule appointment' }).click()
+  await page.getByRole('button', { name: 'Schedule demo appointment' }).click()
   appointmentForm = page.locator('.tm-appt-form')
   await appointmentForm.getByLabel('Title').fill('New consultation')
   await appointmentForm.getByLabel('Date and time').fill('2099-06-15T10:30')
@@ -272,12 +275,12 @@ test('global therapist sharing and care history persist through the therapist wo
   await expect(appointmentForm.getByText(/Times are shown and saved in/)).toBeVisible()
   await appointmentForm.getByRole('button', { name: 'Review date and time' }).click()
 
-  await expect(appointmentForm.getByText('Confirm appointment details')).toBeVisible()
+  await expect(appointmentForm.getByText('Confirm demo appointment details')).toBeVisible()
   await expect(appointmentForm.getByText('New consultation')).toBeVisible()
   await expect(appointmentForm.getByText(/60 minutes/)).toBeVisible()
-  await appointmentForm.getByRole('button', { name: 'Confirm and save' }).click()
+  await appointmentForm.getByRole('button', { name: 'Save demo appointment' }).click()
 
-  await expect(page.getByText('Appointment confirmed and saved.')).toBeVisible()
+  await expect(page.getByText('Demo appointment saved.')).toBeVisible()
   expect(createdAppointmentPayload.title).toBe('New consultation')
   expect(createdAppointmentPayload.durationMinutes).toBe(60)
   expect(createdAppointmentPayload.timezone).toBeTruthy()

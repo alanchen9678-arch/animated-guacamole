@@ -99,19 +99,19 @@ const features = [
   {
     id: 'journal',
     title: 'Thought Journal',
-    desc: 'Reflect privately on your day and emotions.',
+    desc: 'Reflect on your day and control what you share.',
     action: 'Open journal',
   },
   {
     id: 'therapist',
     title: 'Therapist Match',
-    desc: 'Find a professional who fits your needs.',
-    action: 'Find a therapist',
+    desc: 'Explore sample therapist profiles matched to your preferences.',
+    action: 'Explore matching demo',
   },
   {
     id: 'community',
     title: 'Peer Support',
-    desc: 'Connect anonymously with people who understand.',
+    desc: 'Connect through a separate peer-facing identity.',
     action: 'Explore peer support',
   },
   {
