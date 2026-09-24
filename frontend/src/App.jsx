@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
-import { NavLink } from 'react-router'
+import { Link } from 'react-router'
 import { TextReveal } from './components/ui/cascade-text.jsx'
 import WhisperText from './components/ui/whisper-text.jsx'
 import { LoadingState } from './components/ui/feedback.jsx'
@@ -63,13 +63,20 @@ function getTodayKey() {
 
 function NotFoundPage({ onHome }) {
   return (
-    <section className="page route-not-found" aria-labelledby="route-not-found-title">
+    <section
+      className="page route-not-found"
+      aria-labelledby="route-not-found-title"
+      aria-describedby="route-not-found-description"
+    >
       <header className="page-header">
-        <p className="eyebrow">Navigation</p>
-        <h2 id="route-not-found-title">Page not found</h2>
-        <p>This address does not point to a Dawn Harbor page.</p>
+        <h2 id="route-not-found-title">Page unavailable</h2>
+        <p id="route-not-found-description">
+          We couldn’t find that page. Return home to continue using Dawn Harbor.
+        </p>
       </header>
-      <button type="button" className="btn-primary" onClick={onHome}>Return home</button>
+      <div className="route-not-found-actions">
+        <button type="button" className="btn-primary" onClick={onHome}>Return home</button>
+      </div>
     </section>
   )
 }
@@ -196,16 +203,19 @@ function AppShell() {
 
   // daily journal prompt
   useEffect(() => {
-    if (!isLoggedIn || assessmentLocked) return
+    if (!isLoggedIn || assessmentLocked || !activePage) {
+      setShowDailyPrompt(false)
+      return
+    }
     const todayKey = getTodayKey()
     if (localStorage.getItem(DAILY_PROMPT_KEY) === todayKey) return
     if (user?.lastJournalEntryDate === todayKey) return
     setShowDailyPrompt(true)
-  }, [isLoggedIn, assessmentLocked, user?.lastJournalEntryDate])
+  }, [activePage, isLoggedIn, assessmentLocked, user?.lastJournalEntryDate])
 
   // Auto-show after the server says the weekly check-in has been due for two days.
   useEffect(() => {
-    if (!isLoggedIn || assessmentLocked || !user?.checkInDueThisWeek) {
+    if (!isLoggedIn || assessmentLocked || !activePage || !user?.checkInDueThisWeek) {
       setShowCheckinPrompt(false)
       return
     }
@@ -217,7 +227,7 @@ function AppShell() {
     const todayKey = getTodayKey()
     if (localStorage.getItem(`dawn-harbor.checkin.prompt-shown.${user.id}`) === todayKey) return
     setShowCheckinPrompt(true)
-  }, [isLoggedIn, assessmentLocked, user?.checkInDueThisWeek, user?.weeklyCheckInDueSince])
+  }, [activePage, isLoggedIn, assessmentLocked, user?.checkInDueThisWeek, user?.weeklyCheckInDueSince])
 
   useEffect(() => {
     if (assessmentLocked && activePage !== 'checkins') {
@@ -277,7 +287,7 @@ function AppShell() {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     contentRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     if (isLoggedIn) {
-      document.title = (activeConfig?.label ?? 'Page') + ' | Dawn Harbor'
+      document.title = (activeConfig?.label ?? 'Page not found') + ' | Dawn Harbor'
       window.requestAnimationFrame(() => contentRef.current?.focus({ preventScroll: true }))
     } else {
       document.title = 'Dawn Harbor | A calm mental wellness workspace'
@@ -327,14 +337,14 @@ function AppShell() {
               <aside className="sidebar">
                 <nav className="nav-list">
                   {(assessmentLocked ? pageConfig.filter((page) => page.id === 'checkins') : pageConfig).map((page) => (
-                    <NavLink
+                    <Link
                       key={page.id}
                       to={page.path}
                       className={`nav-item${page.id === activeShellPage ? ' active' : ''}`}
                       aria-current={page.id === activeShellPage ? 'page' : undefined}
                     >
                       {page.label}
-                    </NavLink>
+                    </Link>
                   ))}
                 </nav>
               </aside>

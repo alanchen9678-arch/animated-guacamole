@@ -186,6 +186,38 @@ a { color: inherit; }
   line-height: 1.6;
 }
 
+/* Unknown routes stay inside the workspace without masquerading as a content card. */
+.route-not-found {
+  width: min(100%, 34rem);
+  margin: 0;
+  padding-top: clamp(40px, 7vh, 72px);
+  gap: var(--space-6);
+  align-content: start;
+}
+
+.route-not-found .page-header {
+  max-width: 32rem;
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line-strong);
+}
+
+.route-not-found .page-header p {
+  max-width: 44ch;
+}
+
+.route-not-found-actions {
+  display: flex;
+  align-items: center;
+}
+
+.route-not-found .btn-primary {
+  min-height: 44px;
+  padding: 10px 18px;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -270,6 +302,7 @@ a { color: inherit; }
 @media (max-width: 639px) {
   :root { --type-page-title: 1.875rem; }
   .page { gap: var(--space-5); }
+  .route-not-found { padding-top: var(--space-6); }
 }
 
 @media (prefers-reduced-motion: reduce) {

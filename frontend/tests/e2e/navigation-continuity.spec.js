@@ -81,14 +81,24 @@ test('direct links, reload, Back, and Forward preserve app navigation', async ({
 
 test('transient workflow URLs are not directly addressable', async ({ page }) => {
   await page.addInitScript(() => {
-    const now = new Date()
-    const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0')
     window.sessionStorage.setItem('dawn-harbor_token', 'route-token')
-    window.localStorage.setItem('dawn-harbor.journal.daily-prompt', today)
   })
   await page.route('**/api/auth/me/', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(user) }))
 
   await page.goto('/app/check-ins/weekly/complete')
 
-  await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Page unavailable' })).toBeVisible()
+  await expect(page.getByText('We couldn’t find that page. Return home to continue using Dawn Harbor.')).toBeVisible()
+  await expect(page).toHaveTitle('Page not found | Dawn Harbor')
+  await expect(page.locator('.nav-item.active')).toHaveCount(0)
+  await expect(page.locator('.nav-item[aria-current="page"]')).toHaveCount(0)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+
+  const returnHome = page.getByRole('button', { name: 'Return home' })
+  const buttonBounds = await returnHome.boundingBox()
+  expect(buttonBounds?.width).toBeLessThan(200)
+
+  await returnHome.click()
+  await expect(page).toHaveURL(new RegExp('/app/home$'))
+  await expect(page.getByRole('heading', { name: /Good (morning|afternoon|evening)/ })).toBeVisible()
 })
