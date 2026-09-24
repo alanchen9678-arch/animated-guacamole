@@ -36,6 +36,8 @@ class UserProfile(models.Model):
     anonymous_name = models.CharField(max_length=50, blank=True, unique=True, null=True, default=None)
     is_peer_onboarded = models.BooleanField(default=False)
     peer_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    peer_guidelines_version = models.CharField(max_length=32, blank=True, default='')
+    peer_guidelines_accepted_at = models.DateTimeField(null=True, blank=True)
     peer_avatar_color = models.CharField(max_length=7, blank=True, default='')
     peer_avatar_symbol = models.CharField(max_length=32, blank=True, default='')
     peer_support_category = models.CharField(

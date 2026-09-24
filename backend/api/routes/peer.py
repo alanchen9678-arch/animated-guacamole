@@ -5,6 +5,7 @@ import re
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -29,6 +30,7 @@ from app.peer_rooms import (
 )
 from app.throttles import PeerMessageThrottle
 
+PEER_GUIDELINES_VERSION = '2026-09-23'
 WORD_A = ['Calm', 'Quiet', 'Gentle', 'Steady', 'Brave', 'Kind', 'Warm', 'Still', 'Soft', 'Clear', 'Bold', 'Light']
 WORD_N = ['Maple', 'River', 'Stone', 'Dawn', 'Forest', 'Lake', 'Ember', 'Cloud', 'Tide', 'Ridge', 'Pine', 'Brook']
 PEER_AVATAR_COLORS = (
@@ -200,10 +202,26 @@ class PeerProfileView(APIView):
 
     def post(self, request):
         profile = _get_profile(request.user)
+        if (
+            request.data.get('guidelinesAccepted') is not True
+            or request.data.get('guidelinesVersion') != PEER_GUIDELINES_VERSION
+        ):
+            return Response(
+                {'error': 'Accept the current community guidelines before continuing.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if not profile.anonymous_name:
             profile.anonymous_name = _generate_anon_name()
         profile.is_peer_onboarded = True
-        profile.save(update_fields=['anonymous_name', 'is_peer_onboarded'])
+        profile.peer_guidelines_version = PEER_GUIDELINES_VERSION
+        profile.peer_guidelines_accepted_at = timezone.now()
+        profile.save(update_fields=[
+            'anonymous_name',
+            'is_peer_onboarded',
+            'peer_guidelines_version',
+            'peer_guidelines_accepted_at',
+        ])
         avatar_color, avatar_symbol = _ensure_peer_identity(profile)
         room_state = assign_peer_room(request.user)
         return Response({

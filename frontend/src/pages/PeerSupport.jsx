@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useLocation, useNavigate } from 'react-router'
 import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/chat-input.jsx'
 import { AsyncButton, EmptyState, FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
 import { AvatarSymbol } from '../components/ui/avatar-symbols.jsx'
@@ -80,6 +81,8 @@ const GUIDELINES = [
   'If someone expresses a crisis, encourage them to seek professional help.',
   'Messages are screened by automated safety checks before they are sent. These checks are not a substitute for human moderation or emergency support.',
 ]
+
+const PEER_GUIDELINES_VERSION = '2026-09-23'
 
 function ts() {
   return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -167,8 +170,8 @@ function RoomActionConfirm({ label, confirmLabel, onCancel, onConfirm, disabled,
 // Onboarding
 
 function OnboardingView({ onDone, loading, error }) {
+  const [step, setStep] = useState(1)
   const [agreed, setAgreed] = useState(false)
-  const [step, setStep]     = useState(1)
 
   if (step === 2) {
     return (
@@ -182,7 +185,7 @@ function OnboardingView({ onDone, loading, error }) {
           {error && <FeedbackNotice variant="error" title="Could not enter the community" message={error} compact />}
           <AsyncButton
             className="ps-primary-btn"
-            onClick={onDone}
+            onClick={() => onDone({ guidelinesAccepted: agreed, guidelinesVersion: PEER_GUIDELINES_VERSION })}
             pending={loading}
             pendingLabel="Setting up…"
           >
@@ -791,14 +794,24 @@ function DMView({ peer, profile, onBack, onLeave }) {
   )
 }
 
+function decodeRouteSegment(value) {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return null
+  }
+}
+
 // Root
 
 export default function PeerSupport() {
   const [profile, setProfile]     = useState(null)
+  const location = useLocation()
+  const routeNavigate = useNavigate()
   const [roomState, setRoomState] = useState(null)
   const [peers, setPeers]         = useState([])
-  const [loadingPeers, setLoadingPeers] = useState(false)
-  const [loadingRoom, setLoadingRoom] = useState(false)
+  const [loadingPeers, setLoadingPeers] = useState(true)
+  const [loadingRoom, setLoadingRoom] = useState(true)
   const [view, setView]           = useState('loading')
   const [activeRoom, setActiveRoom] = useState(null)
   const [activePeer, setActivePeer] = useState(null)
@@ -817,7 +830,6 @@ export default function PeerSupport() {
     fetchPeerProfile()
       .then(data => {
         setProfile(data)
-        setView(data.isOnboarded ? 'hub' : 'onboarding')
       })
       .catch((error) => {
         setInitialError(error.message || 'Unable to load Peer Support.')
@@ -826,7 +838,7 @@ export default function PeerSupport() {
   }, [profileReloadKey])
 
   useEffect(() => {
-    if (view !== 'hub') return
+    if (!profile?.isOnboarded) return
     setHubError('')
     setLoadingRoom(true)
     fetchPeerRooms()
@@ -835,16 +847,71 @@ export default function PeerSupport() {
       .finally(() => setLoadingRoom(false))
     setLoadingPeers(true)
     fetchPeers().then(setPeers).catch((error) => setHubError(error.message || 'Unable to load peer matches.')).finally(() => setLoadingPeers(false))
-  }, [view, hubReloadKey])
+  }, [profile?.isOnboarded, hubReloadKey])
 
-  async function finishOnboarding() {
+  useEffect(() => {
+    if (!profile) return
+
+    const basePath = '/app/peer-support'
+    const suffix = location.pathname.slice(basePath.length).replace(/^\/+/, '')
+
+    if (!profile.isOnboarded) {
+      if (suffix) routeNavigate(basePath, { replace: true })
+      setView('onboarding')
+      return
+    }
+
+
+    if (!suffix) {
+      setActiveRoom(null)
+      setActivePeer(null)
+      setView('hub')
+      return
+    }
+
+    const parts = suffix.split('/')
+    if (parts[0] === 'rooms' && parts[1] && parts.length === 2) {
+      const requestedRoomId = decodeRouteSegment(parts[1])
+      const room = String(activeRoom?.id) === requestedRoomId
+        ? activeRoom : roomState?.room
+      if (!room && loadingRoom) return
+      if (!room) {
+        routeNavigate(basePath, { replace: true })
+        return
+      }
+      if (String(room.id) !== requestedRoomId) {
+        routeNavigate(basePath + '/rooms/' + encodeURIComponent(room.id), { replace: true })
+        return
+      }
+      setActiveRoom(room)
+      setView('room')
+      return
+    }
+
+    if (parts[0] === 'messages' && parts[1] && parts.length === 2) {
+      const requestedPeerId = decodeRouteSegment(parts[1])
+      const peer = peers.find((item) => item.status === 'connected' && String(item.userId) === requestedPeerId)
+      if (!peer && loadingPeers) return
+      if (!peer) {
+        routeNavigate(basePath, { replace: true })
+        return
+      }
+      setActivePeer(peer)
+      setView('dm')
+      return
+    }
+
+    routeNavigate(basePath, { replace: true })
+  }, [loadingPeers, loadingRoom, location.pathname, peers, profile, roomState, routeNavigate])
+
+  async function finishOnboarding(consent) {
     setOnboardingLoading(true)
     setOnboardingError('')
     try {
-      const data = await completePeerOnboarding()
+      const data = await completePeerOnboarding(consent)
       setProfile(data)
       if (data.roomState) setRoomState(data.roomState)
-      setView('hub')
+      routeNavigate('/app/peer-support', { replace: true })
     } catch (error) {
       setOnboardingError(error.message || 'Unable to finish setup right now.')
     } finally {
@@ -852,8 +919,12 @@ export default function PeerSupport() {
     }
   }
 
-  function openRoom(room) { setActiveRoom(room); setView('room') }
-  function openDM(peer)   { setActivePeer(peer); setView('dm') }
+  function openRoom(room) {
+    routeNavigate('/app/peer-support/rooms/' + encodeURIComponent(room.id))
+  }
+  function openDM(peer) {
+    routeNavigate('/app/peer-support/messages/' + encodeURIComponent(peer.userId))
+  }
 
   async function refreshRoomState() {
     setLoadingRoom(true)
@@ -886,13 +957,14 @@ export default function PeerSupport() {
     const data = await switchPeerRoom()
     setRoomState(data)
     setActiveRoom(data.room)
+    setView('room')
+    routeNavigate('/app/peer-support/rooms/' + encodeURIComponent(data.room.id), { replace: true })
   }
 
   async function handleRoomOptOut() {
     const data = await optOutPeerRoom()
     setRoomState(data)
-    setActiveRoom(null)
-    setView('hub')
+    routeNavigate('/app/peer-support', { replace: true })
   }
 
   if (view === 'loading') {
@@ -958,7 +1030,7 @@ export default function PeerSupport() {
           key={activeRoom.id}
           profile={profile}
           room={activeRoom}
-          onBack={() => setView('hub')}
+          onBack={() => routeNavigate('/app/peer-support')}
           onSwitch={handleRoomSwitch}
           onOptOut={handleRoomOptOut}
         />
@@ -967,8 +1039,8 @@ export default function PeerSupport() {
         <DMView
           peer={activePeer}
           profile={profile}
-          onBack={() => setView('hub')}
-          onLeave={() => { setActivePeer(null); setView('hub') }}
+          onBack={() => routeNavigate('/app/peer-support')}
+          onLeave={() => routeNavigate('/app/peer-support')}
         />
       )}
     </>

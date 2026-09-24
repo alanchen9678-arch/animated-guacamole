@@ -1,41 +1,53 @@
-import { createContext, useEffect, useContext, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef } from 'react'
+import { useLocation, useNavigate as useRouterNavigate } from 'react-router'
+import { getPageIdFromPath, PAGE_PATHS } from '../routes/AppRoutes.jsx'
 
 const NavigationContext = createContext(null)
 const NAVIGATION_STORAGE_KEY = 'dawn-harbor.activePage'
 const LOCKED_PAGE_ID = 'checkins'
 
-export function NavigationProvider({ children, lockedPageId = null }) {
-  const [activePage, setActivePage] = useState(() => {
-    try {
-      const storedPage = window.localStorage.getItem(NAVIGATION_STORAGE_KEY) || 'home'
-      return lockedPageId ? LOCKED_PAGE_ID : storedPage
-    } catch {
-      return lockedPageId ? LOCKED_PAGE_ID : 'home'
-    }
-  })
+export function NavigationProvider({ children, lockedPageId = null, authenticated = false }) {
+  const location = useLocation()
+  const routerNavigate = useRouterNavigate()
+  const migratedLegacyPage = useRef(false)
+  const activePage = getPageIdFromPath(location.pathname)
 
   useEffect(() => {
-    if (!lockedPageId) return
-    setActivePage((currentPage) => (currentPage === LOCKED_PAGE_ID ? currentPage : LOCKED_PAGE_ID))
-    try {
-      window.localStorage.setItem(NAVIGATION_STORAGE_KEY, LOCKED_PAGE_ID)
-    } catch {
-      // Storage can be unavailable in some private browsing modes.
-    }
-  }, [lockedPageId])
+    if (!authenticated || migratedLegacyPage.current) return
+    migratedLegacyPage.current = true
 
-  function navigate(nextPage) {
-    const resolvedPage = lockedPageId && nextPage !== LOCKED_PAGE_ID ? LOCKED_PAGE_ID : nextPage
-    setActivePage(resolvedPage)
+    let storedPage = null
     try {
-      window.localStorage.setItem(NAVIGATION_STORAGE_KEY, resolvedPage)
+      storedPage = window.localStorage.getItem(NAVIGATION_STORAGE_KEY)
+      window.localStorage.removeItem(NAVIGATION_STORAGE_KEY)
     } catch {
       // Storage can be unavailable in some private browsing modes.
     }
-  }
+
+    if (location.pathname === '/' || location.pathname === '/app') {
+      const destination = PAGE_PATHS[storedPage] || PAGE_PATHS.home
+      routerNavigate(destination, { replace: true })
+    }
+  }, [authenticated, location.pathname, routerNavigate])
+
+  useEffect(() => {
+    if (!lockedPageId || activePage === LOCKED_PAGE_ID) return
+    routerNavigate(PAGE_PATHS[LOCKED_PAGE_ID], { replace: true })
+  }, [activePage, lockedPageId, routerNavigate])
+
+  const navigate = useCallback((nextPage, options = {}) => {
+    const requestedPath = PAGE_PATHS[nextPage] || nextPage
+    const requestedPage = getPageIdFromPath(requestedPath)
+    const destination = lockedPageId && requestedPage !== LOCKED_PAGE_ID
+      ? PAGE_PATHS[LOCKED_PAGE_ID]
+      : requestedPath
+    routerNavigate(destination, options)
+  }, [lockedPageId, routerNavigate])
+
+  const currentPath = `${location.pathname}${location.search}`
 
   return (
-    <NavigationContext.Provider value={{ activePage, navigate }}>
+    <NavigationContext.Provider value={{ activePage, currentPath, navigate }}>
       {children}
     </NavigationContext.Provider>
   )

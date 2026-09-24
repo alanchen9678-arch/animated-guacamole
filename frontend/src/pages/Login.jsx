@@ -60,7 +60,7 @@ export default function Login({ initialMode = 'login', onClose, notice = '', suc
       }
 
       navigate(mode === 'register' ? 'checkins' : successPage)
-      onClose()
+      onClose({ authenticated: true })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -72,6 +72,7 @@ export default function Login({ initialMode = 'login', onClose, notice = '', suc
     setMode(next)
     setError('')
     setForm({ username: '', email: '', password: '', confirm: '', firstName: '' })
+    navigate(next === 'register' ? '/register' : '/login', { replace: true })
   }
 
   return (

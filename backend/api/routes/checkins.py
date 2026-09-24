@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -50,15 +51,30 @@ class CheckInCollectionView(APIView):
         if entry_type == CheckIn.CheckInType.WEEKLY:
             today = timezone.localdate()
             week_start = start_of_week(today)
-            checkin, _ = CheckIn.objects.update_or_create(
+            get_user_model().objects.select_for_update().get(pk=request.user.pk)
+            summary = get_user_checkin_summary(request.user, today=today)
+            if not summary['has_initial_assessment']:
+                return Response(
+                    {'error': 'Complete the initial assessment first.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if not summary['has_current_personality_assessment']:
+                return Response(
+                    {'error': 'Complete the current personality assessment first.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if not summary['due_this_week']:
+                return Response(
+                    {'error': "This week's check-in is already complete."},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            checkin = CheckIn.objects.create(
                 user=request.user,
                 type=CheckIn.CheckInType.WEEKLY,
                 week_start_date=week_start,
-                defaults={
-                    'question_ids': question_ids,
-                    'scores': scores,
-                    'check_in_date': today,
-                },
+                question_ids=question_ids,
+                scores=scores,
+                check_in_date=today,
             )
         elif entry_type == CheckIn.CheckInType.INITIAL:
             if request.user.checkins.filter(type=CheckIn.CheckInType.INITIAL).exists():

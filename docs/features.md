@@ -1,5 +1,22 @@
 # Features
 
+## Deferred: AI journal context
+
+**Status: not approved and not implemented.** The chatbot does not read or send journal entries to OpenAI. The existing `allow_ai_access` preference is dormant and must not be connected to the chatbot until the requirements below are completed.
+
+The proposed feature would add an off-by-default Settings control that lets a user authorize bounded retrieval from the previous four months. A qualifying chatbot request could send no more than three relevant text excerpts, capped at about 4,000 characters total, to OpenAI. Doodles would never be included, and unrelated requests would receive no journal context.
+
+Before implementation:
+
+- Obtain legal and privacy review covering applicable federal, state, and international health-data laws.
+- Update the consumer health-data notice and privacy policy before enabling the feature.
+- Present separate, informed opt-in consent that names OpenAI, identifies the data and purpose, explains applicable retention, and explains how to withdraw consent.
+- Determine whether Dawn Harbor is subject to HIPAA and whether BAAs or other processor agreements are required.
+- Decide whether OpenAI Zero Data Retention or Modified Abuse Monitoring is required and approved for the production project.
+- Implement consent-version records, immediate withdrawal, access, deletion, and audit procedures without logging journal text.
+- Prevent journal-derived chatbot replies from being shared with therapists unless both chat sharing and journal sharing are enabled.
+- Complete prompt-injection, relevance, privacy, accessibility, failure-state, and data-boundary tests.
+
 ## Accounts and check-ins
 
 Users can register, log in, edit their profile, complete one initial assessment, and submit weekly check-ins. Needs profiles use the initial assessment until five weekly entries exist, then use the latest five-week average.
@@ -10,7 +27,7 @@ Authenticated chat stores the newest 100 messages for display and sends the late
 
 ## Journal
 
-Each authenticated user can store one entry per day with text, mood, and a doodle. In-progress entries are kept in browser session storage, while saved entries are persisted to the account. Optional chatbot and journal sharing controls are off by default. Keyword-based support prompts include 988 guidance for crisis language.
+Each authenticated user can store one entry per day with text, mood, and a doodle. In-progress entries are kept in browser session storage, while saved entries are persisted to the account. Optional AI-chat-log and journal sharing with simulated therapists is off by default. Keyword-based support prompts include 988 guidance for crisis language.
 
 ## Therapist match
 

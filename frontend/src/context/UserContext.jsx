@@ -6,7 +6,11 @@ import { SESSION_EXPIRED_EVENT, SESSION_EXPIRED_MESSAGE } from '../services/api.
 const API = `${API_BASE_URL}/api/auth`
 const TOKEN_STORAGE_KEY = 'dawn-harbor_token'
 const LEGACY_SENSITIVE_KEYS = ['dawn-harbor.journal.entries', 'dawn-harbor.journal.moods']
-const SESSION_DRAFT_PREFIXES = ['dawn-harbor.checkin.draft.', 'dawn-harbor.journal.draft.']
+const SESSION_DRAFT_PREFIXES = [
+  'dawn-harbor.checkin.draft.',
+  'dawn-harbor.journal.draft.',
+  'dawn-harbor.therapist-prefs.',
+]
 
 function getInitialToken() {
   const sessionToken = sessionStorage.getItem(TOKEN_STORAGE_KEY)

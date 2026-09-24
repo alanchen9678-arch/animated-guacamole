@@ -572,6 +572,7 @@ export default function Journal() {
   const entryReturnFocusRef = useRef(null)
   const skipCalendarAutofocusRef = useRef(false)
 
+
   const todayMood = moodData[todayKey]
   const marginColor = todayMood ? MOOD_MAP[todayMood]?.color : '#ffffff'
   const hasEntryContent = Boolean(entryText.trim() || doodleData)
@@ -604,6 +605,7 @@ export default function Journal() {
           setExpandedEntryDate(null)
           window.requestAnimationFrame(() => entryReturnFocusRef.current?.focus())
         } else {
+          setExpandedEntryDate(null)
           setCalendarOpen(false)
           window.requestAnimationFrame(() => calendarButtonRef.current?.focus())
         }

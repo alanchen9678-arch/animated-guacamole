@@ -481,6 +481,18 @@ class CheckInAPITests(TestCase):
         token, _ = Token.objects.get_or_create(user=self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
 
+    def make_weekly_eligible(self):
+        CheckIn.objects.create(
+            user=self.user,
+            type=CheckIn.CheckInType.INITIAL,
+            question_ids=[1, 2],
+            scores={'stress': 40},
+        )
+        UserProfile.objects.update_or_create(
+            user=self.user,
+            defaults={'personality': continuous_personality_profile()},
+        )
+
     def test_checkin_history_requires_authentication(self):
         # Check-in history is private and should not be visible to anonymous callers.
         anonymous_client = APIClient()
@@ -721,8 +733,41 @@ class CheckInAPITests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data['error'], 'Complete the initial assessment first.')
 
-    def test_post_weekly_checkin_reuses_current_week_entry(self):
-        # Weekly submissions should update the same week instead of creating duplicate weekly records.
+    def test_post_weekly_checkin_requires_initial_assessment(self):
+        response = self.client.post(
+            reverse('checkins'),
+            {
+                'type': CheckIn.CheckInType.WEEKLY,
+                'qIds': [1],
+                'scores': {'stress': 20},
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data['error'], 'Complete the initial assessment first.')
+        self.assertFalse(self.user.checkins.exists())
+
+    def test_post_weekly_checkin_requires_current_personality_assessment(self):
+        CheckIn.objects.create(
+            user=self.user,
+            type=CheckIn.CheckInType.INITIAL,
+            question_ids=[1],
+            scores={'stress': 20},
+        )
+        response = self.client.post(
+            reverse('checkins'),
+            {'type': CheckIn.CheckInType.WEEKLY, 'qIds': [1], 'scores': {'stress': 20}},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data['error'], 'Complete the current personality assessment first.')
+        self.assertEqual(self.user.checkins.count(), 1)
+
+    def test_post_weekly_checkin_rejects_a_second_current_week_submission(self):
+        self.make_weekly_eligible()
+        # Weekly submissions are immutable once the current due week is complete.
         first_response = self.client.post(
             reverse('checkins'),
             {
@@ -745,12 +790,13 @@ class CheckInAPITests(TestCase):
         weekly_entries = self.user.checkins.filter(type=CheckIn.CheckInType.WEEKLY)
 
         self.assertEqual(first_response.status_code, 200)
-        self.assertEqual(second_response.status_code, 200)
+        self.assertEqual(second_response.status_code, 409)
         self.assertEqual(weekly_entries.count(), 1)
-        self.assertEqual(second_response.data['entry']['qIds'], [2, 3])
-        self.assertEqual(second_response.data['entry']['scores'], {'stress': 65})
+        self.assertEqual(first_response.data['entry']['qIds'], [1])
+        self.assertEqual(first_response.data['entry']['scores'], {'stress': 20})
 
     def test_post_weekly_checkin_accepts_legacy_null_personality(self):
+        self.make_weekly_eligible()
         response = self.client.post(
             reverse('checkins'),
             {
@@ -1093,6 +1139,29 @@ class PeerModerationAPITests(TestCase):
         peer_id = response.data[0]['userId']
         self.assertEqual(uuid.UUID(peer_id), self.other_user.profile.peer_id)
         self.assertNotEqual(peer_id, str(self.other_user.id))
+
+    def test_peer_onboarding_requires_and_records_current_guideline_consent(self):
+        newcomer = get_user_model().objects.create_user(username='peer-newcomer', password='testpass123')
+        newcomer_client = APIClient()
+        newcomer_client.force_authenticate(newcomer)
+
+        rejected = newcomer_client.post(reverse('peer-profile'), {}, format='json')
+
+        self.assertEqual(rejected.status_code, 400)
+        self.assertFalse(newcomer.profile.is_peer_onboarded)
+        self.assertEqual(newcomer.profile.peer_guidelines_version, '')
+
+        accepted = newcomer_client.post(
+            reverse('peer-profile'),
+            {'guidelinesAccepted': True, 'guidelinesVersion': '2026-09-23'},
+            format='json',
+        )
+
+        newcomer.profile.refresh_from_db()
+        self.assertEqual(accepted.status_code, 200)
+        self.assertTrue(newcomer.profile.is_peer_onboarded)
+        self.assertEqual(newcomer.profile.peer_guidelines_version, '2026-09-23')
+        self.assertIsNotNone(newcomer.profile.peer_guidelines_accepted_at)
 
     def test_peer_profile_returns_a_stable_identity_separate_from_personal_avatar(self):
         first = self.client.get(reverse('peer-profile'))

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router'
 import { DawnHarborDropdown } from '../components/ui/heroui-dropdown.jsx'
 import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/chat-input.jsx'
 import { useUser } from '../context/UserContext.jsx'
@@ -1724,16 +1725,37 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
     </div>
   )
 }
+function decodeRouteSegment(value) {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return null
+  }
+}
+
 
 export default function TherapistMatch() {
   const { user, refreshUser } = useUser()
+  const location = useLocation()
+  const routeNavigate = useNavigate()
   const needsProfile = formatNeedsProfile(user?.needsProfile)
   const [view,     setView]     = useState('profile')   // profile | prefs | results | detail | chat
-  const [prefs,    setPrefs]    = useState({
-    state: '',
-    languages: ['English'],
-    insurance: '',
-    mode: 'either',
+  const prefsStorageKey = 'dawn-harbor.therapist-prefs.' + (user?.id ?? 'guest')
+  const [prefs, setPrefs] = useState(() => {
+    const fallback = {
+      state: '',
+      languages: ['English'],
+      insurance: '',
+      mode: 'either',
+    }
+    try {
+      const stored = JSON.parse(window.sessionStorage.getItem(prefsStorageKey))
+      return stored && typeof stored === 'object'
+        ? { ...fallback, ...stored }
+        : fallback
+    } catch {
+      return fallback
+    }
   })
   const [matches,  setMatches]  = useState([])
   const [selected, setSelected] = useState(null)
@@ -1748,9 +1770,78 @@ export default function TherapistMatch() {
   const [privacyLoading, setPrivacyLoading] = useState(false)
   const [privacySaving, setPrivacySaving] = useState([])
   const [privacyReloadKey, setPrivacyReloadKey] = useState(0)
-  const [chatsLoading, setChatsLoading] = useState(false)
+  const [chatsLoading, setChatsLoading] = useState(true)
   const [chatsError, setChatsError] = useState('')
   const [chatsReloadKey, setChatsReloadKey] = useState(0)
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(prefsStorageKey, JSON.stringify(prefs))
+    } catch {
+      // Matching continues even if session storage is unavailable.
+    }
+  }, [prefs, prefsStorageKey])
+
+  useEffect(() => {
+    const basePath = '/app/therapist-match'
+    const suffix = location.pathname.slice(basePath.length).replace(/^\/+/, '')
+    if (!suffix) {
+      if (view === 'chat' && chatReturnView === 'profile') {
+        setView('profile')
+        setSelected(null)
+      }
+      return
+    }
+
+    const parts = suffix.split('/')
+    if (parts[0] === 'preferences' && parts.length === 1) {
+      setView('prefs')
+      return
+    }
+
+    if (parts[0] === 'results') {
+      if (!matches.length && needsProfile) {
+        setMatches(runMatching(needsProfile, prefs))
+      }
+      if (!parts[1]) {
+        setView('results')
+        return
+      }
+      const therapistId = decodeRouteSegment(parts[1])
+      const therapist = matches.find((item) => String(item.id) === therapistId)
+        || THERAPISTS.find((item) => String(item.id) === therapistId)
+      if (!therapist) {
+        routeNavigate(basePath + '/results', { replace: true })
+        return
+      }
+      setSelected(therapist)
+      if (parts[2] === 'chat') {
+        setChatReturnView('results')
+        setView('chat')
+      } else if (!parts[2]) {
+        setView('detail')
+      } else {
+        routeNavigate(basePath + '/results', { replace: true })
+      }
+      return
+    }
+
+    if (parts[0] === 'chats' && parts[1] && parts.length === 2) {
+      const therapistId = decodeRouteSegment(parts[1])
+      const therapist = therapistId && activeChats.find((item) => String(item.id) === therapistId)
+      if (!therapist && chatsLoading) return
+      if (!therapist) {
+        routeNavigate(basePath, { replace: true })
+        return
+      }
+      setSelected(therapist)
+      setChatReturnView('profile')
+      setView('chat')
+      return
+    }
+
+    routeNavigate(basePath, { replace: true })
+  }, [activeChats, chatsLoading, location.pathname])
 
   useEffect(() => {
     if (!user) return
@@ -1889,7 +1980,11 @@ export default function TherapistMatch() {
     }
 
     setSelected(selectedTherapist)
-    setView('chat')
+    if (returnView === 'results') {
+      setView('chat')
+    } else {
+      routeNavigate('/app/therapist-match/chats/' + therapist.id)
+    }
   }
 
   function handleConnectionCancelled(therapistId) {
@@ -1899,7 +1994,11 @@ export default function TherapistMatch() {
       return next
     })
     setSelected(null)
-    setView(chatReturnView === 'results' ? 'results' : 'profile')
+    if (chatReturnView === 'results') {
+      setView('results')
+    } else {
+      routeNavigate('/app/therapist-match', { replace: true })
+    }
   }
 
   return (
@@ -1928,9 +2027,9 @@ export default function TherapistMatch() {
       )}
       {view === 'profile'  && <NeedsProfileView profile={needsProfile} activeChats={activeChats} onOpenChat={(therapist) => openChat(therapist, 'profile')} onFind={() => setView('prefs')} onRefresh={refreshUser} privacy={privacy} onUpdatePrivacy={changePrivacy} privacySaving={privacySaving} />}
       {view === 'prefs'    && <PreferencesView prefs={prefs} onChange={setPrefs} onBack={() => setView('profile')} onMatch={handleMatch} />}
-      {view === 'results'  && <ResultsView matches={matches} prefs={prefs} activeChats={activeChats} onSelect={t => { setSelected(t); setView('detail') }} onOpenConnected={(therapist) => openChat(therapist, 'results')} onBack={() => setView('prefs')} />}
+      {view === 'results'  && <ResultsView matches={matches} prefs={prefs} activeChats={activeChats} onSelect={(therapist) => { setSelected(therapist); setView('detail') }} onOpenConnected={(therapist) => openChat(therapist, 'results')} onBack={() => setView('prefs')} />}
       {view === 'detail'   && selected && <DetailView therapist={selected} prefs={prefs} onChat={() => openChat(selected, 'results')} onBook={requestBooking} onBack={() => setView('results')} />}
-      {view === 'chat'     && selected && <PersistentTherapistChatView therapist={selected} onBack={() => setView(chatReturnView)} onConnectionCancelled={handleConnectionCancelled} />}
+      {view === 'chat'     && selected && <PersistentTherapistChatView therapist={selected} onBack={() => { if (chatReturnView === 'results') setView('results'); else { setView('profile'); routeNavigate('/app/therapist-match') } }} onConnectionCancelled={handleConnectionCancelled} />}
     </>
   )
 }

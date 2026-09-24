@@ -160,7 +160,7 @@ test('legacy users are locked into the new assessment without replacing wellness
 
   await page.goto('/')
   await expect(page.getByText('Update required')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Home' })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Home' })).toHaveCount(0)
   await page.getByRole('button', { name: 'Take updated assessment' }).click()
   await expect(page.getByRole('heading', { name: 'Updated Personalization Assessment' })).toBeVisible()
   await expect(page.getByText(/wellness history will not be changed/i)).toBeVisible()
@@ -178,5 +178,5 @@ test('legacy users are locked into the new assessment without replacing wellness
   expect(submittedPayload.personality.instrument).toBe('dawn-harbor-personality-v2')
 
   await page.getByRole('button', { name: /Continue to Dawn Harbor/ }).click()
-  await expect(page.getByRole('button', { name: 'Home' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Home' })).toBeVisible()
 })

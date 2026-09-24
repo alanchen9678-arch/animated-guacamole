@@ -186,8 +186,8 @@ export async function fetchPeerProfile() {
   return apiFetch('/api/peer/profile/')
 }
 
-export async function completePeerOnboarding() {
-  return apiFetch('/api/peer/profile/', { method: 'POST', body: JSON.stringify({}) })
+export async function completePeerOnboarding(consent) {
+  return apiFetch('/api/peer/profile/', { method: 'POST', body: JSON.stringify(consent) })
 }
 
 export async function fetchPeerRooms() {

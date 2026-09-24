@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router'
 import { AsyncButton } from '../components/ui/feedback.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import {
@@ -13,7 +14,6 @@ import './InfoLibrary.css'
 
 const QUIZ_STORAGE_VERSION = 2
 const QUIZ_STORAGE_PREFIX = 'dawn-harbor.infoLibrary.quizSession.v2'
-const TAB_STORAGE_PREFIX = 'dawn-harbor.infoLibrary.activeTab.v2'
 const VALID_DISORDER_IDS = new Set(DISORDERS.map((item) => item.id))
 
 function shuffle(items) {
@@ -105,15 +105,6 @@ function loadQuizSession(storageKey) {
     return isValidQuizSession(stored) ? stored : createQuizSession()
   } catch {
     return createQuizSession()
-  }
-}
-
-function loadActiveTab(storageKey) {
-  if (typeof window === 'undefined') return 'library'
-  try {
-    return window.sessionStorage.getItem(storageKey) === 'quiz' ? 'quiz' : 'library'
-  } catch {
-    return 'library'
   }
 }
 
@@ -446,14 +437,19 @@ function QuizTab({ session, setSession, active, onReviewLibrary, onReviewTopic }
 
 export default function InfoLibrary() {
   const { user } = useUser()
+  const location = useLocation()
+  const routeNavigate = useNavigate()
   const storageScope = useMemo(() => getStorageScope(user), [user?.id, user?.username])
   const quizStorageKey = `${QUIZ_STORAGE_PREFIX}:${storageScope}`
-  const tabStorageKey = `${TAB_STORAGE_PREFIX}:${storageScope}`
-  const [tab, setTab] = useState(() => loadActiveTab(tabStorageKey))
+  const [tab, setTab] = useState(() => location.pathname.endsWith('/quiz') ? 'quiz' : 'library')
   const [quizSession, setQuizSession] = useState(() => loadQuizSession(quizStorageKey))
   const [openConditions, setOpenConditions] = useState(() => new Set())
   const tabRefs = useRef({})
   const focusFrameRef = useRef(null)
+  useEffect(() => {
+    const routeTab = location.pathname.endsWith('/quiz') ? 'quiz' : 'library'
+    setTab(routeTab)
+  }, [location.pathname])
 
   useEffect(() => {
     try {
@@ -463,13 +459,6 @@ export default function InfoLibrary() {
     }
   }, [quizSession, quizStorageKey])
 
-  useEffect(() => {
-    try {
-      window.sessionStorage.setItem(tabStorageKey, tab)
-    } catch {
-      // Tab selection remains available for the current render.
-    }
-  }, [tab, tabStorageKey])
 
   useEffect(() => () => {
     if (focusFrameRef.current) cancelAnimationFrame(focusFrameRef.current)
@@ -477,6 +466,7 @@ export default function InfoLibrary() {
 
   function selectTab(nextTab, moveFocus = false) {
     setTab(nextTab)
+    routeNavigate(nextTab === 'quiz' ? '/app/library/quiz' : '/app/library')
     if (!moveFocus) return
     if (focusFrameRef.current) cancelAnimationFrame(focusFrameRef.current)
     focusFrameRef.current = requestAnimationFrame(() => tabRefs.current[nextTab]?.focus())

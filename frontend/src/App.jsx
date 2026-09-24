@@ -1,12 +1,12 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { NavLink } from 'react-router'
 import { TextReveal } from './components/ui/cascade-text.jsx'
 import WhisperText from './components/ui/whisper-text.jsx'
 import { LoadingState } from './components/ui/feedback.jsx'
 import FeatureStories from './components/landing/FeatureStories.jsx'
 import { UserProvider, useUser } from './context/UserContext.jsx'
 import { NavigationProvider, useNavigation } from './context/NavigationContext.jsx'
-import { pageConfig } from './routes/AppRoutes.jsx'
-import Home from './pages/Home.jsx'
+import { isAppPath, PAGE_PATHS, pageConfig } from './routes/AppRoutes.jsx'
 import Login from './pages/Login.jsx'
 import { useAccessibleDialog } from './hooks/use-accessible-dialog.js'
 import './app.css'
@@ -61,8 +61,21 @@ function getTodayKey() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }
 
+function NotFoundPage({ onHome }) {
+  return (
+    <section className="page route-not-found" aria-labelledby="route-not-found-title">
+      <header className="page-header">
+        <p className="eyebrow">Navigation</p>
+        <h2 id="route-not-found-title">Page not found</h2>
+        <p>This address does not point to a Dawn Harbor page.</p>
+      </header>
+      <button type="button" className="btn-primary" onClick={onHome}>Return home</button>
+    </section>
+  )
+}
+
 function AppShell() {
-  const { activePage, navigate }    = useNavigation()
+  const { activePage, currentPath, navigate } = useNavigation()
   const { user, loading, sessionExpired } = useUser()
   const [showAuth, setShowAuth]     = useState(false)
   const [authMode, setAuthMode]     = useState('login')
@@ -78,7 +91,10 @@ function AppShell() {
   const checkinPromptBackdropRef = useRef(null)
   const checkinPromptDialogRef = useRef(null)
   const checkinPromptHeadingRef = useRef(null)
-  const sessionReturnPageRef = useRef(activePage)
+  const sessionReturnPageRef = useRef(
+    isAppPath(currentPath.split('?')[0]) ? currentPath : PAGE_PATHS.home,
+  )
+  const wasLoggedInRef = useRef(false)
 
   const isLoggedIn = !!user
   const hasCurrentPersonalityAssessment = user?.hasCurrentPersonalityAssessment === true
@@ -111,6 +127,42 @@ function AppShell() {
     : notifications.length === 1
       ? 'Notifications, 1 active'
       : 'Notifications, ' + notifications.length + ' active'
+
+  useEffect(() => {
+    if (loading) return
+
+    const pathname = currentPath.split('?')[0]
+
+    if (isLoggedIn) {
+      wasLoggedInRef.current = true
+      if (pathname === '/login' || pathname === '/register') {
+        navigate(sessionReturnPageRef.current, { replace: true })
+      }
+      return
+    }
+
+    if (wasLoggedInRef.current && !sessionExpired) {
+      wasLoggedInRef.current = false
+      setShowAuth(false)
+      navigate('/', { replace: true })
+      return
+    }
+
+    if (isAppPath(pathname)) {
+      sessionReturnPageRef.current = currentPath
+      setAuthMode('login')
+      setShowAuth(true)
+      return
+    }
+
+    if (pathname === '/login' || pathname === '/register') {
+      setAuthMode(pathname === '/register' ? 'register' : 'login')
+      setShowAuth(true)
+      return
+    }
+
+    if (pathname !== '/') navigate('/', { replace: true })
+  }, [currentPath, isLoggedIn, loading, navigate])
 
   useEffect(() => {
     setNotifOpen(false)
@@ -169,7 +221,7 @@ function AppShell() {
 
   useEffect(() => {
     if (assessmentLocked && activePage !== 'checkins') {
-      navigate('checkins')
+      navigate('checkins', { replace: true })
     }
   }, [assessmentLocked, activePage, navigate])
 
@@ -190,27 +242,47 @@ function AppShell() {
     if (goToCheckins) navigate('checkins')
   }
 
-  const ActiveComponent = useMemo(
-    () => pageConfig.find((p) => p.id === activeShellPage)?.component ?? Home,
+  const activeConfig = useMemo(
+    () => pageConfig.find((page) => page.id === activeShellPage) ?? null,
     [activeShellPage],
   )
+  const ActiveComponent = activeConfig?.component
 
   function openAuth(mode) {
     setAuthMode(mode)
     setShowAuth(true)
+    navigate(mode === 'register' ? '/register' : '/login')
+  }
+
+  function closeAuth(result = {}) {
+    setShowAuth(false)
+    if (result.authenticated) return
+
+    const pathname = currentPath.split('?')[0]
+    if (isAppPath(pathname) || pathname === '/login' || pathname === '/register') {
+      navigate('/', { replace: true })
+    }
   }
 
   useEffect(() => {
     if (!sessionExpired) return
-    sessionReturnPageRef.current = activePage
+    sessionReturnPageRef.current = isAppPath(currentPath.split('?')[0])
+      ? currentPath
+      : PAGE_PATHS.home
     setAuthMode('login')
     setShowAuth(true)
-  }, [activePage, sessionExpired])
+  }, [currentPath, sessionExpired])
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     contentRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-  }, [activeShellPage, isLoggedIn])
+    if (isLoggedIn) {
+      document.title = (activeConfig?.label ?? 'Page') + ' | Dawn Harbor'
+      window.requestAnimationFrame(() => contentRef.current?.focus({ preventScroll: true }))
+    } else {
+      document.title = 'Dawn Harbor | A calm mental wellness workspace'
+    }
+  }, [activeConfig?.label, activeShellPage, isLoggedIn])
 
   if (loading) {
     return <LoadingState label="Loading Dawn Harbor…" skeletonLines={3} className="app-loading" />
@@ -224,8 +296,8 @@ function AppShell() {
         <Login
           initialMode={authMode}
           notice={sessionExpired}
-          successPage={sessionExpired ? sessionReturnPageRef.current : 'home'}
-          onClose={() => setShowAuth(false)}
+          successPage={sessionExpired ? sessionReturnPageRef.current : PAGE_PATHS.home}
+          onClose={closeAuth}
         />
       )}
 
@@ -241,7 +313,7 @@ function AppShell() {
               hoverColor="var(--accent)"
               className="logo-reveal"
               style={{ background: 'transparent', border: 'none' }}
-              onClick={() => navigate('home')}
+              onClick={() => navigate(isLoggedIn ? PAGE_PATHS.home : '/')}
             />
           </div>
         </div>
@@ -255,21 +327,23 @@ function AppShell() {
               <aside className="sidebar">
                 <nav className="nav-list">
                   {(assessmentLocked ? pageConfig.filter((page) => page.id === 'checkins') : pageConfig).map((page) => (
-                    <button
+                    <NavLink
                       key={page.id}
-                      type="button"
+                      to={page.path}
                       className={`nav-item${page.id === activeShellPage ? ' active' : ''}`}
-                      onClick={() => navigate(page.id)}
+                      aria-current={page.id === activeShellPage ? 'page' : undefined}
                     >
                       {page.label}
-                    </button>
+                    </NavLink>
                   ))}
                 </nav>
               </aside>
 
-              <main ref={contentRef} className="content">
+              <main ref={contentRef} className="content" tabIndex={-1}>
                 <Suspense fallback={<LoadingState label="Loading page…" skeletonLines={3} />}>
-                  <ActiveComponent />
+                  {ActiveComponent
+                    ? <ActiveComponent />
+                    : <NotFoundPage onHome={() => navigate(PAGE_PATHS.home, { replace: true })} />}
                 </Suspense>
               </main>
             </div>
@@ -526,7 +600,7 @@ function AppContent() {
   const lockedPageId = user && !hasCurrentPersonalityAssessment ? 'checkins' : null
 
   return (
-    <NavigationProvider lockedPageId={lockedPageId}>
+    <NavigationProvider lockedPageId={lockedPageId} authenticated={Boolean(user)}>
       <AppShell />
     </NavigationProvider>
   )

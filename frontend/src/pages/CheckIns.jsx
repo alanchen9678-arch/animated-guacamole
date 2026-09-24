@@ -770,6 +770,7 @@ export default function CheckIns() {
   const [reloadKey, setReloadKey] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const submittingRef = useRef(false)
+
   const draftRestoreAttemptRef = useRef(null)
   const draftStorageKey = useMemo(() => getCheckInDraftStorageKey(user), [user])
 
@@ -880,7 +881,9 @@ export default function CheckIns() {
     setView('intro')
   }
 
-  function beginAnswering() { setView('survey') }
+  function beginAnswering() {
+    setView('survey')
+  }
 
   async function onSurveyDone(completedAnswers = answers) {
     if (submittingRef.current) return
