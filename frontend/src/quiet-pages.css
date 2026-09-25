@@ -237,6 +237,16 @@
 
 /* Check-ins: health information is structured, not decorated. */
 .app-root .ci-page { width: min(100%, 980px); }
+.app-root .ci-page > .page-header,
+.app-root .il-page-header {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--line-strong);
+}
+.app-root .ci-page > .page-header p,
+.app-root .il-page-header p { max-width: 46ch; }
 .app-root .ci-hub { display: grid; gap: 28px; }
 .app-root .ci-top-row { grid-template-columns: minmax(132px, 0.28fr) minmax(0, 1fr); gap: 18px; }
 .app-root .ci-streak-card {
@@ -1758,6 +1768,8 @@
 
 @media (max-width: 639px) {
   .app-root .home-page .page-header { margin-bottom: 22px; }
+  .app-root .ci-page > .page-header,
+  .app-root .il-page-header { padding-bottom: var(--space-4); }
   .app-root .today-bar { grid-template-columns: 1fr; padding: 0; }
   .app-root .today-stat { padding: 15px 2px; border-right: 0; border-bottom: 1px solid var(--line); }
   .app-root .today-stat:last-child { border-bottom: 0; }
