@@ -9,6 +9,7 @@ from .models import (
     LibraryProgress,
     Message,
     PeerConnection,
+    PeerConnectionEvent,
     PeerDM,
     PeerRoom,
     PeerRoomMembership,
@@ -65,5 +66,6 @@ for model in (
     PeerRoomMessage,
     PeerDM,
     PeerConnection,
+    PeerConnectionEvent,
 ):
     admin.site.register(model, SensitiveModelAdmin)

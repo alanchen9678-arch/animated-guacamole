@@ -15,6 +15,7 @@ from ai_engine.pipeline import moderate_peer_message
 from app.models import (
     PEER_SUPPORT_CATEGORIES,
     PeerConnection,
+    PeerConnectionEvent,
     PeerDM,
     PeerRoom,
     PeerRoomMembership,
@@ -31,6 +32,7 @@ from app.peer_rooms import (
 from app.throttles import PeerMessageThrottle
 
 PEER_GUIDELINES_VERSION = '2026-09-23'
+PEER_MESSAGE_PAGE_SIZE = 50
 WORD_A = ['Calm', 'Quiet', 'Gentle', 'Steady', 'Brave', 'Kind', 'Warm', 'Still', 'Soft', 'Clear', 'Bold', 'Light']
 WORD_N = ['Maple', 'River', 'Stone', 'Dawn', 'Forest', 'Lake', 'Ember', 'Cloud', 'Tide', 'Ridge', 'Pine', 'Brook']
 PEER_AVATAR_COLORS = (
@@ -322,14 +324,22 @@ class PeerRoomMessageView(APIView):
             return Response({'error': 'You are not assigned to this room.'}, status=status.HTTP_403_FORBIDDEN)
 
         since_id = request.query_params.get('since')
+        before_id = request.query_params.get('before')
         qs = room.room_messages.all()
         if since_id:
             try:
                 qs = qs.filter(id__gt=int(since_id))
             except ValueError:
                 pass
-        messages = list(qs.order_by('-created_at')[:100])
-        messages.reverse()
+            messages = list(qs.order_by('created_at', 'id')[:PEER_MESSAGE_PAGE_SIZE])
+        else:
+            if before_id:
+                try:
+                    qs = qs.filter(id__lt=int(before_id))
+                except ValueError:
+                    pass
+            messages = list(qs.order_by('-created_at', '-id')[:PEER_MESSAGE_PAGE_SIZE])
+            messages.reverse()
         names = {message.anonymous_name for message in messages}
         profiles_by_name = {
             profile.anonymous_name: profile
@@ -478,6 +488,11 @@ class PeerConnectView(APIView):
                 return Response({'status': existing.status})
             existing.status = PeerConnection.Status.CONNECTED
             existing.save(update_fields=['status', 'updated_at'])
+            PeerConnectionEvent.objects.get_or_create(
+                connection=existing,
+                event_type=PeerConnectionEvent.EventType.ACCEPTED,
+                defaults={'actor': request.user},
+            )
             return Response({'status': 'connected'})
 
         if (
@@ -494,7 +509,49 @@ class PeerConnectView(APIView):
             recipient=target,
             status=PeerConnection.Status.PENDING,
         )
+        PeerConnectionEvent.objects.create(
+            connection=conn,
+            actor=request.user,
+            event_type=PeerConnectionEvent.EventType.REQUESTED,
+        )
         return Response({'status': conn.status}, status=status.HTTP_201_CREATED)
+
+
+class PeerConnectionEventView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        events = (
+            PeerConnectionEvent.objects
+            .filter(Q(connection__requester=request.user) | Q(connection__recipient=request.user))
+            .select_related(
+                'actor__profile',
+                'connection__requester__profile',
+                'connection__recipient__profile',
+            )
+            .order_by('-created_at', '-id')[:20]
+        )
+        payload = []
+        for event in events:
+            connection = event.connection
+            other_user = (
+                connection.recipient
+                if connection.requester_id == request.user.id
+                else connection.requester
+            )
+            other_profile = other_user.profile
+            actor_profile = event.actor.profile
+            payload.append({
+                'id': event.id,
+                'type': event.event_type,
+                'createdAt': event.created_at.isoformat(),
+                'direction': 'outgoing' if event.actor_id == request.user.id else 'incoming',
+                'actorName': actor_profile.anonymous_name,
+                'peerId': str(other_profile.peer_id),
+                'peerName': other_profile.anonymous_name,
+                'status': connection.status,
+            })
+        return Response(payload)
 
 
 class PeerDMView(APIView):
@@ -514,6 +571,7 @@ class PeerDMView(APIView):
         if not conn:
             return Response({'error': 'Not connected with this peer.'}, status=status.HTTP_403_FORBIDDEN)
         since_id = request.query_params.get('since')
+        before_id = request.query_params.get('before')
         qs = PeerDM.objects.filter(
             Q(sender=request.user, recipient_id=user_id) |
             Q(sender_id=user_id, recipient=request.user)
@@ -523,7 +581,15 @@ class PeerDMView(APIView):
                 qs = qs.filter(id__gt=int(since_id))
             except ValueError:
                 pass
-        messages = list(qs.order_by('created_at')[:200])
+            messages = list(qs.order_by('created_at', 'id')[:PEER_MESSAGE_PAGE_SIZE])
+        else:
+            if before_id:
+                try:
+                    qs = qs.filter(id__lt=int(before_id))
+                except ValueError:
+                    pass
+            messages = list(qs.order_by('-created_at', '-id')[:PEER_MESSAGE_PAGE_SIZE])
+            messages.reverse()
 
         return Response([{
             'id': m.id,

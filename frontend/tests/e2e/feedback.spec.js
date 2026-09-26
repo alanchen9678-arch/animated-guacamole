@@ -144,6 +144,16 @@ test('failed check-in loading presents a working retry action', async ({ page })
 
   await errorNotice.getByRole('button', { name: 'Reload check-ins' }).click()
   await expect(errorNotice).toBeHidden()
-  await expect(page.getByRole('button', { name: /Start weekly check-in/ })).toBeVisible()
+  const startWeekly = page.getByRole('button', { name: /Start weekly check-in/ })
+  await expect(startWeekly).toBeVisible()
   expect(checkInRequests).toBe(3)
+
+  await startWeekly.click()
+  await page.getByRole('button', { name: /Begin/ }).click()
+  for (let question = 1; question <= 12; question += 1) {
+    await expect(page.getByText('Question ' + question + ' of 12')).toBeVisible()
+    await page.getByRole('radio', { name: /^4:/ }).click()
+  }
+
+  await expect(page.locator('.ci-insight-icon use')).toHaveAttribute('href', '/avatar-symbols.svg#brand-harbor')
 })

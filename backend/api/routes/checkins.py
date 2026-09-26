@@ -32,6 +32,7 @@ class CheckInCollectionView(APIView):
                 'lastWeeklyCheckInDate': summary['last_weekly_check_in_date'],
                 'dueThisWeek': summary['due_this_week'],
                 'weeklyDueSince': summary['weekly_due_since'],
+                'nextWeeklyCheckInDate': summary['next_weekly_check_in_date'],
                 'hasInitialAssessment': summary['has_initial_assessment'],
                 'hasCurrentPersonalityAssessment': summary['has_current_personality_assessment'],
             }
@@ -120,6 +121,7 @@ class CheckInCollectionView(APIView):
                 'lastWeeklyCheckInDate': summary['last_weekly_check_in_date'],
                 'dueThisWeek': summary['due_this_week'],
                 'weeklyDueSince': summary['weekly_due_since'],
+                'nextWeeklyCheckInDate': summary['next_weekly_check_in_date'],
                 'hasInitialAssessment': summary['has_initial_assessment'],
                 'hasCurrentPersonalityAssessment': summary['has_current_personality_assessment'],
                 'needsProfile': profile.needs_profile,

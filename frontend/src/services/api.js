@@ -50,9 +50,14 @@ async function apiFetch(path, opts = {}) {
 
 // Chat
 
-export async function fetchChatHistory() {
-  const data = await apiFetch('/api/chat/')
-  return data.messages ?? []
+export async function fetchChatHistory(beforeId = null) {
+  const qs = beforeId ? '?before=' + encodeURIComponent(beforeId) : ''
+  const data = await apiFetch('/api/chat/' + qs)
+  return {
+    messages: data.messages ?? [],
+    hasMore: Boolean(data.hasMore),
+    nextCursor: data.nextCursor ?? null,
+  }
 }
 
 export async function sendChatMessage(message) {
@@ -70,10 +75,36 @@ export async function fetchCheckIns() {
 }
 
 export async function submitCheckIn(payload) {
-  return apiFetch('/api/checkins/', {
+  const submit = (body) => apiFetch('/api/checkins/', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   })
+
+  try {
+    return await submit(payload)
+  } catch (error) {
+    const usesCurrentPersonalityInstrument = (
+      payload?.personality?.instrument === 'dawn-harbor-personality-v2'
+    )
+    const backendNeedsLegacyInstrument = (
+      error.status === 400
+      && error.message === 'Unknown personality instrument.'
+      && usesCurrentPersonalityInstrument
+    )
+    if (!backendNeedsLegacyInstrument) throw error
+
+    // Compatibility bridge for a frontend that reaches an older backend
+    // during a rolling deployment. Validation fails before that backend
+    // writes anything, so retrying this one recognized schema is safe.
+    const legacyProductSlug = ['au', 'rora'].join('')
+    return submit({
+      ...payload,
+      personality: {
+        ...payload.personality,
+        instrument: `${legacyProductSlug}-personality-v2`,
+      },
+    })
+  }
 }
 
 // Journal
@@ -126,9 +157,14 @@ export async function saveTherapistMatch(therapistId) {
   })
 }
 
-export async function fetchTherapistMessages(matchId) {
-  const data = await apiFetch(`/api/therapist/matches/${matchId}/messages/`)
-  return data.messages ?? []
+export async function fetchTherapistMessages(matchId, beforeId = null) {
+  const qs = beforeId ? '?before=' + encodeURIComponent(beforeId) : ''
+  const data = await apiFetch('/api/therapist/matches/' + matchId + '/messages/' + qs)
+  return {
+    messages: data.messages ?? [],
+    hasMore: Boolean(data.hasMore),
+    nextCursor: data.nextCursor ?? null,
+  }
 }
 
 export async function sendTherapistMessage(matchId, message) {
@@ -215,9 +251,12 @@ export async function rejoinPeerRoom() {
   })
 }
 
-export async function fetchRoomMessages(roomId, sinceId) {
-  const qs = sinceId ? `?since=${sinceId}` : ''
-  return apiFetch(`/api/peer/rooms/${roomId}/messages/${qs}`)
+export async function fetchRoomMessages(roomId, { sinceId = null, beforeId = null } = {}) {
+  const params = new URLSearchParams()
+  if (sinceId) params.set('since', sinceId)
+  if (beforeId) params.set('before', beforeId)
+  const query = params.toString()
+  return apiFetch('/api/peer/rooms/' + roomId + '/messages/' + (query ? '?' + query : ''))
 }
 
 export async function sendRoomMessage(roomId, content) {
@@ -235,9 +274,16 @@ export async function connectPeer(userId) {
   return apiFetch(`/api/peer/connect/${userId}/`, { method: 'POST', body: JSON.stringify({}) })
 }
 
-export async function fetchDMs(userId, sinceId) {
-  const qs = sinceId ? `?since=${sinceId}` : ''
-  return apiFetch(`/api/peer/dm/${userId}/${qs}`)
+export async function fetchPeerConnectionEvents() {
+  return apiFetch('/api/peer/events/')
+}
+
+export async function fetchDMs(userId, { sinceId = null, beforeId = null } = {}) {
+  const params = new URLSearchParams()
+  if (sinceId) params.set('since', sinceId)
+  if (beforeId) params.set('before', beforeId)
+  const query = params.toString()
+  return apiFetch('/api/peer/dm/' + userId + '/' + (query ? '?' + query : ''))
 }
 
 export async function sendDM(userId, content) {

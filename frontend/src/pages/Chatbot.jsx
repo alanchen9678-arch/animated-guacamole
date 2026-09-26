@@ -5,6 +5,15 @@ import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/
 import { DawnHarborAvatar } from '../components/ui/avatar-symbols.jsx'
 import { fetchChatHistory, sendChatMessage } from '../services/api.js'
 import { FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
+import {
+  ConversationDateSeparator,
+  CopyMessageButton,
+  LoadEarlierButton,
+  NewMessagesButton,
+  formatMessageTime,
+  isSameMessageDay,
+  useConversationScroll,
+} from '../components/ui/conversation-history.jsx'
 
 const CHATBOT_ONBOARDING_STORAGE_KEY = 'dawn-harbor.chatbot.onboarding'
 
@@ -25,14 +34,7 @@ function saveChatbotOnboardingState() {
 }
 
 function timestamp() {
-  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
-
-function formatMessageTime(value) {
-  if (!value) return timestamp()
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return timestamp()
-  return parsed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return new Date().toISOString()
 }
 
 function defaultGreeting() {
@@ -40,7 +42,7 @@ function defaultGreeting() {
     id: 0,
     role: 'ai',
     text: "Hi, I'm Dawn Harbor. I'm here to listen with warmth and honesty. What's on your mind today?",
-    time: timestamp(),
+    timestamp: timestamp(),
   }
 }
 
@@ -66,7 +68,8 @@ function Message({ msg }) {
       {!isUser && <div className="msg-avatar" aria-hidden="true"><DawnHarborAvatar size={18} /></div>}
       <div className={`bubble${isUser ? ' bubble--user' : ' bubble--ai'}`}>
         <p className="bubble-text">{msg.text}</p>
-        <span className="bubble-time">{msg.time}</span>
+        <span className="bubble-time">{formatMessageTime(msg.timestamp)}</span>
+        <CopyMessageButton text={msg.text} inverse={isUser} />
       </div>
     </div>
   )
@@ -113,8 +116,18 @@ function ChatbotChat() {
   const [isTyping, setIsTyping] = useState(false)
   const [chatError, setChatError] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
-  const messagesRef = useRef(null)
+  const [hasMoreHistory, setHasMoreHistory] = useState(false)
+  const [historyCursor, setHistoryCursor] = useState(null)
+  const [loadingEarlier, setLoadingEarlier] = useState(false)
   const inputRef = useRef(null)
+  const {
+    containerRef: messagesRef,
+    newMessageCount,
+    onScroll: handleMessagesScroll,
+    prepareAppend,
+    preparePrepend,
+    scrollToBottom,
+  } = useConversationScroll(messages, { loading: isLoadingHistory, reduceMotion })
 
   useEffect(() => {
     let isActive = true
@@ -125,18 +138,20 @@ function ChatbotChat() {
       try {
         const history = await fetchChatHistory()
         if (!isActive) return
+        setHasMoreHistory(history.hasMore)
+        setHistoryCursor(history.nextCursor)
 
-        if (history.length === 0) {
+        if (history.messages.length === 0) {
           setMessages([defaultGreeting()])
           return
         }
 
         setMessages(
-          history.map((message) => ({
+          history.messages.map((message) => ({
             id: message.id,
             role: message.role === 'assistant' ? 'ai' : message.role,
             text: message.content,
-            time: formatMessageTime(message.timestamp),
+            timestamp: message.timestamp,
           })),
         )
       } catch (error) {
@@ -158,26 +173,41 @@ function ChatbotChat() {
     }
   }, [reloadKey])
 
-  useEffect(() => {
-    const messagesEl = messagesRef.current
-    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'auto' })
-    inputRef.current?.focus()
-  }, [isLoadingHistory])
 
   useEffect(() => {
-    const messagesEl = messagesRef.current
-    messagesEl?.scrollTo({
-      top: messagesEl.scrollHeight,
-      behavior: reduceMotion ? 'auto' : 'smooth',
-    })
-    if (!isTyping) inputRef.current?.focus()
-  }, [messages, isTyping, reduceMotion])
+    if (!isLoadingHistory) inputRef.current?.focus()
+  }, [isLoadingHistory])
+
+  async function loadEarlierMessages() {
+    if (!hasMoreHistory || loadingEarlier || !historyCursor) return
+    setLoadingEarlier(true)
+    try {
+      const history = await fetchChatHistory(historyCursor)
+      preparePrepend()
+      setMessages((current) => {
+        const existing = new Set(current.map((message) => message.id))
+        return [...history.messages.filter((message) => !existing.has(message.id)).map((message) => ({
+          id: message.id,
+          role: message.role === 'assistant' ? 'ai' : message.role,
+          text: message.content,
+          timestamp: message.timestamp,
+        })), ...current]
+      })
+      setHasMoreHistory(history.hasMore)
+      setHistoryCursor(history.nextCursor)
+    } catch (error) {
+      setChatError({ type: 'history', message: error.message || 'Earlier messages could not be loaded.' })
+    } finally {
+      setLoadingEarlier(false)
+    }
+  }
 
   async function sendMessage() {
     const text = input.trim()
     if (!text || isTyping || isLoadingHistory) return
 
-    const userMsg = { id: Date.now(), role: 'user', text, time: timestamp() }
+    const userMsg = { id: 'pending-' + Date.now(), role: 'user', text, timestamp: timestamp() }
+    prepareAppend(1)
     setMessages((prev) => [...prev, userMsg])
     setInput('')
     await deliverMessage(text)
@@ -189,9 +219,10 @@ function ChatbotChat() {
 
     try {
       const reply = await sendChatMessage(text)
+      prepareAppend(1)
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, role: 'ai', text: reply, time: timestamp() },
+        { id: Date.now() + 1, role: 'ai', text: reply, timestamp: timestamp() },
       ])
     } catch (error) {
       setChatError({
@@ -207,10 +238,20 @@ function ChatbotChat() {
 
   return (
     <div className="chat-root">
-      <div className="chat-messages" ref={messagesRef}>
+      <div className="chat-messages" ref={messagesRef} onScroll={handleMessagesScroll}>
         <div className="chat-conversation">
           {isLoadingHistory && <LoadingState label="Loading your conversation…" compact skeletonLines={3} />}
-          {messages.map((message) => <Message key={message.id} msg={message} />)}
+          {hasMoreHistory && !isLoadingHistory && (
+            <LoadEarlierButton loading={loadingEarlier} onClick={loadEarlierMessages} />
+          )}
+          {messages.map((message, index) => (
+            <div key={message.id} className="conversation-message-group">
+              {(index === 0 || !isSameMessageDay(messages[index - 1]?.timestamp, message.timestamp)) && (
+                <ConversationDateSeparator timestamp={message.timestamp} />
+              )}
+              <Message msg={message} />
+            </div>
+          ))}
           {isTyping && <TypingIndicator />}
           {chatError && (
             <FeedbackNotice
@@ -226,6 +267,8 @@ function ChatbotChat() {
           )}
         </div>
       </div>
+
+      <NewMessagesButton count={newMessageCount} onClick={() => scrollToBottom()} />
 
       <div className="chat-input-bar">
         <ChatInput
@@ -347,6 +390,7 @@ const styles = `
   .start-btn:hover { opacity: 0.88; transform: translateY(-1px); }
   .chat-root {
     --chat-column-width: 940px;
+    position: relative;
     display: flex;
     flex-direction: column;
     width: 100%;

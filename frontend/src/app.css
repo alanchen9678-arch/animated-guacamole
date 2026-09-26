@@ -1,3 +1,87 @@
+.conversation-message-group { display: contents; }
+
+.conversation-date-separator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 7px 0 3px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.conversation-date-separator::before,
+.conversation-date-separator::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--line);
+}
+
+.conversation-copy {
+  align-self: flex-end;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 1px 0;
+  font-size: 0.65rem;
+  font-weight: 650;
+  opacity: 0;
+  transition: opacity 120ms ease, color 120ms ease;
+}
+
+.bubble:hover .conversation-copy,
+.bubble:focus-within .conversation-copy,
+.ps-bubble:hover .conversation-copy,
+.ps-bubble:focus-within .conversation-copy,
+.tm-bubble:hover .conversation-copy,
+.tm-bubble:focus-within .conversation-copy {
+  opacity: 1;
+}
+
+.conversation-copy:hover { color: var(--accent-ink); }
+.conversation-copy--inverse { color: rgba(255, 255, 255, 0.72); }
+.conversation-copy--inverse:hover { color: rgba(255, 255, 255, 0.96); }
+
+.conversation-new-messages {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 76px;
+  transform: translateX(-50%);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--panel-strong);
+  color: var(--accent-ink);
+  box-shadow: 0 6px 18px rgba(46, 42, 38, 0.12);
+  padding: 7px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.conversation-load-earlier {
+  align-self: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--accent-ink);
+  padding: 7px 12px;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.conversation-load-earlier:disabled { opacity: 0.55; cursor: wait; }
+
+@media (hover: none) {
+  .conversation-copy { opacity: 0.82; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conversation-copy,
+  .conversation-new-messages { transition: none; }
+}
 .app-root {
   min-height: 100dvh;
   display: flex;

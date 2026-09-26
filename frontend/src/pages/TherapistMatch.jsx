@@ -1,9 +1,19 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router'
+import { useReducedMotion } from 'motion/react'
 import { DawnHarborDropdown } from '../components/ui/heroui-dropdown.jsx'
 import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/chat-input.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { AsyncButton, EmptyState, FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
+import {
+  ConversationDateSeparator,
+  CopyMessageButton,
+  LoadEarlierButton,
+  NewMessagesButton,
+  formatMessageTime,
+  isSameMessageDay,
+  useConversationScroll,
+} from '../components/ui/conversation-history.jsx'
 import {
   createTherapistAppointment,
   createTherapistBooking,
@@ -1010,10 +1020,6 @@ function DetailView({ therapist: t, prefs, onChat, onBook, onBack }) {
 
 // ─── chat view ────────────────────────────────────────────────────────────────
 
-function timestamp() {
-  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
-
 const BROWSER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
 
 function formatTimezone(value = BROWSER_TIMEZONE) {
@@ -1075,6 +1081,7 @@ function ActiveAppointmentBanner({ appt, expanded, onToggle }) {
 // Persistent therapist conversation and care workspace
 
 function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancelled }) {
+  const reduceMotion = useReducedMotion()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoadingHistory, setIsLoadingHistory] = useState(true)
@@ -1083,6 +1090,9 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
   const [chatErrorContext, setChatErrorContext] = useState('')
   const [failedMessage, setFailedMessage] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [hasMoreHistory, setHasMoreHistory] = useState(false)
+  const [historyCursor, setHistoryCursor] = useState(null)
+  const [loadingEarlier, setLoadingEarlier] = useState(false)
   const [appointmentSaving, setAppointmentSaving] = useState(false)
   const [showApptForm, setShowApptForm] = useState(false)
   const [showCareHistory, setShowCareHistory] = useState(false)
@@ -1103,10 +1113,16 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
   const [apptDesc, setApptDesc] = useState('')
   const [apptDuration, setApptDuration] = useState(50)
   const [apptTimezone, setApptTimezone] = useState(BROWSER_TIMEZONE)
-  const messagesRef = useRef(null)
   const inputRef = useRef(null)
-  const shouldScrollRef = useRef(false)
   const cancellationTimerRef = useRef(null)
+  const {
+    containerRef: messagesRef,
+    newMessageCount,
+    onScroll: handleMessagesScroll,
+    prepareAppend,
+    preparePrepend,
+    scrollToBottom,
+  } = useConversationScroll(messages, { loading: isLoadingHistory, reduceMotion })
 
   useEffect(() => {
     let isActive = true
@@ -1131,14 +1147,16 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
         ])
         if (!isActive) return
         setMessages(
-          history.map((message) => ({
+          history.messages.map((message) => ({
             id: message.id,
             role: message.role,
             text: message.content,
-            time: new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timestamp: message.timestamp,
             type: 'text',
           })),
         )
+        setHasMoreHistory(history.hasMore)
+        setHistoryCursor(history.nextCursor)
         setAppointments(savedAppointments)
         setBookings(savedBookings)
         setChatError('')
@@ -1182,19 +1200,36 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
     }
   }, [])
 
-  useEffect(() => {
-    const messagesEl = messagesRef.current
-    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'auto' })
-    inputRef.current?.focus()
-  }, [isLoadingHistory])
 
   useEffect(() => {
-    if (!shouldScrollRef.current) return
-    shouldScrollRef.current = false
-    const messagesEl = messagesRef.current
-    messagesEl?.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' })
-    if (!isTyping) inputRef.current?.focus()
-  }, [messages, isTyping])
+    if (!isLoadingHistory) inputRef.current?.focus()
+  }, [isLoadingHistory])
+
+  async function loadEarlierMessages() {
+    if (!hasMoreHistory || loadingEarlier || !historyCursor || !t.matchId) return
+    setLoadingEarlier(true)
+    try {
+      const history = await fetchTherapistMessages(t.matchId, historyCursor)
+      preparePrepend()
+      setMessages((current) => {
+        const existing = new Set(current.map((message) => message.id))
+        return [...history.messages.filter((message) => !existing.has(message.id)).map((message) => ({
+          id: message.id,
+          role: message.role,
+          text: message.content,
+          timestamp: message.timestamp,
+          type: 'text',
+        })), ...current]
+      })
+      setHasMoreHistory(history.hasMore)
+      setHistoryCursor(history.nextCursor)
+    } catch (error) {
+      setChatError(error.message || 'Unable to load earlier therapist messages.')
+      setChatErrorContext('load')
+    } finally {
+      setLoadingEarlier(false)
+    }
+  }
 
   async function sendMessage() {
     const text = input.trim()
@@ -1204,11 +1239,11 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
       id: optimisticId,
       role: 'user',
       text,
-      time: timestamp(),
+      timestamp: new Date().toISOString(),
       type: 'text',
     }
 
-    shouldScrollRef.current = true
+    prepareAppend(1)
     setInput('')
     setChatError('')
     setChatErrorContext('')
@@ -1218,21 +1253,21 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
     setIsTyping(true)
     try {
       const data = await sendTherapistMessage(t.matchId, text)
-      shouldScrollRef.current = true
+      prepareAppend(1)
       setMessages((prev) => [
         ...prev.filter((message) => message.id !== optimisticId),
         {
           id: data.userMessage.id,
           role: data.userMessage.role,
           text: data.userMessage.content,
-          time: new Date(data.userMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: data.userMessage.timestamp,
           type: 'text',
         },
         {
           id: data.replyMessage.id,
           role: data.replyMessage.role,
           text: data.replyMessage.content,
-          time: new Date(data.replyMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: data.replyMessage.timestamp,
           type: 'text',
         },
       ])
@@ -1623,7 +1658,7 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
         />
       )}
 
-      <div className="tm-chat-messages" ref={messagesRef}>
+      <div className="tm-chat-messages" ref={messagesRef} onScroll={handleMessagesScroll}>
         {isLoadingHistory && <LoadingState label="Loading conversation…" compact skeletonLines={3} />}
         {!isLoadingHistory && messages.length === 0 && !chatError && (
           <EmptyState
@@ -1632,16 +1667,24 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
             compact
           />
         )}
-        {messages.map((message) => {
+        {hasMoreHistory && !isLoadingHistory && (
+          <LoadEarlierButton loading={loadingEarlier} onClick={loadEarlierMessages} />
+        )}
+        {messages.map((message, index) => {
           const isUser = message.role === 'user'
           return (
-            <div key={message.id} className={`tm-msg-row${isUser ? ' tm-msg-row--user' : ''}`}>
-              {!isUser && <Avatar initials={t.initials} color={t.color} size={30} />}
-              <div className={`tm-bubble${isUser ? ' tm-bubble--user' : ' tm-bubble--them'}`}>
-                <p className="tm-bubble-text">{message.text}</p>
-                <span className="tm-bubble-time">{message.time}</span>
+            <div key={message.id} className="conversation-message-group">
+              {(index === 0 || !isSameMessageDay(messages[index - 1]?.timestamp, message.timestamp)) && (
+                <ConversationDateSeparator timestamp={message.timestamp} />
+              )}
+              <div className={`tm-msg-row${isUser ? ' tm-msg-row--user' : ''}`}>
+                {!isUser && <Avatar initials={t.initials} color={t.color} size={30} />}
+                <div className={`tm-bubble${isUser ? ' tm-bubble--user' : ' tm-bubble--them'}`}>
+                  <p className="tm-bubble-text">{message.text}</p>
+                  <span className="tm-bubble-time">{formatMessageTime(message.timestamp)}</span>
+                  <CopyMessageButton text={message.text} inverse={isUser} />
+                </div>
               </div>
-
             </div>
           )
         })}
@@ -1654,6 +1697,8 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
           </div>
         )}
       </div>
+
+      <NewMessagesButton count={newMessageCount} onClick={() => scrollToBottom()} />
 
       <div className="tm-chat-input-bar">
         <ChatInput
@@ -2382,6 +2427,7 @@ const TM_STYLES = `
   .tm-booked-confirm p { font-size: 0.86rem; color: var(--muted); margin: 6px 0 0; }
   /* chat */
   .tm-chat-root {
+    position: relative;
     display: flex; flex-direction: column;
     width: 100%;
     height: 100%;
@@ -2702,7 +2748,8 @@ const TM_STYLES = `
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .tm-msg-row,
     .tm-chat-root--leaving,
-    .tm-connection-cancel-confirm { animation: none; }
+    .tm-connection-cancel-confirm { animation: none; transition: none; }
   }
 `

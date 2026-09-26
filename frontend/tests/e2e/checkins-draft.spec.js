@@ -76,3 +76,75 @@ test('unfinished weekly check-in restores its answers and position after reload'
   await expect(page.getByText('Question 1 of 12')).toBeVisible()
   await expect(page.locator('.ci-scale-btn--on')).toHaveText('7')
 })
+
+test('completed initial assessments discard stale initial drafts', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.sessionStorage.setItem('dawn-harbor.checkin.draft.v1:42', JSON.stringify({
+      version: 1,
+      surveyType: 'initial',
+      personalityInstrument: 'dawn-harbor-personality-v2',
+      questionIds: [1],
+      answers: { 1: 3 },
+      currentIndex: 0,
+      updatedAt: new Date().toISOString(),
+    }))
+  })
+
+  await page.route('**/api/auth/me/', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      id: 42,
+      username: 'draft-user',
+      firstName: 'Avery',
+      hasInitialAssessment: true,
+      hasCurrentPersonalityAssessment: false,
+      personality: {},
+      needsProfile: null,
+    }),
+  }))
+  await page.route('**/api/checkins/', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      history: [{ id: 1, type: 'initial', date: '2026-08-01', qIds: [], scores: {} }],
+      streak: 0,
+      lastCheckInDate: '2026-08-01',
+      dueThisWeek: true,
+      hasInitialAssessment: true,
+      hasCurrentPersonalityAssessment: false,
+    }),
+  }))
+
+  await page.goto('/')
+
+  await expect(page.getByText('Update required')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Take updated assessment' })).toBeVisible()
+  await expect(page.getByText('Your unfinished check-in was restored.')).toHaveCount(0)
+  await expect.poll(() => page.evaluate(() => (
+    sessionStorage.getItem('dawn-harbor.checkin.draft.v1:42')
+  ))).toBeNull()
+})
+test('up-to-date check-ins render when an older API omits the next date', async ({ page }) => {
+  const pageErrors = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+
+  await page.route('**/api/checkins/', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      history: [{ id: 1, type: 'initial', date: '2026-08-01', qIds: [], scores: {} }],
+      streak: 0,
+      lastCheckInDate: '2026-08-01',
+      dueThisWeek: false,
+      hasInitialAssessment: true,
+      hasCurrentPersonalityAssessment: true,
+    }),
+  }))
+
+  await page.goto('/')
+
+  await expect(page.getByRole('heading', { name: 'Check-Ins', exact: true })).toBeVisible()
+  await expect(page.getByText('Your check-ins are up to date. Come back next week to keep your streak going.')).toBeVisible()
+  expect(pageErrors).toEqual([])
+})

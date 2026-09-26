@@ -70,5 +70,6 @@ test('unfinished journal entry restores after reload and clears after successful
 
   await page.getByRole('button', { name: /Submit entry/ }).click()
   await expect(page.getByText('Your journal entry was saved.')).toBeVisible()
+  await expect(page.locator('.jn-ai-avatar use')).toHaveAttribute('href', '/avatar-symbols.svg#brand-harbor')
   await expect.poll(() => page.evaluate((key) => sessionStorage.getItem(key), draftKey)).toBeNull()
 })

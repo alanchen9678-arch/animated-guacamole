@@ -68,6 +68,19 @@ test.beforeEach(async ({ page }) => {
     waitlist: null,
   }) }))
   await page.route('**/api/peer/rooms/5/messages/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }))
+  await page.route('**/api/peer/events/', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify([{
+      id: 91,
+      type: 'requested',
+      direction: 'incoming',
+      peerId: '12',
+      peerName: 'Calm Harbor',
+      status: 'pending',
+      createdAt: '2026-09-24T14:00:00Z',
+    }]),
+  }))
   await page.route('**/api/peer/peers/', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
     { userId: 11, name: 'Silver Fern', color: '#6f7f76', avatarSymbol: 'peer-pine', status: 'connected' },
     { userId: 12, name: 'Calm Harbor', color: '#687790', avatarSymbol: 'peer-beacon', status: 'none' },
@@ -88,6 +101,7 @@ test('peer match hover adds edge spacing without moving its content', async ({ p
   await expect(page.getByRole('heading', { level: 2, name: 'Peer Support' })).toHaveCSS('font-size', '32px')
   await expect(page.getByRole('heading', { level: 2, name: 'Peer Support' })).toHaveCSS('font-weight', '650')
   await expect(page.locator('.ps-hub-identity')).toContainText('Your peer identity')
+  await expect(page.getByText('Calm Harbor sent you a connection request.')).toBeVisible()
 
   const match = page.locator('.ps-peer-card').filter({ hasText: 'Calm Harbor' })
   const avatar = match.locator(':scope > div').first()

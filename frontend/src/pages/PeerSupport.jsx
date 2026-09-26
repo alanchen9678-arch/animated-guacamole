@@ -1,8 +1,18 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router'
+import { useReducedMotion } from 'motion/react'
 import { ChatInput, ChatInputSubmit, ChatInputTextArea } from '../components/ui/chat-input.jsx'
 import { AsyncButton, EmptyState, FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
 import { AvatarSymbol } from '../components/ui/avatar-symbols.jsx'
+import {
+  ConversationDateSeparator,
+  CopyMessageButton,
+  LoadEarlierButton,
+  NewMessagesButton,
+  formatMessageTime,
+  isSameMessageDay,
+  useConversationScroll,
+} from '../components/ui/conversation-history.jsx'
 import {
   fetchPeerProfile,
   completePeerOnboarding,
@@ -14,9 +24,12 @@ import {
   sendRoomMessage,
   fetchPeers,
   connectPeer,
+  fetchPeerConnectionEvents,
   fetchDMs,
   sendDM,
 } from '../services/api.js'
+
+const MESSAGE_PAGE_SIZE = 50
 
 // Moderation engine
 
@@ -231,7 +244,7 @@ function OnboardingView({ onDone, loading, error }) {
 
 // Hub
 
-function HubView({ profile, roomState, peers, setPeers, onRoom, onDM, loadingPeers, loadingRoom, onRefreshRoom, onRejoinRoom, rejoiningRoom, rejoinError }) {
+function HubView({ profile, roomState, peers, events, setPeers, onConnectionChanged, onRoom, onDM, loadingPeers, loadingRoom, onRefreshRoom, onRejoinRoom, rejoiningRoom, rejoinError }) {
   const activeChats  = peers.filter(p => p.status === 'connected')
   const recommended  = peers.filter(p => p.status !== 'connected' && p.status !== 'declined').slice(0, 8)
   const room         = roomState?.room ?? null
@@ -245,6 +258,7 @@ function HubView({ profile, roomState, peers, setPeers, onRoom, onDM, loadingPee
     try {
       const res = await connectPeer(userId)
       setPeers(prev => prev.map(p => p.userId === userId ? { ...p, status: res.status } : p))
+      onConnectionChanged?.()
     } catch (error) {
       setPeers(prev => prev.map(p => p.userId === userId ? { ...p, status: 'none' } : p))
       setConnectError(error.message || 'Unable to update this peer connection.')
@@ -320,6 +334,33 @@ function HubView({ profile, roomState, peers, setPeers, onRoom, onDM, loadingPee
         </div>
       )}
 
+      {events.length > 0 && (
+        <section className="ps-connection-activity" aria-labelledby="ps-connection-activity-heading">
+          <div className="ps-section-heading">
+            <span id="ps-connection-activity-heading">Connection activity</span>
+          </div>
+          <div className="ps-connection-events">
+            {events.slice(0, 6).map((event) => {
+              const label = event.type === 'accepted'
+                ? (event.direction === 'incoming'
+                    ? event.peerName + ' accepted your connection request.'
+                    : 'You connected with ' + event.peerName + '.')
+                : (event.direction === 'incoming'
+                    ? event.peerName + ' sent you a connection request.'
+                    : 'Connection request sent to ' + event.peerName + '.')
+              return (
+                <div className="ps-connection-event" key={event.id}>
+                  <span>{label}</span>
+                  <time dateTime={event.createdAt}>
+                    {new Date(event.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </time>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
       {/* Active chats */}
       {activeChats.length > 0 && (
         <div>
@@ -389,6 +430,7 @@ function HubView({ profile, roomState, peers, setPeers, onRoom, onDM, loadingPee
 // Room chat
 
 function RoomView({ profile, room, onBack, onSwitch, onOptOut }) {
+  const reduceMotion = useReducedMotion()
   const [messages, setMessages]     = useState([])
   const [input, setInput]           = useState('')
   const [modAlert, setModAlert]     = useState(null)
@@ -400,19 +442,25 @@ function RoomView({ profile, room, onBack, onSwitch, onOptOut }) {
   const [errorContext, setErrorContext] = useState('')
   const [failedMessage, setFailedMessage] = useState('')
   const [initialLoading, setInitialLoading] = useState(true)
-  const messagesRef                 = useRef(null)
+  const [hasMoreHistory, setHasMoreHistory] = useState(false)
+  const [loadingEarlier, setLoadingEarlier] = useState(false)
   const inputRef                    = useRef(null)
   const lastIdRef                   = useRef(null)
-  const initialLoad                 = useRef(true)
-
-  const scrollToBottom = useCallback((behavior = 'smooth') => {
-    messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior })
-  }, [])
+  const {
+    containerRef: messagesRef,
+    newMessageCount,
+    onScroll: handleMessagesScroll,
+    prepareAppend,
+    preparePrepend,
+    scrollToBottom,
+  } = useConversationScroll(messages, { loading: initialLoading, reduceMotion })
 
   const loadMessages = useCallback(async (initial = false) => {
     try {
-      const data = await fetchRoomMessages(room.id, initial ? null : lastIdRef.current)
+      const data = await fetchRoomMessages(room.id, initial ? {} : { sinceId: lastIdRef.current })
+      if (initial) setHasMoreHistory(data.length === MESSAGE_PAGE_SIZE)
       if (!data.length) return
+      if (!initial) prepareAppend(data.length)
       setMessages(prev => {
         const existing = new Set(prev.map(m => m.id))
         const fresh = data.filter(m => !existing.has(m.id))
@@ -426,21 +474,36 @@ function RoomView({ profile, room, onBack, onSwitch, onOptOut }) {
         setErrorContext('load')
       }
     }
-  }, [room.id])
+  }, [prepareAppend, room.id])
 
   useEffect(() => {
     loadMessages(true).then(() => {
-      scrollToBottom('auto')
       inputRef.current?.focus()
-      initialLoad.current = false
     }).finally(() => setInitialLoading(false))
     const interval = setInterval(() => loadMessages(false), 5000)
     return () => clearInterval(interval)
-  }, [loadMessages, scrollToBottom])
+  }, [loadMessages])
 
-  useEffect(() => {
-    if (!initialLoad.current) scrollToBottom()
-  }, [messages, scrollToBottom])
+
+  async function loadEarlierMessages() {
+    const firstId = messages.find((message) => !message.pending)?.id
+    if (!hasMoreHistory || loadingEarlier || !firstId) return
+    setLoadingEarlier(true)
+    try {
+      const data = await fetchRoomMessages(room.id, { beforeId: firstId })
+      preparePrepend()
+      setMessages((current) => {
+        const existing = new Set(current.map((message) => message.id))
+        return [...data.filter((message) => !existing.has(message.id)), ...current]
+      })
+      setHasMoreHistory(data.length === MESSAGE_PAGE_SIZE)
+    } catch (loadError) {
+      setError(loadError.message || 'Unable to load earlier room messages.')
+      setErrorContext('load')
+    } finally {
+      setLoadingEarlier(false)
+    }
+  }
 
   async function send() {
     const text = input.trim()
@@ -453,6 +516,7 @@ function RoomView({ profile, room, onBack, onSwitch, onOptOut }) {
     setError(null)
     setErrorContext('')
     setInput('')
+    prepareAppend(1)
     setMessages(prev => [...prev, pendingMessage])
     window.requestAnimationFrame(() => inputRef.current?.focus())
     try {
@@ -565,7 +629,7 @@ function RoomView({ profile, room, onBack, onSwitch, onOptOut }) {
         />
       )}
 
-      <div className="ps-messages" ref={messagesRef}>
+      <div className="ps-messages" ref={messagesRef} onScroll={handleMessagesScroll}>
         {initialLoading && <LoadingState label="Loading room messages…" compact skeletonLines={3} />}
         {!initialLoading && messages.length === 0 && !error && (
           <EmptyState
@@ -574,20 +638,31 @@ function RoomView({ profile, room, onBack, onSwitch, onOptOut }) {
             compact
           />
         )}
-        {messages.map(m => (
-          <div key={m.id} className={`ps-msg-row${m.self ? ' ps-msg-row--self' : ''}`}>
+        {hasMoreHistory && !initialLoading && (
+          <LoadEarlierButton loading={loadingEarlier} onClick={loadEarlierMessages} />
+        )}
+        {messages.map((m, index) => (
+          <div key={m.id} className="conversation-message-group">
+            {(index === 0 || !isSameMessageDay(messages[index - 1]?.timestamp, m.timestamp)) && (
+              <ConversationDateSeparator timestamp={m.timestamp} />
+            )}
+            <div className={`ps-msg-row${m.self ? ' ps-msg-row--self' : ''}`}>
             {!m.self && <AnonAvatar symbol={m.avatarSymbol} color={m.color} size={28} />}
             <div className={`ps-bubble${m.self ? ' ps-bubble--self' : ' ps-bubble--other'}${m.pending ? ' ps-bubble--pending' : ''}`}>
               {!m.self && <span className="ps-bubble-name" style={{ color: m.color }}>{m.user}</span>}
               <p className="ps-bubble-text">{m.text}</p>
               <span className="ps-bubble-time">
-                {m.pending ? 'Sending...' : new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {m.pending ? 'Sending...' : formatMessageTime(m.timestamp)}
               </span>
+              {!m.pending && <CopyMessageButton text={m.text} inverse={m.self} />}
             </div>
-            {m.self && <AnonAvatar symbol={profile.avatarSymbol} color={profile.avatarColor} size={28} />}
+              {m.self && <AnonAvatar symbol={profile.avatarSymbol} color={profile.avatarColor} size={28} />}
+            </div>
           </div>
         ))}
       </div>
+
+      <NewMessagesButton count={newMessageCount} onClick={() => scrollToBottom()} />
 
       <div className="ps-input-bar">
         <ChatInput
@@ -613,6 +688,7 @@ function RoomView({ profile, room, onBack, onSwitch, onOptOut }) {
 // DM chat
 
 function DMView({ peer, profile, onBack, onLeave }) {
+  const reduceMotion = useReducedMotion()
   const [messages, setMessages] = useState([])
   const [input, setInput]       = useState('')
   const [modAlert, setModAlert] = useState(null)
@@ -622,19 +698,25 @@ function DMView({ peer, profile, onBack, onLeave }) {
   const [errorContext, setErrorContext] = useState('')
   const [failedMessage, setFailedMessage] = useState('')
   const [initialLoading, setInitialLoading] = useState(true)
-  const messagesRef             = useRef(null)
+  const [hasMoreHistory, setHasMoreHistory] = useState(false)
+  const [loadingEarlier, setLoadingEarlier] = useState(false)
   const inputRef                = useRef(null)
   const lastIdRef               = useRef(null)
-  const initialLoad             = useRef(true)
-
-  const scrollToBottom = useCallback((behavior = 'smooth') => {
-    messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior })
-  }, [])
+  const {
+    containerRef: messagesRef,
+    newMessageCount,
+    onScroll: handleMessagesScroll,
+    prepareAppend,
+    preparePrepend,
+    scrollToBottom,
+  } = useConversationScroll(messages, { loading: initialLoading, reduceMotion })
 
   const loadMessages = useCallback(async (initial = false) => {
     try {
-      const data = await fetchDMs(peer.userId, initial ? null : lastIdRef.current)
+      const data = await fetchDMs(peer.userId, initial ? {} : { sinceId: lastIdRef.current })
+      if (initial) setHasMoreHistory(data.length === MESSAGE_PAGE_SIZE)
       if (!data.length) return
+      if (!initial) prepareAppend(data.length)
       setMessages(prev => {
         const existing = new Set(prev.map(m => m.id))
         const fresh = data.filter(m => !existing.has(m.id))
@@ -648,21 +730,36 @@ function DMView({ peer, profile, onBack, onLeave }) {
         setErrorContext('load')
       }
     }
-  }, [peer.userId])
+  }, [peer.userId, prepareAppend])
 
   useEffect(() => {
     loadMessages(true).then(() => {
-      scrollToBottom('auto')
       inputRef.current?.focus()
-      initialLoad.current = false
     }).finally(() => setInitialLoading(false))
     const interval = setInterval(() => loadMessages(false), 5000)
     return () => clearInterval(interval)
-  }, [loadMessages, scrollToBottom])
+  }, [loadMessages])
 
-  useEffect(() => {
-    if (!initialLoad.current) scrollToBottom()
-  }, [messages, scrollToBottom])
+
+  async function loadEarlierMessages() {
+    const firstId = messages.find((message) => !message.pending)?.id
+    if (!hasMoreHistory || loadingEarlier || !firstId) return
+    setLoadingEarlier(true)
+    try {
+      const data = await fetchDMs(peer.userId, { beforeId: firstId })
+      preparePrepend()
+      setMessages((current) => {
+        const existing = new Set(current.map((message) => message.id))
+        return [...data.filter((message) => !existing.has(message.id)), ...current]
+      })
+      setHasMoreHistory(data.length === MESSAGE_PAGE_SIZE)
+    } catch (loadError) {
+      setError(loadError.message || 'Unable to load earlier direct messages.')
+      setErrorContext('load')
+    } finally {
+      setLoadingEarlier(false)
+    }
+  }
 
   async function send() {
     const text = input.trim()
@@ -675,6 +772,7 @@ function DMView({ peer, profile, onBack, onLeave }) {
     setError(null)
     setErrorContext('')
     setInput('')
+    prepareAppend(1)
     setMessages(prev => [...prev, pendingMessage])
     window.requestAnimationFrame(() => inputRef.current?.focus())
     try {
@@ -704,7 +802,7 @@ function DMView({ peer, profile, onBack, onLeave }) {
           <AnonAvatar symbol={peer.avatarSymbol} color={peer.color} size={34} />
           <div className="ps-chat-profile-copy">
             <strong className="ps-chat-name">{peer.name}</strong>
-            <span className="ps-chat-sub">Peer identity {"\u00b7"} 5s updates</span>
+            <span className="ps-chat-sub">Peer identity {"\u00b7"} New messages appear automatically</span>
           </div>
         </div>
         <div className="ps-leave-wrap">
@@ -747,7 +845,7 @@ function DMView({ peer, profile, onBack, onLeave }) {
         />
       )}
 
-      <div className="ps-messages" ref={messagesRef}>
+      <div className="ps-messages" ref={messagesRef} onScroll={handleMessagesScroll}>
         {initialLoading && <LoadingState label="Loading direct messages…" compact skeletonLines={3} />}
         {!initialLoading && messages.length === 0 && !error && (
           <EmptyState
@@ -756,22 +854,33 @@ function DMView({ peer, profile, onBack, onLeave }) {
             compact
           />
         )}
-        {messages.map(m => {
+        {hasMoreHistory && !initialLoading && (
+          <LoadEarlierButton loading={loadingEarlier} onClick={loadEarlierMessages} />
+        )}
+        {messages.map((m, index) => {
           const isMe = m.role === 'me'
           return (
-            <div key={m.id} className={`ps-msg-row${isMe ? ' ps-msg-row--self' : ''}`}>
-              {!isMe && <AnonAvatar symbol={peer.avatarSymbol} color={peer.color} size={28} />}
-              <div className={`ps-bubble${isMe ? ' ps-bubble--self' : ' ps-bubble--other'}${m.pending ? ' ps-bubble--pending' : ''}`}>
-                <p className="ps-bubble-text">{m.text}</p>
-                <span className="ps-bubble-time">
-                  {m.pending ? 'Sending...' : new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+            <div key={m.id} className="conversation-message-group">
+              {(index === 0 || !isSameMessageDay(messages[index - 1]?.timestamp, m.timestamp)) && (
+                <ConversationDateSeparator timestamp={m.timestamp} />
+              )}
+              <div className={`ps-msg-row${isMe ? ' ps-msg-row--self' : ''}`}>
+                {!isMe && <AnonAvatar symbol={peer.avatarSymbol} color={peer.color} size={28} />}
+                <div className={`ps-bubble${isMe ? ' ps-bubble--self' : ' ps-bubble--other'}${m.pending ? ' ps-bubble--pending' : ''}`}>
+                  <p className="ps-bubble-text">{m.text}</p>
+                  <span className="ps-bubble-time">
+                    {m.pending ? 'Sending...' : formatMessageTime(m.timestamp)}
+                  </span>
+                  {!m.pending && <CopyMessageButton text={m.text} inverse={isMe} />}
+                </div>
+                {isMe && <AnonAvatar symbol={profile.avatarSymbol} color={profile.avatarColor} size={28} />}
               </div>
-              {isMe && <AnonAvatar symbol={profile.avatarSymbol} color={profile.avatarColor} size={28} />}
             </div>
           )
         })}
       </div>
+
+      <NewMessagesButton count={newMessageCount} onClick={() => scrollToBottom()} />
 
       <div className="ps-input-bar">
         <ChatInput
@@ -810,6 +919,7 @@ export default function PeerSupport() {
   const routeNavigate = useNavigate()
   const [roomState, setRoomState] = useState(null)
   const [peers, setPeers]         = useState([])
+  const [connectionEvents, setConnectionEvents] = useState([])
   const [loadingPeers, setLoadingPeers] = useState(true)
   const [loadingRoom, setLoadingRoom] = useState(true)
   const [view, setView]           = useState('loading')
@@ -847,7 +957,16 @@ export default function PeerSupport() {
       .finally(() => setLoadingRoom(false))
     setLoadingPeers(true)
     fetchPeers().then(setPeers).catch((error) => setHubError(error.message || 'Unable to load peer matches.')).finally(() => setLoadingPeers(false))
+    fetchPeerConnectionEvents().then(setConnectionEvents).catch((error) => setHubError(error.message || 'Unable to load connection activity.'))
   }, [profile?.isOnboarded, hubReloadKey])
+
+  useEffect(() => {
+    if (!profile?.isOnboarded) return undefined
+    const interval = window.setInterval(() => {
+      fetchPeerConnectionEvents().then(setConnectionEvents).catch(() => {})
+    }, 15000)
+    return () => window.clearInterval(interval)
+  }, [profile?.isOnboarded])
 
   useEffect(() => {
     if (!profile) return
@@ -1013,7 +1132,12 @@ export default function PeerSupport() {
             profile={profile}
             roomState={roomState}
             peers={peers}
+            events={connectionEvents}
             setPeers={setPeers}
+            onConnectionChanged={() => {
+              fetchPeers().then(setPeers).catch(() => {})
+              fetchPeerConnectionEvents().then(setConnectionEvents).catch(() => {})
+            }}
             onRoom={openRoom}
             onDM={openDM}
             loadingPeers={loadingPeers}
@@ -1071,6 +1195,19 @@ const PS_STYLES = `
     border-bottom: 1px solid var(--line-strong);
   }
   .ps-page-header p { max-width: 46ch; }
+  .ps-connection-activity { display: grid; gap: 8px; }
+  .ps-connection-events { border-top: 1px solid var(--line); }
+  .ps-connection-event {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 9px 2px;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+  .ps-connection-event time { color: var(--muted); white-space: nowrap; }
   .ps-primary-btn {
     padding: 13px 32px; border-radius: 999px; border: none;
     background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 700;
@@ -1194,6 +1331,7 @@ const PS_STYLES = `
 
   /* chat shell */
   .ps-chat-root {
+    position: relative;
     display: flex; flex-direction: column;
     width: 100%;
     height: 100%;
@@ -1291,6 +1429,11 @@ const PS_STYLES = `
   }
   .send-btn {
     width: 40px; height: 40px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ps-msg-row,
+    .ps-mod-alert { animation: none; }
   }
 
   @media (max-width: 640px) {

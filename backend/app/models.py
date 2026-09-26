@@ -536,12 +536,19 @@ def get_user_checkin_summary(user, today=None):
             else today
         )
 
+    next_weekly_check_in_date = (
+        weekly_due_since
+        if due_this_week
+        else latest_weekly_entry.week_start_date + timedelta(days=7)
+    )
+
     return {
         'streak': streak,
         'last_check_in_date': latest_entry.check_in_date if latest_entry else None,
         'last_weekly_check_in_date': latest_weekly_entry.check_in_date if latest_weekly_entry else None,
         'due_this_week': due_this_week,
         'weekly_due_since': weekly_due_since,
+        'next_weekly_check_in_date': next_weekly_check_in_date,
         'has_initial_assessment': has_initial_assessment,
         'has_current_personality_assessment': has_current_personality_assessment,
     }
@@ -718,3 +725,27 @@ class PeerConnection(models.Model):
 
     def __str__(self):
         return f"{self.requester_id} -> {self.recipient_id} ({self.status})"
+
+
+class PeerConnectionEvent(models.Model):
+    class EventType(models.TextChoices):
+        REQUESTED = 'requested', 'Requested'
+        ACCEPTED = 'accepted', 'Accepted'
+
+    connection = models.ForeignKey(PeerConnection, on_delete=models.CASCADE, related_name='events')
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='peer_connection_events')
+    event_type = models.CharField(max_length=20, choices=EventType.choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at', '-id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['connection', 'event_type'],
+                name='unique_peer_connection_event_type',
+            ),
+        ]
+        indexes = [models.Index(fields=['connection', 'created_at'])]
+
+    def __str__(self):
+        return f"{self.connection_id}: {self.event_type} by {self.actor_id}"

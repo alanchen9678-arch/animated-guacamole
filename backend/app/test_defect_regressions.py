@@ -58,7 +58,7 @@ class ChatDefectRegressionTests(AuthenticatedAPITestCase):
         self.assertEqual(response.status_code, 429)
         generate.assert_not_called()
 
-    def test_history_returns_newest_one_hundred_messages_in_chronological_order(self):
+    def test_history_returns_bounded_cursor_pages_in_chronological_order(self):
         conversation = Conversation.objects.create(
             user=self.user,
             type=Conversation.ConversationType.AI,
@@ -70,12 +70,24 @@ class ChatDefectRegressionTests(AuthenticatedAPITestCase):
                 content=f'message-{index}',
             )
 
-        response = self.client.get(reverse('chat'))
+        newest = self.client.get(reverse('chat'))
+        newest_contents = [item['content'] for item in newest.data['messages']]
 
-        contents = [item['content'] for item in response.data['messages']]
-        self.assertEqual(len(contents), 100)
-        self.assertEqual(contents[0], 'message-10')
-        self.assertEqual(contents[-1], 'message-109')
+        self.assertEqual(len(newest_contents), 50)
+        self.assertEqual(newest_contents[0], 'message-60')
+        self.assertEqual(newest_contents[-1], 'message-109')
+        self.assertTrue(newest.data['hasMore'])
+
+        middle = self.client.get(reverse('chat'), {'before': newest.data['nextCursor']})
+        middle_contents = [item['content'] for item in middle.data['messages']]
+        self.assertEqual(middle_contents[0], 'message-10')
+        self.assertEqual(middle_contents[-1], 'message-59')
+        self.assertTrue(middle.data['hasMore'])
+
+        oldest = self.client.get(reverse('chat'), {'before': middle.data['nextCursor']})
+        oldest_contents = [item['content'] for item in oldest.data['messages']]
+        self.assertEqual(oldest_contents, [f'message-{index}' for index in range(10)])
+        self.assertFalse(oldest.data['hasMore'])
 
 
 class JournalDefectRegressionTests(AuthenticatedAPITestCase):

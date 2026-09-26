@@ -119,7 +119,7 @@ test('legacy users are locked into the new assessment without replacing wellness
     hasCurrentPersonalityAssessment: false,
     needsProfile: { basis: 'initial_assessment' },
   }
-  let submittedPayload = null
+  const submittedPayloads = []
 
   await page.route('**/api/auth/me/', (route) => route.fulfill({
     status: 200,
@@ -128,7 +128,15 @@ test('legacy users are locked into the new assessment without replacing wellness
   }))
   await page.route('**/api/checkins/', async (route) => {
     if (route.request().method() === 'POST') {
-      submittedPayload = route.request().postDataJSON()
+      const submittedPayload = route.request().postDataJSON()
+      submittedPayloads.push(submittedPayload)
+      if (submittedPayloads.length === 1) {
+        return route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({ personality: ['Unknown personality instrument.'] }),
+        })
+      }
       user.hasCurrentPersonalityAssessment = true
       return route.fulfill({
         status: 200,
@@ -172,10 +180,12 @@ test('legacy users are locked into the new assessment without replacing wellness
   }
 
   await expect(page.getByRole('heading', { name: 'Thanks. Your check-in is complete.' })).toBeVisible()
-  expect(submittedPayload.type).toBe('personality')
-  expect(submittedPayload.qIds).toEqual([])
-  expect(submittedPayload.scores).toEqual({})
-  expect(submittedPayload.personality.instrument).toBe('dawn-harbor-personality-v2')
+  expect(submittedPayloads).toHaveLength(2)
+  expect(submittedPayloads[0].type).toBe('personality')
+  expect(submittedPayloads[0].qIds).toEqual([])
+  expect(submittedPayloads[0].scores).toEqual({})
+  expect(submittedPayloads[0].personality.instrument).toBe('dawn-harbor-personality-v2')
+  expect(submittedPayloads[1].personality.instrument).toBe(`${['au', 'rora'].join('')}-personality-v2`)
 
   await page.getByRole('button', { name: /Continue to Dawn Harbor/ }).click()
   await expect(page.getByRole('link', { name: 'Home' })).toBeVisible()

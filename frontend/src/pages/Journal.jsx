@@ -5,6 +5,7 @@ import ColorPickerMenu from '../components/ui/color-picker-menu.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { fetchJournalEntries, saveJournalEntry } from '../services/api.js'
 import { AsyncButton, EmptyState, FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
+import { DawnHarborAvatar } from '../components/ui/avatar-symbols.jsx'
 
 // ─── mood config ───────────────────────────────────────────────────────────────
 
@@ -124,9 +125,9 @@ const AI_RESPONSES = {
 const TONE_STYLE = {
   crisis: { bg: '#fff1f2', border: '#fda4af', ic: '#be123c', icon: '!' },
   alert: { bg: '#fff7ed', border: '#fdba74', ic: '#c2410c', icon: '!' },
-  positive: { bg: '#ecfdf5', border: '#6ee7b7', ic: '#047857', icon: 'A' },
-  negative: { bg: '#eff6ff', border: '#93c5fd', ic: '#1d4ed8', icon: 'A' },
-  neutral: { bg: '#f8fafc', border: '#cbd5e1', ic: '#475569', icon: 'A' },
+  positive: { bg: '#ecfdf5', border: '#6ee7b7', ic: '#047857', icon: 'brand' },
+  negative: { bg: '#eff6ff', border: '#93c5fd', ic: '#1d4ed8', icon: 'brand' },
+  neutral: { bg: '#f8fafc', border: '#cbd5e1', ic: '#475569', icon: 'brand' },
 }
 
 function analyzeEntry(text) {
@@ -986,7 +987,9 @@ export default function Journal() {
           }}
         >
           <div className="jn-ai-avatar" style={{ background: TONE_STYLE[aiResponse.tone]?.ic }}>
-            {TONE_STYLE[aiResponse.tone]?.icon === 'A' ? 'A' : '!'}
+            {TONE_STYLE[aiResponse.tone]?.icon === 'brand'
+              ? <DawnHarborAvatar size={18} />
+              : '!'}
           </div>
           <div className="jn-ai-body">
             <strong className="jn-ai-label" style={{ color: TONE_STYLE[aiResponse.tone]?.ic }}>Dawn Harbor</strong>

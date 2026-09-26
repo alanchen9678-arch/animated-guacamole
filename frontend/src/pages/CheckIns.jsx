@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useUser } from '../context/UserContext'
 import { fetchCheckIns, submitCheckIn } from '../services/api'
 import { AsyncButton, FeedbackNotice, LoadingState } from '../components/ui/feedback.jsx'
+import { DawnHarborAvatar } from '../components/ui/avatar-symbols.jsx'
 
 // ─── personality questions (30 questions, 5 dimensions) ───────────────────────
 
@@ -293,6 +294,14 @@ function isWeeklyCheckInDue(history, today = new Date()) {
   return diffDays(parseDateKey(latestWeeklyEntry.date), today) >= 7
 }
 
+function getNextWeeklyCheckInDate(history) {
+  const latestWeeklyEntry = getLatestWeeklyEntry(history)
+  if (!latestWeeklyEntry) return null
+  const nextDate = parseDateKey(latestWeeklyEntry.date)
+  nextDate.setDate(nextDate.getDate() + 7)
+  return formatDateKey(nextDate)
+}
+
 function buildSurvey(type, lastDisorderQIds = []) {
   if (type === 'initial') {
     // 40 questions: 10 disorder first, then 30 personality
@@ -406,14 +415,17 @@ function generateInsight(scores, prevScores) {
 }
 
 function fmtDate(str) {
+  if (!str) return null
   const d = parseDateKey(str)
+  if (Number.isNaN(d.getTime())) return null
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 // ─── hub view ─────────────────────────────────────────────────────────────────
 
-function HubView({ streak, dueThisWeek, lastCheckInDate, hasInitialAssessment, hasCurrentPersonalityAssessment, onStart }) {
+function HubView({ streak, dueThisWeek, lastCheckInDate, nextWeeklyCheckInDate, hasInitialAssessment, hasCurrentPersonalityAssessment, onStart }) {
   const needsPersonalityUpgrade = hasInitialAssessment && !hasCurrentPersonalityAssessment
+  const formattedNextCheckInDate = fmtDate(nextWeeklyCheckInDate)
   return (
     <div className="ci-hub">
       {/* streak + due banner */}
@@ -446,7 +458,11 @@ function HubView({ streak, dueThisWeek, lastCheckInDate, hasInitialAssessment, h
           ) : (
             <>
               <div className="ci-due-badge ci-due-badge--ok">Up to date</div>
-              <p className="ci-due-text">Your next check-in is due in a few days. Come back then to keep your streak going.</p>
+              <p className="ci-due-text">
+                {formattedNextCheckInDate
+                  ? `Your next check-in opens on ${formattedNextCheckInDate}. Come back then to keep your streak going.`
+                  : 'Your check-ins are up to date. Come back next week to keep your streak going.'}
+              </p>
             </>
           )}
         </div>
@@ -731,7 +747,9 @@ function ResultsView({ surveyType, scores, prevScores, onDone }) {
 
       {/* dawn-harbor insight */}
       <div className="ci-insight">
-        <div className="ci-insight-icon" style={{ background: '#3a6898' }}>A</div>
+        <div className="ci-insight-icon" style={{ background: '#3a6898' }}>
+          <DawnHarborAvatar size={20} />
+        </div>
         <div className="ci-insight-body">
           <strong className="ci-insight-label" style={{ color: '#3a6898' }}>Dawn Harbor</strong>
           <p className="ci-insight-text">{insightText}</p>
@@ -760,6 +778,7 @@ export default function CheckIns() {
     streak: 0,
     dueThisWeek: false,
     lastCheckInDate: null,
+    nextWeeklyCheckInDate: null,
     hasInitialAssessment: false,
     hasCurrentPersonalityAssessment: false,
   })
@@ -783,6 +802,7 @@ export default function CheckIns() {
         streak: 0,
         dueThisWeek: false,
         lastCheckInDate: null,
+        nextWeeklyCheckInDate: null,
         hasInitialAssessment: false,
         hasCurrentPersonalityAssessment: false,
       })
@@ -803,6 +823,7 @@ export default function CheckIns() {
           streak: data.streak ?? 0,
           dueThisWeek: Boolean(data.dueThisWeek),
           lastCheckInDate: data.lastCheckInDate ?? null,
+          nextWeeklyCheckInDate: data.nextWeeklyCheckInDate ?? null,
           hasInitialAssessment: Boolean(data.hasInitialAssessment),
           hasCurrentPersonalityAssessment: data.hasCurrentPersonalityAssessment === true,
         })
@@ -814,6 +835,7 @@ export default function CheckIns() {
             streak: 0,
             dueThisWeek: false,
             lastCheckInDate: null,
+            nextWeeklyCheckInDate: null,
             hasInitialAssessment: false,
             hasCurrentPersonalityAssessment: false,
           })
@@ -840,7 +862,9 @@ export default function CheckIns() {
     if (!draft) return
 
     const isNoLongerValid = (
-      draft.surveyType !== 'weekly' && serverSummary.hasCurrentPersonalityAssessment
+      draft.surveyType === 'initial' && serverSummary.hasInitialAssessment
+    ) || (
+      draft.surveyType === 'personality' && serverSummary.hasCurrentPersonalityAssessment
     ) || (
       draft.surveyType === 'weekly'
       && (!serverSummary.hasCurrentPersonalityAssessment || !serverSummary.dueThisWeek)
@@ -921,6 +945,7 @@ export default function CheckIns() {
           streak: data.streak ?? 0,
           dueThisWeek: Boolean(data.dueThisWeek),
           lastCheckInDate: data.lastCheckInDate ?? null,
+          nextWeeklyCheckInDate: data.nextWeeklyCheckInDate ?? null,
           hasInitialAssessment: Boolean(data.hasInitialAssessment),
           hasCurrentPersonalityAssessment: data.hasCurrentPersonalityAssessment === true,
         })
@@ -954,6 +979,7 @@ export default function CheckIns() {
         streak: getWeeklyStreak(nextHistory),
         dueThisWeek: isWeeklyCheckInDue(nextHistory),
         lastCheckInDate: getLatestEntry(nextHistory)?.date ?? null,
+        nextWeeklyCheckInDate: getNextWeeklyCheckInDate(nextHistory),
         hasInitialAssessment: nextHistory.some((entry) => entry.type === 'initial'),
         hasCurrentPersonalityAssessment: surveyType !== 'weekly' || serverSummary.hasCurrentPersonalityAssessment,
       })
@@ -1007,6 +1033,7 @@ export default function CheckIns() {
           streak={streak}
           dueThisWeek={dueThisWeek}
           lastCheckInDate={latestEntryDate}
+          nextWeeklyCheckInDate={serverSummary.nextWeeklyCheckInDate}
           hasInitialAssessment={hasInitialAssessment}
           hasCurrentPersonalityAssessment={hasCurrentPersonalityAssessment}
           onStart={startSurvey}

@@ -12,7 +12,7 @@ from app.throttles import AiChatThrottle
 WEEKLY_MESSAGE_LIMIT = 200
 WEEK_IN_SECONDS = 60 * 60 * 24 * 7
 CONTEXT_MESSAGE_LIMIT = 12
-HISTORY_MESSAGE_LIMIT = 100
+HISTORY_PAGE_SIZE = 50
 
 PERSONALITY_DIMENSION_GUIDANCE = {
     'socialEnergy': {
@@ -62,20 +62,30 @@ def serialize_recent_history(conversation):
     ]
 
 
-def serialize_chat_messages(conversation):
-    messages = list(conversation.messages.order_by('-timestamp', '-id')[:HISTORY_MESSAGE_LIMIT])
-    messages.reverse()
-    return [
-        {
-            "id": message.id,
-            "userId": message.user_id,
-            "role": message.role,
-            "content": message.content,
-            "timestamp": message.timestamp.isoformat(),
-        }
-        for message in messages
-        if message.role in {Message.MessageRole.USER, Message.MessageRole.ASSISTANT}
-    ]
+def serialize_chat_messages(conversation, before_id=None):
+    messages = conversation.messages.filter(
+        role__in=[Message.MessageRole.USER, Message.MessageRole.ASSISTANT]
+    )
+    if before_id:
+        messages = messages.filter(id__lt=before_id)
+    page = list(messages.order_by('-timestamp', '-id')[:HISTORY_PAGE_SIZE + 1])
+    has_more = len(page) > HISTORY_PAGE_SIZE
+    page = page[:HISTORY_PAGE_SIZE]
+    page.reverse()
+    return (
+        [
+            {
+                "id": message.id,
+                "userId": message.user_id,
+                "role": message.role,
+                "content": message.content,
+                "timestamp": message.timestamp.isoformat(),
+            }
+            for message in page
+        ],
+        has_more,
+        page[0].id if has_more and page else None,
+    )
 
 
 def reserve_chat_message(user):
@@ -156,12 +166,24 @@ class ChatView(APIView):
             .first()
         )
         if not conversation:
-            return Response({"messages": []}, status=status.HTTP_200_OK)
+            return Response(
+                {"messages": [], "hasMore": False, "nextCursor": None},
+                status=status.HTTP_200_OK,
+            )
+
+        before_id = request.query_params.get('before')
+        try:
+            before_id = int(before_id) if before_id else None
+        except (TypeError, ValueError):
+            before_id = None
+        messages, has_more, next_cursor = serialize_chat_messages(conversation, before_id)
 
         return Response(
             {
                 "conversation_id": conversation.id,
-                "messages": serialize_chat_messages(conversation),
+                "messages": messages,
+                "hasMore": has_more,
+                "nextCursor": next_cursor,
             },
             status=status.HTTP_200_OK,
         )

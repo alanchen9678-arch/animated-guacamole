@@ -432,6 +432,9 @@ class TherapistSharingPreviewView(APIView):
         })
 
 
+THERAPIST_MESSAGE_PAGE_SIZE = 50
+
+
 class TherapistMatchMessageView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -444,12 +447,25 @@ class TherapistMatchMessageView(APIView):
             return Response({'error': 'Therapist match not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         conversation = get_or_create_therapist_conversation(match)
-        messages = conversation.messages.order_by('timestamp', 'id')
+        messages = conversation.messages.all()
+        before_id = request.query_params.get('before')
+        try:
+            before_id = int(before_id) if before_id else None
+        except (TypeError, ValueError):
+            before_id = None
+        if before_id:
+            messages = messages.filter(id__lt=before_id)
+        page = list(messages.order_by('-timestamp', '-id')[:THERAPIST_MESSAGE_PAGE_SIZE + 1])
+        has_more = len(page) > THERAPIST_MESSAGE_PAGE_SIZE
+        page = page[:THERAPIST_MESSAGE_PAGE_SIZE]
+        page.reverse()
         return Response(
             {
                 'matchId': match.id,
                 'therapistId': match.therapist_id,
-                'messages': [serialize_therapist_message(message) for message in messages],
+                'messages': [serialize_therapist_message(message) for message in page],
+                'hasMore': has_more,
+                'nextCursor': page[0].id if has_more and page else None,
             }
         )
 

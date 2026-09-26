@@ -17,6 +17,7 @@ from .models import (
     JournalPrivacySettings,
     Message,
     PeerConnection,
+    PeerConnectionEvent,
     PeerDM,
     PeerRoom,
     PeerRoomMembership,
@@ -211,6 +212,7 @@ class CheckInModelTests(TestCase):
         self.assertEqual(summary['last_check_in_date'], date(2026, 6, 22))
         self.assertEqual(summary['last_weekly_check_in_date'], date(2026, 6, 22))
         self.assertIsNone(summary['weekly_due_since'])
+        self.assertEqual(summary['next_weekly_check_in_date'], date(2026, 6, 29))
 
     def test_missing_entire_week_resets_streak(self):
         # Missing a full week should break the streak and mark the next check-in as due.
@@ -231,6 +233,7 @@ class CheckInModelTests(TestCase):
         self.assertTrue(summary['due_this_week'])
         self.assertEqual(summary['last_weekly_check_in_date'], date(2026, 6, 15))
         self.assertEqual(summary['weekly_due_since'], date(2026, 6, 22))
+        self.assertEqual(summary['next_weekly_check_in_date'], date(2026, 6, 22))
 
 
 class TherapistMatchModelTests(TestCase):
@@ -1132,6 +1135,61 @@ class PeerModerationAPITests(TestCase):
             status=PeerConnection.Status.CONNECTED,
         )
 
+
+    def test_peer_connection_requests_and_acceptance_create_server_events(self):
+        self.user.profile.peer_support_category = 'anxiety'
+        self.user.profile.save(update_fields=['peer_support_category'])
+        target = get_user_model().objects.create_user(username='peer-event-target', password='testpass123')
+        target_profile = UserProfile.objects.create(
+            user=target,
+            anonymous_name='SteadyPine31',
+            is_peer_onboarded=True,
+            peer_support_category='anxiety',
+        )
+
+        requested = self.client.post(reverse('peer-connect', args=[target_profile.peer_id]), {}, format='json')
+
+        self.assertEqual(requested.status_code, 201)
+        connection = PeerConnection.objects.get(requester=self.user, recipient=target)
+        self.assertTrue(
+            PeerConnectionEvent.objects.filter(
+                connection=connection,
+                event_type=PeerConnectionEvent.EventType.REQUESTED,
+                actor=self.user,
+            ).exists()
+        )
+
+        target_client = APIClient()
+        target_client.force_authenticate(target)
+        accepted = target_client.post(reverse('peer-connect', args=[self.user.profile.peer_id]), {}, format='json')
+        activity = target_client.get(reverse('peer-connection-events'))
+
+        self.assertEqual(accepted.status_code, 200)
+        self.assertEqual(connection.events.count(), 2)
+        self.assertEqual(activity.status_code, 200)
+        self.assertEqual([event['type'] for event in activity.data], ['accepted', 'requested'])
+        self.assertEqual(activity.data[0]['direction'], 'outgoing')
+
+    def test_peer_room_history_supports_older_message_pages(self):
+        PeerRoomMessage.objects.filter(room=self.room).delete()
+        for index in range(60):
+            PeerRoomMessage.objects.create(
+                room=self.room,
+                sender=self.user,
+                anonymous_name=self.user.profile.anonymous_name,
+                content=f'room-message-{index}',
+            )
+
+        newest = self.client.get(reverse('peer-room-messages', args=[self.room.id]))
+        older = self.client.get(
+            reverse('peer-room-messages', args=[self.room.id]),
+            {'before': newest.data[0]['id']},
+        )
+
+        self.assertEqual(len(newest.data), 50)
+        self.assertEqual(newest.data[0]['text'], 'room-message-10')
+        self.assertEqual(newest.data[-1]['text'], 'room-message-59')
+        self.assertEqual([message['text'] for message in older.data], [f'room-message-{index}' for index in range(10)])
     def test_peer_list_uses_opaque_identifiers(self):
         response = self.client.get(reverse('peer-list'))
 

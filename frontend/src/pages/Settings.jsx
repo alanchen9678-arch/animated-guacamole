@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router'
 import { useUser } from '../context/UserContext.jsx'
 import { AsyncButton, FeedbackNotice } from '../components/ui/feedback.jsx'
 import { AvatarSymbol, USER_AVATAR_SYMBOLS } from '../components/ui/avatar-symbols.jsx'
@@ -24,6 +25,7 @@ function getStreakLabel(streak) {
 
 export default function Settings() {
   const { user, updateProfile, logout } = useUser()
+  const location = useLocation()
 
   const [mood, setMood] = useState(user?.mood || '')
   const [displayName, setDisplayName] = useState(user?.displayName || '')
@@ -42,6 +44,18 @@ export default function Settings() {
 
   const profileFeedbackTimer = useRef(null)
   const moodFeedbackTimer = useRef(null)
+  const moodControlRef = useRef(null)
+
+  useEffect(() => {
+    if (location.hash !== '#mood') return
+    const frame = window.requestAnimationFrame(() => {
+      moodControlRef.current?.scrollIntoView({ block: 'center', behavior: 'auto' })
+      const selected = moodControlRef.current?.querySelector('input:checked')
+        || moodControlRef.current?.querySelector('input')
+      selected?.focus({ preventScroll: true })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [location.hash])
 
   useEffect(() => () => {
     window.clearTimeout(profileFeedbackTimer.current)
@@ -312,7 +326,7 @@ export default function Settings() {
           </header>
 
           <fieldset
-            className="settings-mood-fieldset"
+            id="mood" ref={moodControlRef} className="settings-mood-fieldset"
             aria-labelledby="settings-mood-heading"
             aria-describedby="settings-mood-help"
             aria-busy={moodSaving || undefined}

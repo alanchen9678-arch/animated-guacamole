@@ -50,6 +50,13 @@ function hashDayKey(dayKey) {
   return Math.abs(hash)
 }
 
+function formatCheckInDate(value) {
+  if (!value) return null
+  const date = new Date(value + 'T12:00:00')
+  if (Number.isNaN(date.getTime())) return null
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 function getDailyJournalPrompt(date = new Date()) {
   const todayKey = getDayKey(date)
   const yesterday = new Date(date)
@@ -133,7 +140,10 @@ export default function Home() {
   )
   const journalPrompt = useMemo(() => getDailyJournalPrompt(), [])
 
-  const checkInLabel = user?.checkInDueThisWeek === false ? 'Up to date' : 'Due this week'
+  const nextCheckInDate = formatCheckInDate(user?.nextWeeklyCheckInDate)
+  const checkInLabel = user?.checkInDueThisWeek === false
+    ? (nextCheckInDate ? 'Next check-in ' + nextCheckInDate : 'Up to date')
+    : (nextCheckInDate ? 'Available since ' + nextCheckInDate : 'Due this week')
 
   return (
     <section className="page home-page">
@@ -210,7 +220,52 @@ export default function Home() {
           background: var(--panel-strong);
           border: 1px solid var(--line);
           border-radius: 16px;
-          padding: 16px 18px;
+          box-sizing: border-box;
+          min-height: 92px;
+          padding: 18px 22px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          color: inherit;
+          font: inherit;
+          text-align: left;
+        }
+        button.today-stat {
+          position: relative;
+          cursor: pointer;
+        }
+        button.today-stat::after {
+          content: "";
+          position: absolute;
+          right: 22px;
+          bottom: 0;
+          left: 22px;
+          height: 2px;
+          background: rgba(77, 107, 88, 0.62);
+          opacity: 0;
+          transform: scaleX(0.35);
+          transform-origin: left;
+          transition: opacity 140ms ease, transform 140ms ease;
+        }
+        .today-bar > button.today-stat:first-child::after {
+          left: 2px;
+        }
+
+        button.today-stat:hover::after,
+        button.today-stat:focus-visible::after {
+          opacity: 1;
+          transform: scaleX(1);
+        }
+        button.today-stat .value {
+          transition: color 140ms ease, transform 140ms ease;
+        }
+        button.today-stat:hover .value {
+          color: #3f624e;
+          transform: translateY(-1px);
+        }
+        button.today-stat:focus-visible {
+          outline: 3px solid rgba(77, 107, 88, 0.24);
+          outline-offset: 3px;
         }
         .today-stat .label {
           font-size: 0.8125rem; font-weight: 500;
@@ -268,6 +323,11 @@ export default function Home() {
           .feature-grid { grid-template-columns: 1fr; column-gap: 0; }
           .prompt-content { align-items: flex-start; flex-direction: column; gap: 16px; }
         }
+        @media (prefers-reduced-motion: reduce) {
+          button.today-stat::after,
+          button.today-stat .value { transition: none; }
+          button.today-stat:hover .value { transform: none; }
+        }
       `}</style>
 
       <header className="page-header">
@@ -278,22 +338,22 @@ export default function Home() {
       </header>
 
       <div className="today-bar">
-        <div className="today-stat">
+        <button className="today-stat" type="button" onClick={() => navigate('/app/settings#mood')} aria-label="Update your mood in Settings">
           <div className="label">Mood</div>
           <div className="value" style={{ textTransform: 'capitalize' }}>
             {user?.mood?.trim() || 'Not set'}
           </div>
-        </div>
+        </button>
         <div className="today-stat">
-          <div className="label">Streak</div>
+          <div className="label">Check-in streak</div>
           <div className="value">{user?.streak ?? 0} {user?.streak === 1 ? 'week' : 'weeks'}</div>
         </div>
-        <div className="today-stat">
-          <div className="label">Check-in</div>
+        <button className="today-stat" type="button" onClick={() => navigate('checkins')} aria-label="Open check-in status">
+          <div className="label">Check-in status</div>
           <div className="value" style={{ fontSize: '1rem', paddingTop: '4px' }}>
             {checkInLabel}
           </div>
-        </div>
+        </button>
       </div>
 
       <section className="prompts-card" aria-labelledby="daily-journal-prompt">

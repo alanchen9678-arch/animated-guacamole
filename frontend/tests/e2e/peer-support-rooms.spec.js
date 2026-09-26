@@ -25,6 +25,11 @@ async function stubPeerSupportShell(page) {
     avatarSymbol: 'peer-cove',
     peerSupportCategory: 'anxiety',
   }) }))
+  await page.route('**/api/peer/events/', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: '[]',
+  }))
   await page.route('**/api/peer/peers/', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',

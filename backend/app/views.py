@@ -82,6 +82,7 @@ def _user_payload(user):
         'lastWeeklyCheckInDate': checkin_summary['last_weekly_check_in_date'],
         'checkInDueThisWeek': checkin_summary['due_this_week'],
         'weeklyCheckInDueSince': checkin_summary['weekly_due_since'],
+        'nextWeeklyCheckInDate': checkin_summary['next_weekly_check_in_date'],
         'lastJournalEntryDate': latest_journal_entry.entry_date if latest_journal_entry else None,
     }
 

@@ -49,6 +49,7 @@ test('Home describes an unset mood with meaningful copy', async ({ page }) => {
       mood: '',
       streak: 0,
       checkInDueThisWeek: false,
+      nextWeeklyCheckInDate: '2026-09-28',
       hasInitialAssessment: true,
       hasCurrentPersonalityAssessment: true,
       personality: {},
@@ -61,9 +62,17 @@ test('Home describes an unset mood with meaningful copy', async ({ page }) => {
   const moodStat = page.locator('.today-stat').filter({ hasText: 'Mood' })
   await expect(moodStat).toContainText('Not set')
   await expect(moodStat).not.toContainText('-')
+  await expect(page.getByText('Check-in streak')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Open check-in status' })).toContainText('Next check-in Sep 28, 2026')
+
+  await moodStat.click()
+  await expect(page).toHaveURL(/\/app\/settings#mood$/)
+  await expect(page.locator('#mood')).toBeVisible()
+  await expect(page.locator('#mood input').first()).toBeFocused()
 })
 
-test('returning chatbot users retain direct safety guidance and reduced-motion scrolling', async ({ page }) => {
+test('returning chatbot users retain direct safety guidance and reduced-motion scrolling', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.addInitScript((today) => {
     window.__dawnHarborScrollBehaviors = []
@@ -118,6 +127,10 @@ test('returning chatbot users retain direct safety guidance and reduced-motion s
   await expect(safety.getByRole('link', { name: 'call 911' })).toHaveAttribute('href', 'tel:911')
   await expect(page.locator('.msg-avatar use').first()).toHaveAttribute('href', '/avatar-symbols.svg#brand-harbor')
   await expect(page.locator('.chat-messages')).toHaveCSS('scroll-behavior', 'auto')
+  await expect(page.getByRole('separator', { name: 'Monday, September 21, 2026' })).toBeVisible()
+  const copyMessage = page.getByRole('button', { name: 'Copy message' })
+  await copyMessage.click()
+  await expect(page.getByRole('button', { name: 'Message copied' })).toBeVisible()
 
   const scrollBehaviors = await page.evaluate(() => window.__dawnHarborScrollBehaviors)
   expect(scrollBehaviors).not.toContain('smooth')
