@@ -1681,8 +1681,10 @@ function PersistentTherapistChatView({ therapist: t, onBack, onConnectionCancell
                 {!isUser && <Avatar initials={t.initials} color={t.color} size={30} />}
                 <div className={`tm-bubble${isUser ? ' tm-bubble--user' : ' tm-bubble--them'}`}>
                   <p className="tm-bubble-text">{message.text}</p>
-                  <span className="tm-bubble-time">{formatMessageTime(message.timestamp)}</span>
-                  <CopyMessageButton text={message.text} inverse={isUser} />
+                  <div className="conversation-message-meta">
+                    <CopyMessageButton text={message.text} inverse={isUser} />
+                    <span className="tm-bubble-time">{formatMessageTime(message.timestamp)}</span>
+                  </div>
                 </div>
               </div>
             </div>

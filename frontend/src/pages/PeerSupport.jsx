@@ -651,10 +651,12 @@ function RoomView({ profile, room, onBack, onSwitch, onOptOut }) {
             <div className={`ps-bubble${m.self ? ' ps-bubble--self' : ' ps-bubble--other'}${m.pending ? ' ps-bubble--pending' : ''}`}>
               {!m.self && <span className="ps-bubble-name" style={{ color: m.color }}>{m.user}</span>}
               <p className="ps-bubble-text">{m.text}</p>
-              <span className="ps-bubble-time">
-                {m.pending ? 'Sending...' : formatMessageTime(m.timestamp)}
-              </span>
-              {!m.pending && <CopyMessageButton text={m.text} inverse={m.self} />}
+              <div className="conversation-message-meta">
+                {!m.pending && <CopyMessageButton text={m.text} inverse={m.self} />}
+                <span className="ps-bubble-time">
+                  {m.pending ? 'Sending...' : formatMessageTime(m.timestamp)}
+                </span>
+              </div>
             </div>
               {m.self && <AnonAvatar symbol={profile.avatarSymbol} color={profile.avatarColor} size={28} />}
             </div>
@@ -868,10 +870,12 @@ function DMView({ peer, profile, onBack, onLeave }) {
                 {!isMe && <AnonAvatar symbol={peer.avatarSymbol} color={peer.color} size={28} />}
                 <div className={`ps-bubble${isMe ? ' ps-bubble--self' : ' ps-bubble--other'}${m.pending ? ' ps-bubble--pending' : ''}`}>
                   <p className="ps-bubble-text">{m.text}</p>
-                  <span className="ps-bubble-time">
-                    {m.pending ? 'Sending...' : formatMessageTime(m.timestamp)}
-                  </span>
-                  {!m.pending && <CopyMessageButton text={m.text} inverse={isMe} />}
+                  <div className="conversation-message-meta">
+                    {!m.pending && <CopyMessageButton text={m.text} inverse={isMe} />}
+                    <span className="ps-bubble-time">
+                      {m.pending ? 'Sending...' : formatMessageTime(m.timestamp)}
+                    </span>
+                  </div>
                 </div>
                 {isMe && <AnonAvatar symbol={profile.avatarSymbol} color={profile.avatarColor} size={28} />}
               </div>

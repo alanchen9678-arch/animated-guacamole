@@ -68,8 +68,10 @@ function Message({ msg }) {
       {!isUser && <div className="msg-avatar" aria-hidden="true"><DawnHarborAvatar size={18} /></div>}
       <div className={`bubble${isUser ? ' bubble--user' : ' bubble--ai'}`}>
         <p className="bubble-text">{msg.text}</p>
-        <span className="bubble-time">{formatMessageTime(msg.timestamp)}</span>
-        <CopyMessageButton text={msg.text} inverse={isUser} />
+        <div className="conversation-message-meta">
+          <CopyMessageButton text={msg.text} inverse={isUser} />
+          <span className="bubble-time">{formatMessageTime(msg.timestamp)}</span>
+        </div>
       </div>
     </div>
   )
