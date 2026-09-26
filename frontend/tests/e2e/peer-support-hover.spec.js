@@ -45,6 +45,23 @@ async function expectPeerChatLayout(page) {
   await expect(page.locator('.ps-input-bar')).toHaveCSS('padding-left', '8px')
 }
 
+async function expectDirectMessageChrome(page) {
+  await expect(page.getByText(/New messages appear automatically/)).toHaveCount(0)
+  await expect(page.locator('.ps-chat-header--dm .ps-chat-name')).toHaveCSS('font-size', '16.8px')
+
+  const noticeAlignment = await page.locator('.ps-anon-notice').evaluate((notice) => {
+    const noticeBounds = notice.getBoundingClientRect()
+    const contentBounds = notice.closest('.content').getBoundingClientRect()
+    return {
+      leftDelta: Math.abs(noticeBounds.left - contentBounds.left),
+      rightDelta: Math.abs(noticeBounds.right - contentBounds.right),
+    }
+  })
+
+  expect(noticeAlignment.leftDelta).toBeLessThan(1)
+  expect(noticeAlignment.rightDelta).toBeLessThan(1)
+}
+
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     const now = new Date()
@@ -125,6 +142,7 @@ test('peer match hover adds edge spacing without moving its content', async ({ p
   const activeChat = page.locator('.ps-peer-card--active').filter({ hasText: 'Silver Fern' })
   await activeChat.getByRole('button', { name: 'Message' }).click()
   await expect(page.locator('.ps-chat-name')).toHaveText('Silver Fern')
+  await expectDirectMessageChrome(page)
 })
 
 test('peer match hover stays contained on mobile', async ({ page }) => {
@@ -142,6 +160,12 @@ test('peer match hover stays contained on mobile', async ({ page }) => {
   expect(cardBox.x).toBeGreaterThanOrEqual(pageBox.x)
   expect(cardBox.x + cardBox.width).toBeLessThanOrEqual(pageBox.x + pageBox.width + 1)
   expect(overflow).toBeLessThanOrEqual(1)
+
+  const activeChat = page.locator('.ps-peer-card--active').filter({ hasText: 'Silver Fern' })
+  await activeChat.getByRole('button', { name: 'Message' }).click()
+  await expectDirectMessageChrome(page)
+  const chatOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  expect(chatOverflow).toBeLessThanOrEqual(1)
 })
 
 test('group and direct peer chats share the full-width chat workspace', async ({ page }) => {
@@ -157,4 +181,5 @@ test('group and direct peer chats share the full-width chat workspace', async ({
   await activeChat.getByRole('button', { name: 'Message' }).click()
   await expect(page.locator('.ps-chat-name')).toHaveText('Silver Fern')
   await expectPeerChatLayout(page)
+  await expectDirectMessageChrome(page)
 })

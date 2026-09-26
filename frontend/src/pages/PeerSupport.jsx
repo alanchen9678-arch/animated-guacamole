@@ -798,13 +798,12 @@ function DMView({ peer, profile, onBack, onLeave }) {
 
   return (
     <div className="ps-chat-root">
-      <div className="ps-chat-header">
+      <div className="ps-chat-header ps-chat-header--dm">
         <button className="ps-back-btn" onClick={onBack}>Back</button>
         <div className="ps-chat-identity">
           <AnonAvatar symbol={peer.avatarSymbol} color={peer.color} size={34} />
           <div className="ps-chat-profile-copy">
             <strong className="ps-chat-name">{peer.name}</strong>
-            <span className="ps-chat-sub">Peer identity {"\u00b7"} New messages appear automatically</span>
           </div>
         </div>
         <div className="ps-leave-wrap">

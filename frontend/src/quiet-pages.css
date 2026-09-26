@@ -1588,6 +1588,10 @@
   font-size: 0.9rem;
   font-weight: 680;
 }
+.app-root .ps-chat-header--dm .ps-chat-name {
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
 .app-root .ps-chat-sub {
   color: var(--muted);
   font-size: 0.72rem;
@@ -1618,7 +1622,11 @@
   font-weight: 650;
 }
 .app-root .ps-anon-notice {
-  padding: 9px 8px;
+  width: auto;
+  margin: 0 calc(-1 * clamp(32px, 3.7vw, 46px));
+  padding: 10px calc(clamp(32px, 3.7vw, 46px) + 8px);
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--line);
   background: var(--panel-soft);
   color: var(--muted);
   line-height: 1.45;
@@ -1641,6 +1649,10 @@
     margin: -32px -30px 0;
     padding: 18px 38px;
   }
+  .app-root .ps-anon-notice {
+    margin-inline: -30px;
+    padding-inline: 38px;
+  }
 }
 
 @media (min-width: 960px) {
@@ -1654,6 +1666,10 @@
   .app-root .ps-chat-header {
     margin: -26px -18px 0;
     padding: 16px 26px;
+  }
+  .app-root .ps-anon-notice {
+    margin-inline: -18px;
+    padding-inline: 26px;
   }
 }
 
